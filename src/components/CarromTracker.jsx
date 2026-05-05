@@ -67,14 +67,16 @@ function Avatar({ id, allPlayers, size = 30 }) {
 }
 
 // ── Leaderboard ───────────────────────────────────────────────────────────────
-function Leaderboard({ players, matches, setTab, setSelectedPlayer }) {
+function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const stats = computeStats(players, matches);
   const thisWeek = matches.filter(m => m.createdAt && Date.now() - m.createdAt.toMillis() < 7 * 864e5).length;
   const rankClass = i => i === 0 ? "rank-1" : i === 1 ? "rank-2" : i === 2 ? "rank-3" : "text-muted";
 
   function goToPlayer(id) {
-    setSelectedPlayer(id);
-    setTab("stats");
+    if (onSelectPlayer && onNavigateToStats) {
+      onSelectPlayer(id);
+      onNavigateToStats();
+    }
   }
 
   return (
@@ -101,16 +103,12 @@ function Leaderboard({ players, matches, setTab, setSelectedPlayer }) {
             </thead>
             <tbody>
               {stats.map((p, i) => (
-                <tr key={p.id}>
+                <tr key={p.id} onClick={() => goToPlayer(p.id)} style={{ cursor: "pointer" }}>
                   <td><span className={rankClass(i)} style={{ fontSize: 13, fontFamily: "'Sora', sans-serif" }}>{i + 1}</span></td>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <Avatar id={p.id} allPlayers={players} size={28} />
-                      <span onClick={() => goToPlayer(p.id)}
-                        style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13, cursor: "pointer", textDecoration: "underline", textDecorationColor: "transparent" }}
-                        onMouseEnter={e => e.currentTarget.style.textDecorationColor = "currentColor"}
-                        onMouseLeave={e => e.currentTarget.style.textDecorationColor = "transparent"}
-                      >{p.name}</span>
+                      <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13 }}>{p.name}</span>
                       {i === 0 && p.played > 0 && <span className="badge badge-top">🏆</span>}
                     </div>
                   </td>
@@ -876,22 +874,7 @@ export default function CarromTracker() {
             <h1>Carrom Tracker</h1>
             <div className="subtitle">{players.length} players · {matches.length} matches</div>
           </div>
-          <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "stretch", gap: 4, flexShrink: 0 }}>
-            {isAdmin ? (
-              <button onClick={handleLogout} style={{
-                background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
-                borderRadius: 6, padding: "3px 10px", color: "rgba(255,255,255,0.85)",
-                fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
-                textAlign: "center", width: "100%",
-              }}>Logout</button>
-            ) : (
-              <button onClick={() => setAuthState("login")} style={{
-                background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
-                borderRadius: 6, padding: "3px 10px", color: "rgba(255,255,255,0.85)",
-                fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
-                textAlign: "center", width: "100%",
-              }}>Login</button>
-            )}
+          <div style={{ marginLeft: "auto", flexShrink: 0 }}>
             <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
               style={{
                 display: "flex", flexDirection: "column", alignItems: "center",
@@ -910,16 +893,31 @@ export default function CarromTracker() {
         </div>
       </div>
 
-      <div className="tabs-wrap">
+      <div className="tabs-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div className="tabs">
           {TABS.map(({ k, l }) => (
             <button key={k} className={`tab-btn ${tab === k ? "active" : ""}`} onClick={() => setTab(k)}>{l}</button>
           ))}
         </div>
+        {isAdmin ? (
+          <button onClick={handleLogout} style={{
+            background: "transparent", border: "1px solid rgba(255,255,255,0.5)",
+            borderRadius: 6, padding: "4px 14px", color: "rgba(255,255,255,0.9)",
+            fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+            marginRight: 4, flexShrink: 0,
+          }}>Logout</button>
+        ) : (
+          <button onClick={() => setAuthState("login")} style={{
+            background: "transparent", border: "1px solid rgba(255,255,255,0.5)",
+            borderRadius: 6, padding: "4px 14px", color: "rgba(255,255,255,0.9)",
+            fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+            marginRight: 4, flexShrink: 0,
+          }}>Login</button>
+        )}
       </div>
 
       <div className="content">
-        {tab === "board" && <Leaderboard players={players} matches={matches} setTab={setTab} setSelectedPlayer={setSelectedPlayer} />}
+        {tab === "board" && <Leaderboard players={players} matches={matches} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
         {tab === "match" && isAdmin && <NewMatch players={players} onSave={saveMatch} />}
         {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} />}
