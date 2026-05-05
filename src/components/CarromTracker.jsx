@@ -1069,8 +1069,10 @@ export default function CarromTracker() {
     if (authState !== "admin" || players.length === 0 || matches.length === 0) return;
     const playersWithoutDesc = players.filter(p => !p.aiDescription);
     if (playersWithoutDesc.length === 0) return;
-    playersWithoutDesc.forEach(p => {
-      regeneratePlayerDescription(p.id, players, matches);
+    playersWithoutDesc.forEach((p, index) => {
+      setTimeout(() => {
+        regeneratePlayerDescription(p.id, players, matches);
+      }, index * 3000);
     });
   }, [authState, players.length, matches.length]);
 
