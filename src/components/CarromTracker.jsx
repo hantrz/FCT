@@ -70,7 +70,6 @@ function Avatar({ id, allPlayers, size = 30 }) {
 function Leaderboard({ players, matches }) {
   const stats = computeStats(players, matches);
   const thisWeek = matches.filter(m => m.createdAt && Date.now() - m.createdAt.toMillis() < 7 * 864e5).length;
-
   const rankClass = i => i === 0 ? "rank-1" : i === 1 ? "rank-2" : i === 2 ? "rank-3" : "text-muted";
 
   return (
@@ -81,18 +80,18 @@ function Leaderboard({ players, matches }) {
         <div className="metric"><label>This Week</label><span>{thisWeek}</span></div>
       </div>
       {stats.length === 0 ? (
-        <div className="empty"><p>No data yet. Add players and record matches to see the leaderboard!</p></div>
+        <div className="empty"><p>No data yet. Add players and record matches!</p></div>
       ) : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th style={{ width: 40 }}>#</th>
+                <th style={{ width: 36 }}>#</th>
                 <th>Player</th>
-                <th style={{ width: 60, textAlign: "center" }}>Played</th>
-                <th style={{ width: 48, textAlign: "center" }}>Won</th>
-                <th style={{ width: 48, textAlign: "center" }}>Lost</th>
-                <th style={{ width: 96, textAlign: "right" }}>Win%</th>
+                <th style={{ width: 56, textAlign: "center" }}>P</th>
+                <th style={{ width: 44, textAlign: "center" }}>W</th>
+                <th style={{ width: 44, textAlign: "center" }}>L</th>
+                <th style={{ width: 88, textAlign: "right" }}>Win%</th>
               </tr>
             </thead>
             <tbody>
@@ -100,15 +99,15 @@ function Leaderboard({ players, matches }) {
                 <tr key={p.id}>
                   <td><span className={rankClass(i)} style={{ fontSize: 13, fontFamily: "'Sora', sans-serif" }}>{i + 1}</span></td>
                   <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <Avatar id={p.id} allPlayers={players} size={30} />
-                      <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 14 }}>{p.name}</span>
-                      {i === 0 && p.played > 0 && <span className="badge badge-top">🏆 Top</span>}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Avatar id={p.id} allPlayers={players} size={28} />
+                      <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13 }}>{p.name}</span>
+                      {i === 0 && p.played > 0 && <span className="badge badge-top">🏆</span>}
                     </div>
                   </td>
-                  <td style={{ textAlign: "center", fontWeight: 500 }}>{p.played}</td>
-                  <td style={{ textAlign: "center" }} className="text-success"><b>{p.won}</b></td>
-                  <td style={{ textAlign: "center" }} className="text-danger">{p.lost}</td>
+                  <td style={{ textAlign: "center", fontWeight: 500, fontSize: 13 }}>{p.played}</td>
+                  <td style={{ textAlign: "center" }} className="text-success"><b style={{ fontSize: 13 }}>{p.won}</b></td>
+                  <td style={{ textAlign: "center" }} className="text-danger" ><span style={{ fontSize: 13 }}>{p.lost}</span></td>
                   <td>
                     <div className="win-bar-wrap">
                       <div className="win-bar"><div className="win-bar-fill" style={{ width: `${p.winPct}%` }} /></div>
@@ -162,7 +161,7 @@ function NewMatch({ players, onSave }) {
 
   return (
     <div style={{ maxWidth: 480 }}>
-      <div style={{ marginBottom: "1.5rem" }}>
+      <div style={{ marginBottom: "1.25rem" }}>
         <p className="section-label">Format</p>
         <div style={{ display: "flex", gap: 8 }}>
           {["1v1", "2v2"].map(f => (
@@ -171,7 +170,7 @@ function NewMatch({ players, onSave }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: "1.5rem" }}>
+      <div className="teams-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: "1.25rem" }}>
         {[1, 2].map(team => {
           const slots = team === 1 ? t1 : t2;
           const teamColor = team === 1 ? "#14a800" : "#D4A017";
@@ -192,21 +191,21 @@ function NewMatch({ players, onSave }) {
       </div>
 
       {t1ok && t2ok && (
-        <div style={{ marginBottom: "1.5rem" }}>
+        <div style={{ marginBottom: "1.25rem" }}>
           <p className="section-label">Who won?</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div className="win-btns-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {[
               { key: "team1", label: t1.map(id => `${getIcon(id)} ${getName(id)}`).join(" & "), color: "#14a800" },
               { key: "team2", label: t2.map(id => `${getIcon(id)} ${getName(id)}`).join(" & "), color: "#D4A017" },
             ].map(({ key, label, color }) => (
               <button key={key} onClick={() => setWinner(key)}
                 style={{
-                  padding: "12px 10px", fontSize: 13, fontWeight: winner === key ? 700 : 500,
+                  padding: "12px 8px", fontSize: 13, fontWeight: winner === key ? 700 : 500,
                   borderRadius: "var(--radius-sm)", cursor: "pointer", fontFamily: "inherit",
                   background: winner === key ? color + "15" : "transparent",
                   color: winner === key ? color : "var(--text)",
                   border: `1.5px solid ${winner === key ? color : "var(--border-strong)"}`,
-                  transition: "all 0.15s",
+                  transition: "all 0.15s", touchAction: "manipulation",
                 }}>{winner === key ? "★ " : ""}{label}</button>
             ))}
           </div>
@@ -237,9 +236,9 @@ function Players({ players, matches, onAdd, onRemove }) {
 
   return (
     <div>
-      <div className="card" style={{ marginBottom: "1.5rem" }}>
-        <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>Add New Player</p>
-        <div style={{ marginBottom: 14 }}>
+      <div className="card" style={{ marginBottom: "1.25rem" }}>
+        <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Add New Player</p>
+        <div style={{ marginBottom: 12 }}>
           <p className="section-label">Choose an icon</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {AVATAR_ICONS.map(ic => (
@@ -255,8 +254,8 @@ function Players({ players, matches, onAdd, onRemove }) {
           <input value={name} onChange={e => setName(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleAdd()}
             placeholder="Player name" style={{ flex: 1 }} />
-          <button className="btn btn-primary" onClick={handleAdd} disabled={adding} style={{ whiteSpace: "nowrap" }}>
-            {adding ? "..." : "Add Player"}
+          <button className="btn btn-primary" onClick={handleAdd} disabled={adding} style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
+            {adding ? "..." : "Add"}
           </button>
         </div>
       </div>
@@ -271,19 +270,19 @@ function Players({ players, matches, onAdd, onRemove }) {
             return (
               <div key={p.id} className="player-card">
                 <button onClick={() => onRemove(p.id)} style={{
-                  position: "absolute", top: 8, right: 8, background: "none", border: "none",
-                  cursor: "pointer", fontSize: 18, color: "var(--text-muted)", lineHeight: 1,
-                  padding: "2px 6px", fontFamily: "inherit",
+                  position: "absolute", top: 6, right: 6, background: "none", border: "none",
+                  cursor: "pointer", fontSize: 17, color: "var(--text-muted)", lineHeight: 1,
+                  padding: "3px 6px", fontFamily: "inherit", touchAction: "manipulation",
                 }}>×</button>
                 <div style={{
-                  width: 50, height: 50, borderRadius: "50%",
+                  width: 46, height: 46, borderRadius: "50%",
                   background: c + "20", border: `2px solid ${c}40`,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  marginBottom: 12, fontSize: p.icon ? 26 : 18, fontWeight: 700, color: c,
+                  marginBottom: 10, fontSize: p.icon ? 24 : 16, fontWeight: 700, color: c,
                 }}>
                   {p.icon || (p.name || "?").trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2)}
                 </div>
-                <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{p.name}</p>
+                <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{p.name}</p>
                 <p className="text-muted" style={{ fontSize: 11 }}>{st.played} matches</p>
                 <p style={{ fontSize: 12, fontWeight: 600, color: "var(--green)", marginTop: 2 }}>{st.winPct}% win rate</p>
               </div>
@@ -314,11 +313,11 @@ function History({ players, matches, onDelete }) {
         return (
           <div key={m.id} className="match-item">
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 3 }}>
                 <span style={{ fontSize: 13, fontWeight: w1 ? 700 : 400, color: w1 ? "var(--green)" : "var(--text-muted)" }}>
                   {w1 && "★ "}{t1Names}
                 </span>
-                <span className="text-muted" style={{ fontSize: 11, padding: "1px 6px", background: "var(--bg-secondary)", borderRadius: 4 }}>vs</span>
+                <span className="text-muted" style={{ fontSize: 10, padding: "1px 5px", background: "var(--bg-secondary)", borderRadius: 4 }}>vs</span>
                 <span style={{ fontSize: 13, fontWeight: !w1 ? 700 : 400, color: !w1 ? "var(--green)" : "var(--text-muted)" }}>
                   {!w1 && "★ "}{t2Names}
                 </span>
@@ -327,7 +326,8 @@ function History({ players, matches, onDelete }) {
             </div>
             <button onClick={() => onDelete(m.id)} style={{
               background: "none", border: "none", cursor: "pointer", fontSize: 18,
-              color: "var(--text-muted)", padding: "2px 6px", fontFamily: "inherit", lineHeight: 1, flexShrink: 0,
+              color: "var(--text-muted)", padding: "2px 6px", fontFamily: "inherit",
+              lineHeight: 1, flexShrink: 0, touchAction: "manipulation",
             }}>×</button>
           </div>
         );
@@ -377,14 +377,12 @@ function Stats({ players, matches }) {
       if (isW) won++; else lost++;
       (inT1 ? m.team2 : m.team1).forEach(oid => {
         if (!opponents[oid]) opponents[oid] = { played: 0, won: 0 };
-        opponents[oid].played++;
-        if (isW) opponents[oid].won++;
+        opponents[oid].played++; if (isW) opponents[oid].won++;
       });
       if (m.type === "2v2") {
         (inT1 ? m.team1 : m.team2).filter(x => x !== p.id).forEach(pid => {
           if (!partners[pid]) partners[pid] = { played: 0, won: 0 };
-          partners[pid].played++;
-          if (isW) partners[pid].won++;
+          partners[pid].played++; if (isW) partners[pid].won++;
         });
       }
     }
@@ -396,35 +394,39 @@ function Stats({ players, matches }) {
 
     return (
       <div>
-        <div className="card" style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: 16 }}>
+        <div className="card" style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{
-            width: 60, height: 60, borderRadius: "50%", background: c + "20",
+            width: 56, height: 56, borderRadius: "50%", background: c + "20",
             border: `2px solid ${c}50`, display: "flex", alignItems: "center",
-            justifyContent: "center", fontSize: p.icon ? 30 : 22, fontWeight: 700, color: c, flexShrink: 0,
+            justifyContent: "center", fontSize: p.icon ? 28 : 20, fontWeight: 700, color: c, flexShrink: 0,
           }}>
             {p.icon || (p.name || "?").trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2)}
           </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Sora', sans-serif" }}>{p.name}</p>
-            <p className="text-muted" style={{ fontSize: 12 }}>Current streak: <b style={{ color: streak.endsWith("W") ? "var(--green)" : "var(--danger)" }}>{streak}</b></p>
+          <div>
+            <p style={{ fontSize: 17, fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>{p.name}</p>
+            <p className="text-muted" style={{ fontSize: 12 }}>
+              Streak: <b style={{ color: streak.endsWith("W") ? "var(--green)" : "var(--danger)" }}>{streak}</b>
+            </p>
           </div>
         </div>
         <div className="metrics" style={{ marginBottom: "1rem" }}>
           <div className="metric"><label>Played</label><span>{played}</span></div>
           <div className="metric"><label>Won</label><span style={{ color: "var(--green)" }}>{won}</span></div>
-          <div className="metric"><label>Win Rate</label><span style={{ color: "var(--green)" }}>{winPct}%</span></div>
+          <div className="metric"><label>Win Rate</label><span style={{ color: "var(--green)", fontSize: 20 }}>{winPct}%</span></div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: "1rem" }}>
           <div className="metric"><label>Lost</label><span style={{ color: "var(--danger)" }}>{lost}</span></div>
-          <div className="metric"><label>Streak</label><span style={{ fontSize: 22, color: streak.endsWith("W") ? "var(--green)" : "var(--danger)" }}>{streak}</span></div>
+          <div className="metric"><label>Streak</label>
+            <span style={{ fontSize: 20, color: streak.endsWith("W") ? "var(--green)" : "var(--danger)" }}>{streak}</span>
+          </div>
         </div>
         {Object.keys(opponents).length > 0 && (
           <div className="card" style={{ marginBottom: "1rem" }}>
-            <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>vs Opponents</p>
+            <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>vs Opponents</p>
             {Object.entries(opponents).sort((a, b) => b[1].played - a[1].played).map(([oid, o]) => (
-              <div key={oid} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid var(--border)" }}>
+              <div key={oid} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Avatar id={oid} allPlayers={players} size={26} />
+                  <Avatar id={oid} allPlayers={players} size={24} />
                   <span style={{ fontSize: 13, fontWeight: 500 }}>{getName(oid)}</span>
                 </div>
                 <span style={{ fontSize: 12 }}>
@@ -438,11 +440,11 @@ function Stats({ players, matches }) {
         )}
         {Object.keys(partners).length > 0 && (
           <div className="card">
-            <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>2v2 Partners</p>
+            <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>2v2 Partners</p>
             {Object.entries(partners).sort((a, b) => b[1].won - a[1].won).map(([pid, pt]) => (
-              <div key={pid} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid var(--border)" }}>
+              <div key={pid} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Avatar id={pid} allPlayers={players} size={26} />
+                  <Avatar id={pid} allPlayers={players} size={24} />
                   <span style={{ fontSize: 13, fontWeight: 500 }}>{getName(pid)}</span>
                 </div>
                 <span style={{ fontSize: 12 }}>
@@ -472,9 +474,9 @@ function Stats({ players, matches }) {
               <tr>
                 <th style={{ width: 36 }}>#</th>
                 <th>Player</th>
-                <th style={{ width: 60, textAlign: "center" }}>Played</th>
-                <th style={{ width: 48, textAlign: "center" }}>Won</th>
-                <th style={{ width: 96, textAlign: "right" }}>Win%</th>
+                <th style={{ width: 56, textAlign: "center" }}>P</th>
+                <th style={{ width: 44, textAlign: "center" }}>W</th>
+                <th style={{ width: 88, textAlign: "right" }}>Win%</th>
               </tr>
             </thead>
             <tbody>
@@ -483,12 +485,12 @@ function Stats({ players, matches }) {
                   <td className="text-muted" style={{ fontWeight: 600 }}>{i + 1}</td>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Avatar id={p.id} allPlayers={players} size={26} />
+                      <Avatar id={p.id} allPlayers={players} size={24} />
                       <span style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</span>
                     </div>
                   </td>
                   <td style={{ textAlign: "center", fontSize: 13 }}>{p.played}</td>
-                  <td style={{ textAlign: "center", fontSize: 13 }} className="text-success"><b>{p.won}</b></td>
+                  <td style={{ textAlign: "center" }} className="text-success"><b>{p.won}</b></td>
                   <td>
                     <div className="win-bar-wrap">
                       <div className="win-bar"><div className="win-bar-fill" style={{ width: `${p.winPct}%` }} /></div>
@@ -520,7 +522,7 @@ function Stats({ players, matches }) {
       .map(d => ({ ...d, winPct: Math.round((d.won / d.played) * 100) }))
       .sort((a, b) => b.winPct - a.winPct || b.won - a.won);
 
-    if (!duos.length) return <div className="empty"><p>No 2v2 matches recorded yet. Best Duo ranking will appear here.</p></div>;
+    if (!duos.length) return <div className="empty"><p>No 2v2 matches recorded yet.</p></div>;
 
     return (
       <div className="table-wrap">
@@ -529,9 +531,9 @@ function Stats({ players, matches }) {
             <tr>
               <th style={{ width: 36 }}>#</th>
               <th>Duo</th>
-              <th style={{ width: 60, textAlign: "center" }}>Played</th>
-              <th style={{ width: 48, textAlign: "center" }}>Won</th>
-              <th style={{ width: 96, textAlign: "right" }}>Win%</th>
+              <th style={{ width: 44, textAlign: "center" }}>P</th>
+              <th style={{ width: 44, textAlign: "center" }}>W</th>
+              <th style={{ width: 88, textAlign: "right" }}>Win%</th>
             </tr>
           </thead>
           <tbody>
@@ -539,13 +541,13 @@ function Stats({ players, matches }) {
               <tr key={i}>
                 <td className={i === 0 ? "rank-1" : "text-muted"} style={{ fontWeight: 700 }}>{i + 1}</td>
                 <td>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <Avatar id={d.p1} allPlayers={players} size={26} />
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{getIcon(d.p1)} {getName(d.p1)}</span>
-                    <span className="text-muted" style={{ fontSize: 11, fontWeight: 700 }}>+</span>
-                    <Avatar id={d.p2} allPlayers={players} size={26} />
-                    <span style={{ fontSize: 13, fontWeight: 600 }}>{getIcon(d.p2)} {getName(d.p2)}</span>
-                    {i === 0 && <span className="badge badge-best">Best Duo</span>}
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                    <Avatar id={d.p1} allPlayers={players} size={24} />
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{getIcon(d.p1)} {getName(d.p1)}</span>
+                    <span className="text-muted" style={{ fontSize: 10, fontWeight: 700 }}>+</span>
+                    <Avatar id={d.p2} allPlayers={players} size={24} />
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{getIcon(d.p2)} {getName(d.p2)}</span>
+                    {i === 0 && <span className="badge badge-best">Best</span>}
                   </div>
                 </td>
                 <td style={{ textAlign: "center", fontSize: 13 }}>{d.played}</td>
@@ -573,16 +575,16 @@ function Stats({ players, matches }) {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 8, marginBottom: "1.5rem", flexWrap: "wrap" }}>
+      <div className="stats-mode-btns" style={{ display: "flex", gap: 8, marginBottom: "1.25rem", flexWrap: "wrap" }}>
         {[{ k: "player", l: "By Player" }, { k: "date", l: "By Date" }, { k: "duo", l: "Best Duo" }].map(({ k, l }) => (
           <button key={k} className={`btn btn-format ${mode === k ? "active" : ""}`} onClick={() => setMode(k)}>{l}</button>
         ))}
       </div>
 
       {mode === "player" && (
-        <div style={{ marginBottom: "1.5rem" }}>
+        <div style={{ marginBottom: "1.25rem" }}>
           <p className="section-label">Select Player</p>
-          <select value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)} style={{ maxWidth: 300 }}>
+          <select value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)}>
             <option value="">Choose a player...</option>
             {players.map(p => <option key={p.id} value={p.id}>{p.icon || ""} {p.name}</option>)}
           </select>
@@ -590,7 +592,7 @@ function Stats({ players, matches }) {
       )}
 
       {mode === "date" && (
-        <div style={{ display: "flex", gap: 8, marginBottom: "1.5rem", flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: "1.25rem", flexWrap: "wrap", alignItems: "center" }}>
           {[{ k: "weekly", l: "This Week" }, { k: "monthly", l: "Monthly" }, { k: "yearly", l: "Yearly" }].map(({ k, l }) => (
             <button key={k} className={`btn btn-format ${dateFilter === k ? "active" : ""}`} onClick={() => setDateFilter(k)}>{l}</button>
           ))}
@@ -672,7 +674,7 @@ export default function CarromTracker() {
             <h1>Carrom Tracker</h1>
             <div className="subtitle">{players.length} players · {matches.length} matches</div>
           </div>
-          <div className="header-badge">FNF</div>
+          <div className="header-badge">App by<br />FNF School</div>
         </div>
         <div className="status-bar">
           <span className={`sync-dot ${synced ? "live" : "loading"}`} />

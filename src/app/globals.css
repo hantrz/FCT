@@ -65,7 +65,7 @@ body {
 /* ── Header ── */
 .app-header {
   background: linear-gradient(135deg, var(--green-dark) 0%, var(--green) 70%, #1dc400 100%);
-  padding: 1.5rem 1.5rem 0;
+  padding: 1.25rem 1.25rem 0;
   position: relative;
   overflow: hidden;
 }
@@ -91,23 +91,24 @@ body {
 .header-top {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 1.25rem;
+  gap: 12px;
+  margin-bottom: 1rem;
   position: relative;
   z-index: 1;
 }
 
 .header-logo {
-  width: 46px; height: 46px;
+  width: 44px; height: 44px;
   border-radius: var(--radius-sm);
   background: rgba(255,255,255,0.15);
   border: 1px solid rgba(255,255,255,0.25);
   display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
 
 .header-text h1 {
   font-family: 'Sora', sans-serif;
-  font-size: 21px;
+  font-size: 19px;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.3px;
@@ -115,7 +116,7 @@ body {
 }
 
 .header-text .subtitle {
-  font-size: 12px;
+  font-size: 11px;
   color: rgba(255,255,255,0.65);
   margin-top: 2px;
 }
@@ -126,11 +127,13 @@ body {
   color: #1a1000;
   font-size: 10px;
   font-weight: 700;
-  padding: 4px 10px;
+  padding: 5px 10px;
   border-radius: 20px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
   flex-shrink: 0;
+  line-height: 1.3;
+  text-align: center;
 }
 
 .status-bar {
@@ -139,7 +142,7 @@ body {
   display: flex;
   align-items: center;
   gap: 5px;
-  margin-bottom: 1rem;
+  margin-bottom: 0.875rem;
   position: relative;
   z-index: 1;
 }
@@ -160,9 +163,7 @@ body {
 /* ── Tabs ── */
 .tabs-wrap {
   background: linear-gradient(135deg, var(--green-dark) 0%, var(--green) 70%, #1dc400 100%);
-  padding: 0 1.5rem;
-  position: relative;
-  z-index: 1;
+  padding: 0 1.25rem;
 }
 
 .tabs {
@@ -170,6 +171,7 @@ body {
   gap: 0;
   overflow-x: auto;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 .tabs::-webkit-scrollbar { display: none; }
 
@@ -177,7 +179,7 @@ body {
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
-  padding: 10px 14px;
+  padding: 10px 12px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
@@ -185,6 +187,7 @@ body {
   font-family: 'Inter', sans-serif;
   white-space: nowrap;
   transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
 }
 .tab-btn.active {
   color: #ffffff;
@@ -193,9 +196,9 @@ body {
 }
 .tab-btn:hover:not(.active) { color: rgba(255,255,255,0.9); }
 
-/* ── Content area ── */
+/* ── Content ── */
 .content {
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 /* ── Metric cards ── */
@@ -203,13 +206,13 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .metric {
   background: var(--bg-card);
   border-radius: var(--radius);
-  padding: 1rem 1rem 0.875rem;
+  padding: 0.875rem 0.875rem 0.75rem;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   position: relative;
@@ -223,17 +226,17 @@ body {
   background: linear-gradient(90deg, var(--green), var(--gold));
 }
 .metric label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 9px;
+  font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 .metric span {
   font-family: 'Sora', sans-serif;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--text);
   line-height: 1;
@@ -246,35 +249,38 @@ body {
   border-radius: var(--radius);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  min-width: 380px;
 }
 
 th {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 10px 14px;
+  letter-spacing: 0.07em;
+  padding: 9px 12px;
   text-align: left;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
+  white-space: nowrap;
 }
 
 td {
-  padding: 11px 14px;
+  padding: 10px 12px;
   font-size: 13px;
   border-bottom: 1px solid var(--border);
 }
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: var(--green-light); }
 
-/* ── Rank number ── */
 .rank-1 { color: var(--gold); font-weight: 700; }
 .rank-2 { color: #9ca3af; font-weight: 600; }
 .rank-3 { color: #b45309; font-weight: 600; }
@@ -283,14 +289,15 @@ tr:hover td { background: var(--green-light); }
 .win-bar-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   justify-content: flex-end;
 }
 .win-bar {
-  width: 52px; height: 5px;
+  width: 40px; height: 5px;
   background: var(--border);
   border-radius: 5px;
   overflow: hidden;
+  flex-shrink: 0;
 }
 .win-bar-fill {
   height: 100%;
@@ -300,7 +307,7 @@ tr:hover td { background: var(--green-light); }
 .win-pct {
   font-size: 12px;
   font-weight: 700;
-  min-width: 36px;
+  min-width: 32px;
   text-align: right;
   color: var(--green);
 }
@@ -308,46 +315,37 @@ tr:hover td { background: var(--green-light); }
 /* ── Badge ── */
 .badge {
   font-size: 9px;
-  padding: 2px 7px;
+  padding: 2px 6px;
   border-radius: 20px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .badge-top { background: var(--gold-light); color: var(--gold-dark); border: 1px solid var(--gold); }
 .badge-best { background: var(--green-light); color: var(--green-dark); border: 1px solid var(--green); }
-
-/* ── Avatar ── */
-.avatar {
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-weight: 700;
-}
 
 /* ── Card ── */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1.125rem 1.25rem;
+  padding: 1rem 1.125rem;
   box-shadow: var(--shadow-sm);
 }
 
 /* ── Players grid ── */
 .players-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
 }
 
 .player-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1.125rem;
+  padding: 1rem;
   position: relative;
   box-shadow: var(--shadow-sm);
   transition: box-shadow 0.15s, border-color 0.15s;
@@ -362,12 +360,11 @@ tr:hover td { background: var(--green-light); }
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px 16px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   box-shadow: var(--shadow-sm);
-  transition: border-color 0.15s;
 }
 .match-item:hover { border-color: var(--border-strong); }
 
@@ -375,7 +372,7 @@ tr:hover td { background: var(--green-light); }
 input, select {
   font-family: 'Inter', sans-serif;
   font-size: 14px;
-  padding: 10px 13px;
+  padding: 10px 12px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--bg-card);
@@ -383,6 +380,7 @@ input, select {
   width: 100%;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
 }
 input:focus, select:focus {
   border-color: var(--green);
@@ -393,7 +391,7 @@ input:focus, select:focus {
 .btn {
   font-family: 'Inter', sans-serif;
   cursor: pointer;
-  padding: 9px 18px;
+  padding: 9px 16px;
   border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
@@ -401,9 +399,11 @@ input:focus, select:focus {
   background: transparent;
   color: var(--text);
   transition: all 0.15s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .btn:hover { background: var(--bg-secondary); border-color: var(--green); }
-.btn:active { transform: scale(0.98); }
+.btn:active { transform: scale(0.97); }
 
 .btn-primary {
   background: var(--green);
@@ -411,7 +411,7 @@ input:focus, select:focus {
   border-color: transparent;
   box-shadow: 0 2px 8px rgba(20,168,0,0.3);
 }
-.btn-primary:hover { background: var(--green-dark); border-color: transparent; box-shadow: 0 4px 12px rgba(20,168,0,0.4); }
+.btn-primary:hover { background: var(--green-dark); border-color: transparent; }
 .btn-primary:disabled { opacity: 0.4; cursor: default; transform: none; box-shadow: none; }
 
 .btn-active {
@@ -421,7 +421,7 @@ input:focus, select:focus {
   font-weight: 700;
 }
 
-.btn-format { border-color: rgba(255,255,255,0.3); color: var(--text); }
+.btn-format { color: var(--text); }
 .btn-format.active {
   background: var(--green);
   color: #fff;
@@ -429,19 +429,6 @@ input:focus, select:focus {
   box-shadow: 0 2px 8px rgba(20,168,0,0.25);
 }
 .btn-format:hover:not(.active) { background: var(--bg-secondary); border-color: var(--green); }
-
-.btn-winner {
-  padding: 11px 8px;
-  font-size: 13px;
-  text-align: center;
-  transition: all 0.15s;
-}
-.btn-winner.selected {
-  background: var(--green-light);
-  color: var(--green-dark);
-  border-color: var(--green);
-  font-weight: 700;
-}
 
 /* ── Emoji picker ── */
 .emoji-btn {
@@ -453,6 +440,8 @@ input:focus, select:focus {
   transition: all 0.12s;
   background: transparent;
   font-family: inherit;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .emoji-btn:hover { background: var(--bg-secondary); transform: scale(1.1); }
 .emoji-btn.selected {
@@ -460,7 +449,7 @@ input:focus, select:focus {
   border: 2px solid var(--green) !important;
 }
 
-/* ── Section heading ── */
+/* ── Section label ── */
 .section-label {
   font-size: 11px;
   font-weight: 700;
@@ -473,19 +462,11 @@ input:focus, select:focus {
 /* ── Empty state ── */
 .empty {
   text-align: center;
-  padding: 3.5rem 1rem;
+  padding: 3rem 1rem;
   color: var(--text-muted);
   font-size: 14px;
 }
 .empty p { margin-bottom: 12px; }
-
-/* ── Gold divider ── */
-.gold-divider {
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  margin: 1rem 0;
-  opacity: 0.5;
-}
 
 /* ── Utility ── */
 .text-success { color: var(--success); }
@@ -493,3 +474,47 @@ input:focus, select:focus {
 .text-muted { color: var(--text-muted); }
 .flex-center { display: flex; align-items: center; }
 .gap-2 { gap: 8px; }
+
+/* ════════════════════════════════
+   MOBILE RESPONSIVE
+   ════════════════════════════════ */
+
+@media (max-width: 480px) {
+  .app-header { padding: 1rem 1rem 0; }
+
+  .header-text h1 { font-size: 17px; }
+  .header-badge { font-size: 9px; padding: 4px 8px; }
+
+  .tabs-wrap { padding: 0 0.75rem; }
+  .tab-btn { padding: 9px 10px; font-size: 12px; }
+
+  .content { padding: 1rem; }
+
+  .metrics { gap: 8px; }
+  .metric { padding: 0.75rem 0.75rem 0.625rem; }
+  .metric label { font-size: 8px; }
+  .metric span { font-size: 22px; }
+
+  table { min-width: 340px; }
+  th, td { padding: 8px 10px; }
+  .win-bar { width: 30px; }
+
+  .players-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+  .player-card { padding: 0.875rem; }
+
+  .card { padding: 0.875rem 1rem; }
+
+  /* Match form — stack teams vertically on small screens */
+  .teams-grid { grid-template-columns: 1fr !important; }
+
+  .win-btns-grid { grid-template-columns: 1fr !important; }
+
+  .stats-mode-btns { flex-wrap: wrap; }
+  .stats-mode-btns .btn { flex: 1; min-width: 80px; text-align: center; }
+}
+
+@media (max-width: 360px) {
+  .header-text h1 { font-size: 15px; }
+  .tab-btn { padding: 8px 8px; font-size: 11px; }
+  .metric span { font-size: 20px; }
+}
