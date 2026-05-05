@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  collection, addDoc, deleteDoc, doc,
+  collection, addDoc, deleteDoc, doc, updateDoc,
   onSnapshot, query, orderBy, serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -221,10 +221,13 @@ function NewMatch({ players, onSave }) {
 }
 
 // ── Players ───────────────────────────────────────────────────────────────────
-function Players({ players, matches, onAdd, onRemove }) {
+function Players({ players, matches, onAdd, onRemove, onEdit }) {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState(AVATAR_ICONS[0]);
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editIcon, setEditIcon] = useState("");
   const stats = computeStats(players, matches);
 
   async function handleAdd() {
@@ -232,6 +235,17 @@ function Players({ players, matches, onAdd, onRemove }) {
     setAdding(true);
     await onAdd(name.trim(), icon);
     setName(""); setAdding(false);
+  }
+
+  function startEdit(p) {
+    setEditingId(p.id);
+    setEditName(p.name);
+    setEditIcon(p.icon || AVATAR_ICONS[0]);
+  }
+
+  async function handleEdit() {
+    await onEdit(editingId, editName, editIcon);
+    setEditingId(null);
   }
 
   return (
@@ -269,11 +283,17 @@ function Players({ players, matches, onAdd, onRemove }) {
             const c = PALETTE[i % PALETTE.length];
             return (
               <div key={p.id} className="player-card">
-                <button onClick={() => onRemove(p.id)} style={{
-                  position: "absolute", top: 6, right: 6, background: "none", border: "none",
-                  cursor: "pointer", fontSize: 17, color: "var(--text-muted)", lineHeight: 1,
-                  padding: "3px 6px", fontFamily: "inherit", touchAction: "manipulation",
-                }}>×</button>
+                <div style={{ position: "absolute", top: 6, right: 6, display: "flex", gap: 2 }}>
+                  <button onClick={() => startEdit(p)} style={{
+                    background: "none", border: "none", cursor: "pointer", fontSize: 14,
+                    lineHeight: 1, padding: "3px 5px", fontFamily: "inherit", touchAction: "manipulation",
+                  }}>✏️</button>
+                  <button onClick={() => onRemove(p.id)} style={{
+                    background: "none", border: "none", cursor: "pointer", fontSize: 17,
+                    color: "var(--text-muted)", lineHeight: 1, padding: "3px 5px",
+                    fontFamily: "inherit", touchAction: "manipulation",
+                  }}>×</button>
+                </div>
                 <div style={{
                   width: 46, height: 46, borderRadius: "50%",
                   background: c + "20", border: `2px solid ${c}40`,
@@ -288,6 +308,38 @@ function Players({ players, matches, onAdd, onRemove }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {editingId && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 1000, padding: "1rem",
+        }}>
+          <div className="card" style={{ width: "100%", maxWidth: 380, margin: 0 }}>
+            <p style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Edit Player</p>
+            <div style={{ marginBottom: 12 }}>
+              <p className="section-label">Choose an icon</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {AVATAR_ICONS.map(ic => (
+                  <button key={ic} className={`emoji-btn ${ic === editIcon ? "selected" : ""}`}
+                    onClick={() => setEditIcon(ic)}
+                    style={{ border: `1.5px solid ${ic === editIcon ? "var(--green)" : "var(--border)"}` }}>
+                    {ic}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <input value={editName} onChange={e => setEditName(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleEdit()}
+              placeholder="Player name" style={{ marginBottom: 12 }} />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn" style={{ flex: 1 }} onClick={() => setEditingId(null)}>Cancel</button>
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleEdit}
+                disabled={!editName.trim()}>Save</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -766,6 +818,9 @@ export default function CarromTracker() {
     if (!confirm("Remove this player?")) return;
     await deleteDoc(doc(db, "players", id));
   }
+  async function editPlayer(id, name, icon) {
+    await updateDoc(doc(db, "players", id), { name, icon });
+  }
   async function saveMatch(data) {
     await addDoc(collection(db, "matches"), { ...data, createdAt: serverTimestamp() });
     setTab("board");
@@ -851,7 +906,7 @@ export default function CarromTracker() {
       <div className="content">
         {tab === "board" && <Leaderboard players={players} matches={matches} />}
         {tab === "match" && isAdmin && <NewMatch players={players} onSave={saveMatch} />}
-        {tab === "players" && isAdmin && <Players players={players} matches={matches} onAdd={addPlayer} onRemove={removePlayer} />}
+        {tab === "players" && isAdmin && <Players players={players} matches={matches} onAdd={addPlayer} onRemove={removePlayer} onEdit={editPlayer} />}
         {tab === "stats" && <Stats players={players} matches={matches} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} />}
       </div>
