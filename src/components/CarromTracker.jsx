@@ -66,6 +66,26 @@ function Avatar({ id, allPlayers, size = 30 }) {
   );
 }
 
+function calcBadges(playerId, matches) {
+  const pm = [...matches]
+    .filter(m => (m.team1 || []).includes(playerId) || (m.team2 || []).includes(playerId))
+    .sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
+  let maxStreak = 0, currentStreak = 0, cleanWins = 0, cleanLosses = 0;
+  for (const m of pm) {
+    const inT1 = (m.team1 || []).includes(playerId);
+    const isWinner = (inT1 && m.winner === "team1") || (!inT1 && m.winner === "team2");
+    if (isWinner) {
+      currentStreak++;
+      if (m.loserScore === 0) cleanWins++;
+    } else {
+      currentStreak = 0;
+      if (m.loserScore === 0) cleanLosses++;
+    }
+    maxStreak = Math.max(maxStreak, currentStreak);
+  }
+  return { fireCount: Math.floor(maxStreak / 3), cleanWins, cleanLosses };
+}
+
 // ── Leaderboard ───────────────────────────────────────────────────────────────
 function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [sortBy, setSortBy] = useState("points");
@@ -138,6 +158,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
               {sorted.map((p, i) => {
                 const rankColor = i < 3 ? rankColors[i] : "var(--text-muted)";
                 const ptsColor = i < 3 ? "#f59e0b" : "var(--text)";
+                const badges = calcBadges(p.id, matches);
                 return (
                   <div key={p.id} onClick={() => goToPlayer(p.id)} style={{
                     background: "var(--card-bg)", borderRadius: 14,
@@ -160,10 +181,13 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                       <div style={{ fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {p.name}{i === 0 && p.played > 0 && " 🏆"}
                       </div>
-                      <div style={{ display: "flex", gap: 5, marginTop: 3 }}>
+                      <div style={{ display: "flex", gap: 5, marginTop: 3, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.played}P</span>
                         <span style={{ fontSize: 11, color: "#16a34a", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.won}W</span>
                         <span style={{ fontSize: 11, color: "#dc2626", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.lost}L</span>
+                        {badges.fireCount > 0 && <span style={{ fontSize: 11, borderRadius: 20, padding: "1px 6px", fontWeight: 600, background: "#fff7ed", color: "#c2410c", border: "0.5px solid #fed7aa" }}>{badges.fireCount} 🔥</span>}
+                        {badges.cleanWins > 0 && <span style={{ fontSize: 11, borderRadius: 20, padding: "1px 6px", fontWeight: 600, background: "#dbeafe", color: "#1d4ed8", border: "0.5px solid #93c5fd" }}>{badges.cleanWins} 💎</span>}
+                        {badges.cleanLosses > 0 && <span style={{ fontSize: 11, borderRadius: 20, padding: "1px 6px", fontWeight: 600, background: "#dc2626", color: "#ffffff", border: "0.5px solid #b91c1c" }}>{badges.cleanLosses} 💎</span>}
                       </div>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -203,14 +227,19 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {sorted.map((p, i) => (
+                  {sorted.map((p, i) => {
+                    const badges = calcBadges(p.id, matches);
+                    return (
                     <tr key={p.id} onClick={() => goToPlayer(p.id)} style={{ cursor: "pointer" }}>
                       <td style={{ textAlign: "center" }}><span className={rankClass(i)} style={{ fontSize: 13, fontFamily: "'Sora', sans-serif" }}>{i + 1}</span></td>
                       <td style={{ maxWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
                           <Avatar id={p.id} allPlayers={players} size={28} />
-                          <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                          <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}>{p.name}</span>
                           {i === 0 && p.played > 0 && <span className="badge badge-top" style={{ flexShrink: 0 }}>🏆</span>}
+                          {badges.fireCount > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa", flexShrink:0 }}>{badges.fireCount} 🔥</span>}
+                          {badges.cleanWins > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd", flexShrink:0 }}>{badges.cleanWins} 💎</span>}
+                          {badges.cleanLosses > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#dc2626", color:"#ffffff", border:"0.5px solid #b91c1c", flexShrink:0 }}>{badges.cleanLosses} 💎</span>}
                         </div>
                       </td>
                       <td style={{ textAlign: "center", fontWeight: 500, fontSize: 13 }}>{p.played}</td>
@@ -226,7 +255,8 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -244,8 +274,10 @@ function NewMatch({ players, onSave }) {
   const [t2, setT2] = useState([""]);
   const [winner, setWinner] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [winnerScore, setWinnerScore] = useState("");
+  const [loserScore, setLoserScore] = useState("");
 
-  function changeFmt(f) { setFmt(f); setT1(f === "1v1" ? [""] : ["", ""]); setT2(f === "1v1" ? [""] : ["", ""]); setWinner(null); }
+  function changeFmt(f) { setFmt(f); setT1(f === "1v1" ? [""] : ["", ""]); setT2(f === "1v1" ? [""] : ["", ""]); setWinner(null); setWinnerScore(""); setLoserScore(""); }
   function setSlot(team, idx, val) {
     if (team === 1) { const n = [...t1]; n[idx] = val; setT1(n); }
     else { const n = [...t2]; n[idx] = val; setT2(n); }
@@ -264,7 +296,11 @@ function NewMatch({ players, onSave }) {
   async function handleSave() {
     if (!canSave || saving) return;
     setSaving(true);
-    await onSave({ type: fmt, team1: t1, team2: t2, winner });
+    await onSave({
+      type: fmt, team1: t1, team2: t2, winner,
+      winnerScore: winnerScore !== "" ? Number(winnerScore) : null,
+      loserScore: loserScore !== "" ? Number(loserScore) : null,
+    });
     changeFmt("1v1"); setSaving(false);
   }
 
@@ -321,6 +357,29 @@ function NewMatch({ players, onSave }) {
                   transition: "all 0.15s", touchAction: "manipulation",
                 }}>{winner === key ? "★ " : ""}{label}</button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {winner && (
+        <div style={{ marginBottom: "1.25rem" }}>
+          <p className="section-label">Score (optional)</p>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
+                {(winner === "team1" ? t1 : t2).map(id => `${getIcon(id)} ${getName(id)}`).join(" & ")} score
+              </div>
+              <input type="number" min="0" value={winnerScore} onChange={e => setWinnerScore(e.target.value)}
+                placeholder="e.g. 24" style={{ width: "100%", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ fontSize: 16, color: "var(--text-muted)", paddingTop: 20 }}>vs</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
+                {(winner === "team1" ? t2 : t1).map(id => `${getIcon(id)} ${getName(id)}`).join(" & ")} score
+              </div>
+              <input type="number" min="0" value={loserScore} onChange={e => setLoserScore(e.target.value)}
+                placeholder="e.g. 0" style={{ width: "100%", boxSizing: "border-box" }} />
+            </div>
           </div>
         </div>
       )}
