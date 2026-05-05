@@ -230,7 +230,7 @@ function NewMatch({ players, onSave }) {
 }
 
 // ── Players ───────────────────────────────────────────────────────────────────
-function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin }) {
+function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectPlayer, onNavigateToStats }) {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState(AVATAR_ICONS[0]);
   const [adding, setAdding] = useState(false);
@@ -293,7 +293,7 @@ function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin }) {
             const st = stats.find(s => s.id === p.id) || { played: 0, winPct: 0 };
             const c = PALETTE[i % PALETTE.length];
             return (
-              <div key={p.id} className="player-card">
+              <div key={p.id} className="player-card" onClick={() => { if (onSelectPlayer && onNavigateToStats) { onSelectPlayer(p.id); onNavigateToStats(); } }} style={{ cursor: onSelectPlayer ? "pointer" : "default" }}>
                 {isAdmin && (
                   <div style={{ position: "absolute", top: 6, right: 6, display: "flex", gap: 2 }}>
                     <button onClick={() => startEdit(p)} style={{
@@ -876,7 +876,22 @@ export default function CarromTracker() {
             <h1>Carrom Tracker</h1>
             <div className="subtitle">{players.length} players · {matches.length} matches</div>
           </div>
-          <div style={{ marginLeft: "auto", flexShrink: 0 }}>
+          <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "stretch", gap: 4, flexShrink: 0 }}>
+            {isAdmin ? (
+              <button onClick={handleLogout} style={{
+                background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
+                borderRadius: 6, padding: "3px 10px", color: "rgba(255,255,255,0.85)",
+                fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+                textAlign: "center", width: "100%",
+              }}>Logout</button>
+            ) : (
+              <button onClick={() => setAuthState("login")} style={{
+                background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
+                borderRadius: 6, padding: "3px 10px", color: "rgba(255,255,255,0.85)",
+                fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+                textAlign: "center", width: "100%",
+              }}>Login</button>
+            )}
             <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
               style={{
                 display: "flex", flexDirection: "column", alignItems: "center",
@@ -900,28 +915,13 @@ export default function CarromTracker() {
           {TABS.map(({ k, l }) => (
             <button key={k} className={`tab-btn ${tab === k ? "active" : ""}`} onClick={() => setTab(k)}>{l}</button>
           ))}
-          {isAdmin ? (
-            <button onClick={handleLogout} style={{
-              marginLeft: "auto", flexShrink: 0, background: "transparent",
-              border: "1px solid rgba(255,255,255,0.4)", borderRadius: 6,
-              padding: "4px 10px", color: "rgba(255,255,255,0.85)",
-              fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
-            }}>Logout</button>
-          ) : (
-            <button onClick={() => setAuthState("login")} style={{
-              marginLeft: "auto", flexShrink: 0, background: "transparent",
-              border: "1px solid rgba(255,255,255,0.4)", borderRadius: 6,
-              padding: "4px 10px", color: "rgba(255,255,255,0.85)",
-              fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
-            }}>Login</button>
-          )}
         </div>
       </div>
 
       <div className="content">
         {tab === "board" && <Leaderboard players={players} matches={matches} setTab={setTab} setSelectedPlayer={setSelectedPlayer} />}
         {tab === "match" && isAdmin && <NewMatch players={players} onSave={saveMatch} />}
-        {tab === "players" && <Players players={players} matches={matches} onAdd={addPlayer} onRemove={removePlayer} onEdit={editPlayer} isAdmin={isAdmin} />}
+        {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
       </div>
