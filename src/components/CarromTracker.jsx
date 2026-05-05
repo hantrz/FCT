@@ -876,7 +876,7 @@ export default function CarromTracker() {
             <h1>Carrom Tracker</h1>
             <div className="subtitle">{players.length} players · {matches.length} matches</div>
           </div>
-          <div style={{ marginLeft: "auto", flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+          <div style={{ marginLeft: "auto", flexShrink: 0 }}>
             <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
               style={{
                 display: "flex", flexDirection: "column", alignItems: "center",
@@ -886,19 +886,6 @@ export default function CarromTracker() {
               <span style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>App by</span>
               <span style={{ fontSize: 12, color: "#ffffff", fontFamily: "'Sora', sans-serif", fontWeight: 800, lineHeight: 1.2 }}>FNF School</span>
             </a>
-            {isAdmin ? (
-              <button onClick={handleLogout} style={{
-                width: "100%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
-                borderRadius: 6, padding: "4px 10px", color: "rgba(255,255,255,0.85)",
-                fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
-              }}>Logout</button>
-            ) : (
-              <button onClick={() => setAuthState("login")} style={{
-                width: "100%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
-                borderRadius: 6, padding: "4px 10px", color: "rgba(255,255,255,0.85)",
-                fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
-              }}>Login</button>
-            )}
           </div>
         </div>
         <div className="status-bar">
@@ -913,6 +900,21 @@ export default function CarromTracker() {
           {TABS.map(({ k, l }) => (
             <button key={k} className={`tab-btn ${tab === k ? "active" : ""}`} onClick={() => setTab(k)}>{l}</button>
           ))}
+          {isAdmin ? (
+            <button onClick={handleLogout} style={{
+              marginLeft: "auto", flexShrink: 0, background: "transparent",
+              border: "1px solid rgba(255,255,255,0.4)", borderRadius: 6,
+              padding: "4px 10px", color: "rgba(255,255,255,0.85)",
+              fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+            }}>Logout</button>
+          ) : (
+            <button onClick={() => setAuthState("login")} style={{
+              marginLeft: "auto", flexShrink: 0, background: "transparent",
+              border: "1px solid rgba(255,255,255,0.4)", borderRadius: 6,
+              padding: "4px 10px", color: "rgba(255,255,255,0.85)",
+              fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+            }}>Login</button>
+          )}
         </div>
       </div>
 
