@@ -1065,6 +1065,15 @@ export default function CarromTracker() {
     return () => { unsubP(); unsubM(); };
   }, []);
 
+  useEffect(() => {
+    if (authState !== "admin" || players.length === 0 || matches.length === 0) return;
+    const playersWithoutDesc = players.filter(p => !p.aiDescription);
+    if (playersWithoutDesc.length === 0) return;
+    playersWithoutDesc.forEach(p => {
+      regeneratePlayerDescription(p.id, players, matches);
+    });
+  }, [authState, players.length, matches.length]);
+
   function handleLogin(guestOnly = false) {
     setAuthState(guestOnly ? "guest" : "admin");
   }
