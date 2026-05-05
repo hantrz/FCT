@@ -1094,6 +1094,8 @@ export default function CarromTracker() {
     await updateDoc(doc(db, "players", id), { name, icon });
   }
   async function regeneratePlayerDescription(playerId, allPlayers, allMatches) {
+    console.log("regeneratePlayerDescription called for:", playerId);
+    console.log("GEMINI KEY exists:", !!process.env.NEXT_PUBLIC_GEMINI_API_KEY);
     const player = allPlayers.find(p => p.id === playerId);
     if (!player) return;
 
