@@ -68,9 +68,29 @@ function Avatar({ id, allPlayers, size = 30 }) {
 
 // ── Leaderboard ───────────────────────────────────────────────────────────────
 function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
-  const stats = computeStats(players, matches);
+  const [sortBy, setSortBy] = useState("points");
+
+  const raw = computeStats(players, matches);
+  const stats = raw.map(p => ({ ...p, points: 10 + p.won * 3 + p.lost * -1 }));
+  const sorted = [...stats].sort((a, b) => {
+    if (sortBy === "points")   return b.points - a.points;
+    if (sortBy === "winrate")  return b.winPct - a.winPct;
+    if (sortBy === "matches")  return b.played - a.played;
+    if (sortBy === "wins")     return b.won - a.won;
+    if (sortBy === "losses")   return a.lost - b.lost;
+    return 0;
+  });
+
   const thisWeek = matches.filter(m => m.createdAt && Date.now() - m.createdAt.toMillis() < 7 * 864e5).length;
   const rankClass = i => i === 0 ? "rank-1" : i === 1 ? "rank-2" : i === 2 ? "rank-3" : "text-muted";
+
+  const SORT_OPTIONS = [
+    { k: "points",  l: "Points" },
+    { k: "winrate", l: "Win %" },
+    { k: "matches", l: "Matches" },
+    { k: "wins",    l: "Wins" },
+    { k: "losses",  l: "Losses" },
+  ];
 
   function goToPlayer(id) {
     if (onSelectPlayer && onNavigateToStats) {
@@ -89,43 +109,60 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
       {stats.length === 0 ? (
         <div className="empty"><p>No data yet. Add players and record matches!</p></div>
       ) : (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th style={{ width: 36 }}>#</th>
-                <th>Player</th>
-                <th style={{ width: 56, textAlign: "center" }}>P</th>
-                <th style={{ width: 44, textAlign: "center" }}>W</th>
-                <th style={{ width: 44, textAlign: "center" }}>L</th>
-                <th style={{ width: 88, textAlign: "right" }}>Win%</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats.map((p, i) => (
-                <tr key={p.id} onClick={() => goToPlayer(p.id)} style={{ cursor: "pointer" }}>
-                  <td><span className={rankClass(i)} style={{ fontSize: 13, fontFamily: "'Sora', sans-serif" }}>{i + 1}</span></td>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Avatar id={p.id} allPlayers={players} size={28} />
-                      <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13 }}>{p.name}</span>
-                      {i === 0 && p.played > 0 && <span className="badge badge-top">🏆</span>}
-                    </div>
-                  </td>
-                  <td style={{ textAlign: "center", fontWeight: 500, fontSize: 13 }}>{p.played}</td>
-                  <td style={{ textAlign: "center" }} className="text-success"><b style={{ fontSize: 13 }}>{p.won}</b></td>
-                  <td style={{ textAlign: "center" }} className="text-danger" ><span style={{ fontSize: 13 }}>{p.lost}</span></td>
-                  <td>
-                    <div className="win-bar-wrap">
-                      <div className="win-bar"><div className="win-bar-fill" style={{ width: `${p.winPct}%` }} /></div>
-                      <span className="win-pct">{p.winPct}%</span>
-                    </div>
-                  </td>
+        <>
+          <div style={{ display: "flex", gap: 8, marginBottom: "1rem", overflowX: "auto", paddingBottom: 2 }}>
+            {SORT_OPTIONS.map(({ k, l }) => (
+              <button key={k} onClick={() => setSortBy(k)} style={{
+                padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
+                cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0,
+                background: sortBy === k ? "#16a34a" : "#ffffff",
+                color: sortBy === k ? "#ffffff" : "#374151",
+                border: sortBy === k ? "1.5px solid #16a34a" : "1.5px solid #d1d5db",
+              }}>{l}</button>
+            ))}
+          </div>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style={{ width: 36 }}>#</th>
+                  <th>Player</th>
+                  <th style={{ width: 44, textAlign: "center" }}>P</th>
+                  <th style={{ width: 44, textAlign: "center" }}>W</th>
+                  <th style={{ width: 44, textAlign: "center" }}>L</th>
+                  <th style={{ width: 72, textAlign: "right" }}>Win%</th>
+                  <th style={{ width: 52, textAlign: "right" }}>PTS</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {sorted.map((p, i) => (
+                  <tr key={p.id} onClick={() => goToPlayer(p.id)} style={{ cursor: "pointer" }}>
+                    <td><span className={rankClass(i)} style={{ fontSize: 13, fontFamily: "'Sora', sans-serif" }}>{i + 1}</span></td>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Avatar id={p.id} allPlayers={players} size={28} />
+                        <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13 }}>{p.name}</span>
+                        {i === 0 && p.played > 0 && <span className="badge badge-top">🏆</span>}
+                      </div>
+                    </td>
+                    <td style={{ textAlign: "center", fontWeight: 500, fontSize: 13 }}>{p.played}</td>
+                    <td style={{ textAlign: "center" }} className="text-success"><b style={{ fontSize: 13 }}>{p.won}</b></td>
+                    <td style={{ textAlign: "center" }} className="text-danger"><span style={{ fontSize: 13 }}>{p.lost}</span></td>
+                    <td>
+                      <div className="win-bar-wrap">
+                        <div className="win-bar"><div className="win-bar-fill" style={{ width: `${p.winPct}%` }} /></div>
+                        <span className="win-pct">{p.winPct}%</span>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      <b style={{ fontSize: 13, color: i < 3 ? "#f59e0b" : "var(--text)" }}>{p.points}</b>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
