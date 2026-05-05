@@ -8,8 +8,8 @@ import {
 import { db } from "../lib/firebase";
 
 const PALETTE = [
-  "#2563eb","#059669","#d97706","#dc2626","#7c3aed",
-  "#0891b2","#be185d","#65a30d","#9333ea","#0f766e",
+  "#14a800","#D4A017","#2563eb","#dc2626","#7c3aed",
+  "#0891b2","#059669","#d97706","#9333ea","#0f766e",
 ];
 
 const AVATAR_ICONS = [
@@ -21,8 +21,7 @@ function computeStats(players, matches) {
   return players.map((p) => {
     let played = 0, won = 0;
     for (const m of matches) {
-      const inT1 = m.team1.includes(p.id);
-      const inT2 = m.team2.includes(p.id);
+      const inT1 = m.team1.includes(p.id), inT2 = m.team2.includes(p.id);
       if (inT1 || inT2) {
         played++;
         if ((inT1 && m.winner === "team1") || (inT2 && m.winner === "team2")) won++;
@@ -37,13 +36,13 @@ function getStreak(playerId, matches) {
   const pm = [...matches]
     .filter(m => m.team1.includes(playerId) || m.team2.includes(playerId))
     .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-  if (pm.length === 0) return "—";
+  if (!pm.length) return "—";
   let streak = 0, type = null;
   for (const m of pm) {
     const inT1 = m.team1.includes(playerId);
     const won = (inT1 && m.winner === "team1") || (!inT1 && m.winner === "team2");
     const cur = won ? "W" : "L";
-    if (type === null) type = cur;
+    if (!type) type = cur;
     if (cur === type) streak++; else break;
   }
   return `${streak}${type}`;
@@ -57,20 +56,22 @@ function Avatar({ id, allPlayers, size = 30 }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%",
-      background: c + "22", color: c,
+      background: c + "20", color: c,
       display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: player.icon ? Math.round(size * 0.5) : Math.round(size * 0.36),
-      fontWeight: 700, flexShrink: 0,
+      fontSize: player.icon ? Math.round(size * 0.52) : Math.round(size * 0.36),
+      fontWeight: 700, flexShrink: 0, border: `1.5px solid ${c}40`,
     }}>
       {player.icon || (player.name || "?").trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2)}
     </div>
   );
 }
 
-// ─── Leaderboard ──────────────────────────────────────────────────────────────
+// ── Leaderboard ───────────────────────────────────────────────────────────────
 function Leaderboard({ players, matches }) {
   const stats = computeStats(players, matches);
   const thisWeek = matches.filter(m => m.createdAt && Date.now() - m.createdAt.toMillis() < 7 * 864e5).length;
+
+  const rankClass = i => i === 0 ? "rank-1" : i === 1 ? "rank-2" : i === 2 ? "rank-3" : "text-muted";
 
   return (
     <div>
@@ -80,13 +81,13 @@ function Leaderboard({ players, matches }) {
         <div className="metric"><label>This Week</label><span>{thisWeek}</span></div>
       </div>
       {stats.length === 0 ? (
-        <div className="empty"><p>No data yet. Add players and record matches!</p></div>
+        <div className="empty"><p>No data yet. Add players and record matches to see the leaderboard!</p></div>
       ) : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th style={{ width: 36 }}>#</th>
+                <th style={{ width: 40 }}>#</th>
                 <th>Player</th>
                 <th style={{ width: 60, textAlign: "center" }}>Played</th>
                 <th style={{ width: 48, textAlign: "center" }}>Won</th>
@@ -97,16 +98,16 @@ function Leaderboard({ players, matches }) {
             <tbody>
               {stats.map((p, i) => (
                 <tr key={p.id}>
-                  <td className="text-muted">{i + 1}</td>
+                  <td><span className={rankClass(i)} style={{ fontSize: 13, fontFamily: "'Sora', sans-serif" }}>{i + 1}</span></td>
                   <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Avatar id={p.id} allPlayers={players} size={28} />
-                      <span style={{ fontWeight: i < 3 ? 600 : 400 }}>{p.name}</span>
-                      {i === 0 && p.played > 0 && <span className="badge badge-top">Top</span>}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <Avatar id={p.id} allPlayers={players} size={30} />
+                      <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 14 }}>{p.name}</span>
+                      {i === 0 && p.played > 0 && <span className="badge badge-top">🏆 Top</span>}
                     </div>
                   </td>
-                  <td style={{ textAlign: "center" }}>{p.played}</td>
-                  <td style={{ textAlign: "center" }} className="text-success">{p.won}</td>
+                  <td style={{ textAlign: "center", fontWeight: 500 }}>{p.played}</td>
+                  <td style={{ textAlign: "center" }} className="text-success"><b>{p.won}</b></td>
                   <td style={{ textAlign: "center" }} className="text-danger">{p.lost}</td>
                   <td>
                     <div className="win-bar-wrap">
@@ -124,7 +125,7 @@ function Leaderboard({ players, matches }) {
   );
 }
 
-// ─── New Match ────────────────────────────────────────────────────────────────
+// ── New Match ─────────────────────────────────────────────────────────────────
 function NewMatch({ players, onSave }) {
   const [fmt, setFmt] = useState("1v1");
   const [t1, setT1] = useState([""]);
@@ -132,9 +133,7 @@ function NewMatch({ players, onSave }) {
   const [winner, setWinner] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  function changeFmt(f) {
-    setFmt(f); setT1(f === "1v1" ? [""] : ["", ""]); setT2(f === "1v1" ? [""] : ["", ""]); setWinner(null);
-  }
+  function changeFmt(f) { setFmt(f); setT1(f === "1v1" ? [""] : ["", ""]); setT2(f === "1v1" ? [""] : ["", ""]); setWinner(null); }
   function setSlot(team, idx, val) {
     if (team === 1) { const n = [...t1]; n[idx] = val; setT1(n); }
     else { const n = [...t2]; n[idx] = val; setT2(n); }
@@ -162,21 +161,23 @@ function NewMatch({ players, onSave }) {
   );
 
   return (
-    <div style={{ maxWidth: 460 }}>
+    <div style={{ maxWidth: 480 }}>
       <div style={{ marginBottom: "1.5rem" }}>
-        <p className="text-muted" style={{ fontSize: 13, marginBottom: 8 }}>Format</p>
+        <p className="section-label">Format</p>
         <div style={{ display: "flex", gap: 8 }}>
           {["1v1", "2v2"].map(f => (
             <button key={f} className={`btn btn-format ${fmt === f ? "active" : ""}`} onClick={() => changeFmt(f)}>{f}</button>
           ))}
         </div>
       </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: "1.5rem" }}>
         {[1, 2].map(team => {
           const slots = team === 1 ? t1 : t2;
+          const teamColor = team === 1 ? "#14a800" : "#D4A017";
           return (
             <div key={team}>
-              <p className="text-muted" style={{ fontSize: 13, marginBottom: 8 }}>Team {team}</p>
+              <p className="section-label" style={{ color: teamColor }}>Team {team}</p>
               {slots.map((val, i) => (
                 <select key={i} value={val} onChange={e => setSlot(team, i, e.target.value)} style={{ marginBottom: 8 }}>
                   <option value="">Select player</option>
@@ -189,30 +190,38 @@ function NewMatch({ players, onSave }) {
           );
         })}
       </div>
+
       {t1ok && t2ok && (
         <div style={{ marginBottom: "1.5rem" }}>
-          <p className="text-muted" style={{ fontSize: 13, marginBottom: 8 }}>Who won?</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <p className="section-label">Who won?</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {[
-              { key: "team1", label: t1.map(id => `${getIcon(id)} ${getName(id)}`).join(" & ") },
-              { key: "team2", label: t2.map(id => `${getIcon(id)} ${getName(id)}`).join(" & ") },
-            ].map(({ key, label }) => (
+              { key: "team1", label: t1.map(id => `${getIcon(id)} ${getName(id)}`).join(" & "), color: "#14a800" },
+              { key: "team2", label: t2.map(id => `${getIcon(id)} ${getName(id)}`).join(" & "), color: "#D4A017" },
+            ].map(({ key, label, color }) => (
               <button key={key} onClick={() => setWinner(key)}
-                className={`btn ${winner === key ? "btn-active" : ""}`}
-                style={{ padding: "10px 8px", fontSize: 13 }}>{label}</button>
+                style={{
+                  padding: "12px 10px", fontSize: 13, fontWeight: winner === key ? 700 : 500,
+                  borderRadius: "var(--radius-sm)", cursor: "pointer", fontFamily: "inherit",
+                  background: winner === key ? color + "15" : "transparent",
+                  color: winner === key ? color : "var(--text)",
+                  border: `1.5px solid ${winner === key ? color : "var(--border-strong)"}`,
+                  transition: "all 0.15s",
+                }}>{winner === key ? "★ " : ""}{label}</button>
             ))}
           </div>
         </div>
       )}
-      <button className="btn btn-primary" style={{ width: "100%", padding: "12px", fontSize: 14 }}
+
+      <button className="btn btn-primary" style={{ width: "100%", padding: "13px", fontSize: 15 }}
         onClick={handleSave} disabled={!canSave || saving}>
-        {saving ? "Saving..." : "Save Match"}
+        {saving ? "Saving..." : "💾 Save Match"}
       </button>
     </div>
   );
 }
 
-// ─── Players ──────────────────────────────────────────────────────────────────
+// ── Players ───────────────────────────────────────────────────────────────────
 function Players({ players, matches, onAdd, onRemove }) {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState(AVATAR_ICONS[0]);
@@ -229,19 +238,16 @@ function Players({ players, matches, onAdd, onRemove }) {
   return (
     <div>
       <div className="card" style={{ marginBottom: "1.5rem" }}>
-        <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Add New Player</p>
-        <div style={{ marginBottom: 12 }}>
-          <p className="text-muted" style={{ fontSize: 12, marginBottom: 8 }}>Choose an icon</p>
+        <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>Add New Player</p>
+        <div style={{ marginBottom: 14 }}>
+          <p className="section-label">Choose an icon</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {AVATAR_ICONS.map(ic => (
-              <button key={ic} onClick={() => setIcon(ic)} style={{
-                width: 36, height: 36,
-                border: `2px solid ${ic === icon ? "var(--text)" : "var(--border)"}`,
-                borderRadius: "var(--radius-sm)",
-                background: ic === icon ? "var(--bg-secondary)" : "transparent",
-                cursor: "pointer", fontSize: 18,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>{ic}</button>
+              <button key={ic} className={`emoji-btn ${ic === icon ? "selected" : ""}`}
+                onClick={() => setIcon(ic)}
+                style={{ border: `1.5px solid ${ic === icon ? "var(--green)" : "var(--border)"}` }}>
+                {ic}
+              </button>
             ))}
           </div>
         </div>
@@ -249,9 +255,12 @@ function Players({ players, matches, onAdd, onRemove }) {
           <input value={name} onChange={e => setName(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleAdd()}
             placeholder="Player name" style={{ flex: 1 }} />
-          <button className="btn" onClick={handleAdd} disabled={adding}>{adding ? "..." : "Add"}</button>
+          <button className="btn btn-primary" onClick={handleAdd} disabled={adding} style={{ whiteSpace: "nowrap" }}>
+            {adding ? "..." : "Add Player"}
+          </button>
         </div>
       </div>
+
       {players.length === 0 ? (
         <div className="empty"><p>No players added yet.</p></div>
       ) : (
@@ -263,18 +272,20 @@ function Players({ players, matches, onAdd, onRemove }) {
               <div key={p.id} className="player-card">
                 <button onClick={() => onRemove(p.id)} style={{
                   position: "absolute", top: 8, right: 8, background: "none", border: "none",
-                  cursor: "pointer", fontSize: 20, color: "var(--text-muted)", lineHeight: 1,
+                  cursor: "pointer", fontSize: 18, color: "var(--text-muted)", lineHeight: 1,
                   padding: "2px 6px", fontFamily: "inherit",
                 }}>×</button>
                 <div style={{
-                  width: 48, height: 48, borderRadius: "50%", background: c + "22",
+                  width: 50, height: 50, borderRadius: "50%",
+                  background: c + "20", border: `2px solid ${c}40`,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  marginBottom: 10, fontSize: p.icon ? 26 : 17, fontWeight: 700, color: c,
+                  marginBottom: 12, fontSize: p.icon ? 26 : 18, fontWeight: 700, color: c,
                 }}>
                   {p.icon || (p.name || "?").trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2)}
                 </div>
-                <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>{p.name}</p>
-                <p className="text-muted" style={{ fontSize: 12 }}>{st.played} matches · {st.winPct}% win rate</p>
+                <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{p.name}</p>
+                <p className="text-muted" style={{ fontSize: 11 }}>{st.played} matches</p>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--green)", marginTop: 2 }}>{st.winPct}% win rate</p>
               </div>
             );
           })}
@@ -284,14 +295,12 @@ function Players({ players, matches, onAdd, onRemove }) {
   );
 }
 
-// ─── History ──────────────────────────────────────────────────────────────────
+// ── History ───────────────────────────────────────────────────────────────────
 function History({ players, matches, onDelete }) {
   const getName = id => players.find(p => p.id === id)?.name || "?";
   const getIcon = id => players.find(p => p.id === id)?.icon || "";
 
-  if (matches.length === 0) return (
-    <div className="empty"><p>No matches recorded yet.</p></div>
-  );
+  if (!matches.length) return <div className="empty"><p>No matches recorded yet.</p></div>;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -306,20 +315,19 @@ function History({ players, matches, onDelete }) {
           <div key={m.id} className="match-item">
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-                <span style={{ fontSize: 14, fontWeight: w1 ? 600 : 400, color: w1 ? "var(--success)" : "var(--text-muted)" }}>
+                <span style={{ fontSize: 13, fontWeight: w1 ? 700 : 400, color: w1 ? "var(--green)" : "var(--text-muted)" }}>
                   {w1 && "★ "}{t1Names}
                 </span>
-                <span className="text-muted" style={{ fontSize: 12 }}>vs</span>
-                <span style={{ fontSize: 14, fontWeight: !w1 ? 600 : 400, color: !w1 ? "var(--success)" : "var(--text-muted)" }}>
+                <span className="text-muted" style={{ fontSize: 11, padding: "1px 6px", background: "var(--bg-secondary)", borderRadius: 4 }}>vs</span>
+                <span style={{ fontSize: 13, fontWeight: !w1 ? 700 : 400, color: !w1 ? "var(--green)" : "var(--text-muted)" }}>
                   {!w1 && "★ "}{t2Names}
                 </span>
               </div>
-              <p className="text-muted" style={{ fontSize: 12 }}>{date} · {m.type}</p>
+              <p className="text-muted" style={{ fontSize: 11 }}>{date} · {m.type}</p>
             </div>
             <button onClick={() => onDelete(m.id)} style={{
-              background: "none", border: "none", cursor: "pointer", fontSize: 20,
-              color: "var(--text-muted)", padding: "2px 6px", fontFamily: "inherit",
-              lineHeight: 1, flexShrink: 0,
+              background: "none", border: "none", cursor: "pointer", fontSize: 18,
+              color: "var(--text-muted)", padding: "2px 6px", fontFamily: "inherit", lineHeight: 1, flexShrink: 0,
             }}>×</button>
           </div>
         );
@@ -328,7 +336,7 @@ function History({ players, matches, onDelete }) {
   );
 }
 
-// ─── Stats ────────────────────────────────────────────────────────────────────
+// ── Stats ─────────────────────────────────────────────────────────────────────
 function Stats({ players, matches }) {
   const [mode, setMode] = useState("player");
   const [selectedPlayer, setSelectedPlayer] = useState("");
@@ -357,36 +365,29 @@ function Stats({ players, matches }) {
   }
 
   function renderPlayerStats() {
-    if (!selectedPlayer) return (
-      <div className="empty"><p>Select a player to view their stats.</p></div>
-    );
+    if (!selectedPlayer) return <div className="empty"><p>Select a player to view their stats.</p></div>;
     const p = players.find(x => x.id === selectedPlayer);
     if (!p) return null;
-
-    const playerMatches = matches.filter(m => m.team1.includes(p.id) || m.team2.includes(p.id));
+    const pm = matches.filter(m => m.team1.includes(p.id) || m.team2.includes(p.id));
     let won = 0, lost = 0;
     const opponents = {}, partners = {};
-
-    for (const m of playerMatches) {
+    for (const m of pm) {
       const inT1 = m.team1.includes(p.id);
-      const isWinner = (inT1 && m.winner === "team1") || (!inT1 && m.winner === "team2");
-      if (isWinner) won++; else lost++;
-      const opp = inT1 ? m.team2 : m.team1;
-      opp.forEach(oid => {
+      const isW = (inT1 && m.winner === "team1") || (!inT1 && m.winner === "team2");
+      if (isW) won++; else lost++;
+      (inT1 ? m.team2 : m.team1).forEach(oid => {
         if (!opponents[oid]) opponents[oid] = { played: 0, won: 0 };
         opponents[oid].played++;
-        if (isWinner) opponents[oid].won++;
+        if (isW) opponents[oid].won++;
       });
       if (m.type === "2v2") {
-        const myTeam = inT1 ? m.team1 : m.team2;
-        myTeam.filter(x => x !== p.id).forEach(pid => {
+        (inT1 ? m.team1 : m.team2).filter(x => x !== p.id).forEach(pid => {
           if (!partners[pid]) partners[pid] = { played: 0, won: 0 };
           partners[pid].played++;
-          if (isWinner) partners[pid].won++;
+          if (isW) partners[pid].won++;
         });
       }
     }
-
     const played = won + lost;
     const winPct = played > 0 ? Math.round((won / played) * 100) : 0;
     const streak = getStreak(p.id, matches);
@@ -397,50 +398,59 @@ function Stats({ players, matches }) {
       <div>
         <div className="card" style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{
-            width: 56, height: 56, borderRadius: "50%", background: c + "22",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: p.icon ? 28 : 20, fontWeight: 700, color: c, flexShrink: 0,
+            width: 60, height: 60, borderRadius: "50%", background: c + "20",
+            border: `2px solid ${c}50`, display: "flex", alignItems: "center",
+            justifyContent: "center", fontSize: p.icon ? 30 : 22, fontWeight: 700, color: c, flexShrink: 0,
           }}>
             {p.icon || (p.name || "?").trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2)}
           </div>
-          <div>
-            <p style={{ fontSize: 18, fontWeight: 700 }}>{p.name}</p>
-            <p className="text-muted" style={{ fontSize: 13 }}>Streak: {streak}</p>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Sora', sans-serif" }}>{p.name}</p>
+            <p className="text-muted" style={{ fontSize: 12 }}>Current streak: <b style={{ color: streak.endsWith("W") ? "var(--green)" : "var(--danger)" }}>{streak}</b></p>
           </div>
         </div>
         <div className="metrics" style={{ marginBottom: "1rem" }}>
           <div className="metric"><label>Played</label><span>{played}</span></div>
-          <div className="metric"><label>Won</label><span style={{ color: "var(--success)" }}>{won}</span></div>
-          <div className="metric"><label>Win Rate</label><span>{winPct}%</span></div>
+          <div className="metric"><label>Won</label><span style={{ color: "var(--green)" }}>{won}</span></div>
+          <div className="metric"><label>Win Rate</label><span style={{ color: "var(--green)" }}>{winPct}%</span></div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: "1rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: "1rem" }}>
           <div className="metric"><label>Lost</label><span style={{ color: "var(--danger)" }}>{lost}</span></div>
-          <div className="metric"><label>Best Streak</label><span>{streak}</span></div>
+          <div className="metric"><label>Streak</label><span style={{ fontSize: 22, color: streak.endsWith("W") ? "var(--green)" : "var(--danger)" }}>{streak}</span></div>
         </div>
         {Object.keys(opponents).length > 0 && (
           <div className="card" style={{ marginBottom: "1rem" }}>
-            <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>vs Opponents</p>
+            <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>vs Opponents</p>
             {Object.entries(opponents).sort((a, b) => b[1].played - a[1].played).map(([oid, o]) => (
-              <div key={oid} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "0.5px solid var(--border)" }}>
+              <div key={oid} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid var(--border)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Avatar id={oid} allPlayers={players} size={24} />
-                  <span style={{ fontSize: 13 }}>{getName(oid)}</span>
+                  <Avatar id={oid} allPlayers={players} size={26} />
+                  <span style={{ fontSize: 13, fontWeight: 500 }}>{getName(oid)}</span>
                 </div>
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{o.won}W — {o.played - o.won}L</span>
+                <span style={{ fontSize: 12 }}>
+                  <b style={{ color: "var(--green)" }}>{o.won}W</b>
+                  <span className="text-muted"> — </span>
+                  <b style={{ color: "var(--danger)" }}>{o.played - o.won}L</b>
+                </span>
               </div>
             ))}
           </div>
         )}
         {Object.keys(partners).length > 0 && (
           <div className="card">
-            <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>2v2 Partners</p>
+            <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>2v2 Partners</p>
             {Object.entries(partners).sort((a, b) => b[1].won - a[1].won).map(([pid, pt]) => (
-              <div key={pid} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "0.5px solid var(--border)" }}>
+              <div key={pid} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid var(--border)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Avatar id={pid} allPlayers={players} size={24} />
-                  <span style={{ fontSize: 13 }}>{getName(pid)}</span>
+                  <Avatar id={pid} allPlayers={players} size={26} />
+                  <span style={{ fontSize: 13, fontWeight: 500 }}>{getName(pid)}</span>
                 </div>
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{pt.won}W — {pt.played - pt.won}L · {Math.round((pt.won / pt.played) * 100)}%</span>
+                <span style={{ fontSize: 12 }}>
+                  <b style={{ color: "var(--green)" }}>{pt.won}W</b>
+                  <span className="text-muted"> — </span>
+                  <b style={{ color: "var(--danger)" }}>{pt.played - pt.won}L</b>
+                  <span className="text-muted"> · {Math.round((pt.won / pt.played) * 100)}%</span>
+                </span>
               </div>
             ))}
           </div>
@@ -451,13 +461,11 @@ function Stats({ players, matches }) {
 
   function renderDateStats() {
     const filtered = filterByDate(matches);
-    if (filtered.length === 0) return (
-      <div className="empty"><p>No matches found for this period.</p></div>
-    );
+    if (!filtered.length) return <div className="empty"><p>No matches found for this period.</p></div>;
     const stats = computeStats(players, filtered).filter(s => s.played > 0);
     return (
       <div>
-        <p className="text-muted" style={{ fontSize: 13, marginBottom: "1rem" }}>{filtered.length} matches in this period</p>
+        <p className="text-muted" style={{ fontSize: 12, marginBottom: "1rem", fontWeight: 600 }}>{filtered.length} matches in this period</p>
         <div className="table-wrap">
           <table>
             <thead>
@@ -472,15 +480,15 @@ function Stats({ players, matches }) {
             <tbody>
               {stats.map((p, i) => (
                 <tr key={p.id}>
-                  <td className="text-muted">{i + 1}</td>
+                  <td className="text-muted" style={{ fontWeight: 600 }}>{i + 1}</td>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Avatar id={p.id} allPlayers={players} size={24} />
-                      <span style={{ fontSize: 13 }}>{p.name}</span>
+                      <Avatar id={p.id} allPlayers={players} size={26} />
+                      <span style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</span>
                     </div>
                   </td>
                   <td style={{ textAlign: "center", fontSize: 13 }}>{p.played}</td>
-                  <td style={{ textAlign: "center", fontSize: 13 }} className="text-success">{p.won}</td>
+                  <td style={{ textAlign: "center", fontSize: 13 }} className="text-success"><b>{p.won}</b></td>
                   <td>
                     <div className="win-bar-wrap">
                       <div className="win-bar"><div className="win-bar-fill" style={{ width: `${p.winPct}%` }} /></div>
@@ -505,17 +513,14 @@ function Stats({ players, matches }) {
         const key = `${a}___${b}`;
         if (!duoMap[key]) duoMap[key] = { p1: a, p2: b, played: 0, won: 0 };
         duoMap[key].played++;
-        const isWin = (ti === 0 && m.winner === "team1") || (ti === 1 && m.winner === "team2");
-        if (isWin) duoMap[key].won++;
+        if ((ti === 0 && m.winner === "team1") || (ti === 1 && m.winner === "team2")) duoMap[key].won++;
       });
     }
     const duos = Object.values(duoMap)
       .map(d => ({ ...d, winPct: Math.round((d.won / d.played) * 100) }))
-      .sort((a, b) => b.winPct - a.winPct || b.won - a.won || b.played - a.played);
+      .sort((a, b) => b.winPct - a.winPct || b.won - a.won);
 
-    if (duos.length === 0) return (
-      <div className="empty"><p>No 2v2 matches recorded yet. Best Duo ranking will appear here.</p></div>
-    );
+    if (!duos.length) return <div className="empty"><p>No 2v2 matches recorded yet. Best Duo ranking will appear here.</p></div>;
 
     return (
       <div className="table-wrap">
@@ -532,19 +537,19 @@ function Stats({ players, matches }) {
           <tbody>
             {duos.map((d, i) => (
               <tr key={i}>
-                <td className="text-muted">{i + 1}</td>
+                <td className={i === 0 ? "rank-1" : "text-muted"} style={{ fontWeight: 700 }}>{i + 1}</td>
                 <td>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <Avatar id={d.p1} allPlayers={players} size={24} />
-                    <span style={{ fontSize: 13, fontWeight: 500 }}>{getIcon(d.p1)} {getName(d.p1)}</span>
-                    <span className="text-muted" style={{ fontSize: 11 }}>+</span>
-                    <Avatar id={d.p2} allPlayers={players} size={24} />
-                    <span style={{ fontSize: 13, fontWeight: 500 }}>{getIcon(d.p2)} {getName(d.p2)}</span>
-                    {i === 0 && <span className="badge badge-top">Best Duo</span>}
+                    <Avatar id={d.p1} allPlayers={players} size={26} />
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{getIcon(d.p1)} {getName(d.p1)}</span>
+                    <span className="text-muted" style={{ fontSize: 11, fontWeight: 700 }}>+</span>
+                    <Avatar id={d.p2} allPlayers={players} size={26} />
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{getIcon(d.p2)} {getName(d.p2)}</span>
+                    {i === 0 && <span className="badge badge-best">Best Duo</span>}
                   </div>
                 </td>
                 <td style={{ textAlign: "center", fontSize: 13 }}>{d.played}</td>
-                <td style={{ textAlign: "center", fontSize: 13 }} className="text-success">{d.won}</td>
+                <td style={{ textAlign: "center" }} className="text-success"><b>{d.won}</b></td>
                 <td>
                   <div className="win-bar-wrap">
                     <div className="win-bar"><div className="win-bar-fill" style={{ width: `${d.winPct}%` }} /></div>
@@ -562,10 +567,7 @@ function Stats({ players, matches }) {
   const now = new Date();
   const monthOptions = Array.from({ length: 12 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    return {
-      val: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-      label: d.toLocaleDateString("en-GB", { month: "long", year: "numeric" }),
-    };
+    return { val: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, label: d.toLocaleDateString("en-GB", { month: "long", year: "numeric" }) };
   });
   const yearOptions = Array.from({ length: 6 }, (_, i) => String(now.getFullYear() - i));
 
@@ -579,8 +581,9 @@ function Stats({ players, matches }) {
 
       {mode === "player" && (
         <div style={{ marginBottom: "1.5rem" }}>
-          <select value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)} style={{ maxWidth: 280 }}>
-            <option value="">Select a player...</option>
+          <p className="section-label">Select Player</p>
+          <select value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)} style={{ maxWidth: 300 }}>
+            <option value="">Choose a player...</option>
             {players.map(p => <option key={p.id} value={p.id}>{p.icon || ""} {p.name}</option>)}
           </select>
         </div>
@@ -597,7 +600,7 @@ function Stats({ players, matches }) {
             </select>
           )}
           {dateFilter === "yearly" && (
-            <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} style={{ maxWidth: 120 }}>
+            <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} style={{ maxWidth: 130 }}>
               {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           )}
@@ -611,7 +614,7 @@ function Stats({ players, matches }) {
   );
 }
 
-// ─── Main App ─────────────────────────────────────────────────────────────────
+// ── Main App ──────────────────────────────────────────────────────────────────
 export default function CarromTracker() {
   const [tab, setTab] = useState("board");
   const [players, setPlayers] = useState([]);
@@ -655,37 +658,43 @@ export default function CarromTracker() {
 
   return (
     <div className="app">
-      <div className="header">
-        <div className="header-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" />
-            <circle cx="10" cy="10" r="2.5" fill="currentColor" />
-            <circle cx="6" cy="6" r="1.5" fill="currentColor" opacity="0.4" />
-            <circle cx="14" cy="14" r="1.5" fill="currentColor" opacity="0.4" />
-          </svg>
+      <div className="app-header">
+        <div className="header-top">
+          <div className="header-logo">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="9" stroke="white" strokeWidth="1.5" />
+              <circle cx="11" cy="11" r="3" fill="white" />
+              <circle cx="6.5" cy="6.5" r="1.8" fill="white" opacity="0.5" />
+              <circle cx="15.5" cy="15.5" r="1.8" fill="white" opacity="0.5" />
+            </svg>
+          </div>
+          <div className="header-text">
+            <h1>Carrom Tracker</h1>
+            <div className="subtitle">{players.length} players · {matches.length} matches</div>
+          </div>
+          <div className="header-badge">FNF</div>
         </div>
-        <div>
-          <h1>Carrom Tracker</h1>
-          <p>{players.length} players · {matches.length} matches</p>
+        <div className="status-bar">
+          <span className={`sync-dot ${synced ? "live" : "loading"}`} />
+          {synced ? "Live sync active" : "Connecting..."}
         </div>
       </div>
 
-      <div className="status-bar">
-        <span className={`sync-dot ${synced ? "live" : "loading"}`} />
-        {synced ? "Live sync active" : "Connecting..."}
+      <div className="tabs-wrap">
+        <div className="tabs">
+          {TABS.map(({ k, l }) => (
+            <button key={k} className={`tab-btn ${tab === k ? "active" : ""}`} onClick={() => setTab(k)}>{l}</button>
+          ))}
+        </div>
       </div>
 
-      <div className="tabs">
-        {TABS.map(({ k, l }) => (
-          <button key={k} className={`tab-btn ${tab === k ? "active" : ""}`} onClick={() => setTab(k)}>{l}</button>
-        ))}
+      <div className="content">
+        {tab === "board" && <Leaderboard players={players} matches={matches} />}
+        {tab === "match" && <NewMatch players={players} onSave={saveMatch} />}
+        {tab === "players" && <Players players={players} matches={matches} onAdd={addPlayer} onRemove={removePlayer} />}
+        {tab === "stats" && <Stats players={players} matches={matches} />}
+        {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} />}
       </div>
-
-      {tab === "board" && <Leaderboard players={players} matches={matches} />}
-      {tab === "match" && <NewMatch players={players} onSave={saveMatch} />}
-      {tab === "players" && <Players players={players} matches={matches} onAdd={addPlayer} onRemove={removePlayer} />}
-      {tab === "stats" && <Stats players={players} matches={matches} />}
-      {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} />}
     </div>
   );
 }
