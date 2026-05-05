@@ -164,6 +164,9 @@ body {
 .tabs-wrap {
   background: linear-gradient(135deg, var(--green-dark) 0%, var(--green) 70%, #1dc400 100%);
   padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .tabs {

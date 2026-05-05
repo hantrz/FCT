@@ -67,10 +67,15 @@ function Avatar({ id, allPlayers, size = 30 }) {
 }
 
 // ── Leaderboard ───────────────────────────────────────────────────────────────
-function Leaderboard({ players, matches }) {
+function Leaderboard({ players, matches, setTab, setSelectedPlayer }) {
   const stats = computeStats(players, matches);
   const thisWeek = matches.filter(m => m.createdAt && Date.now() - m.createdAt.toMillis() < 7 * 864e5).length;
   const rankClass = i => i === 0 ? "rank-1" : i === 1 ? "rank-2" : i === 2 ? "rank-3" : "text-muted";
+
+  function goToPlayer(id) {
+    setSelectedPlayer(id);
+    setTab("stats");
+  }
 
   return (
     <div>
@@ -101,7 +106,11 @@ function Leaderboard({ players, matches }) {
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <Avatar id={p.id} allPlayers={players} size={28} />
-                      <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13 }}>{p.name}</span>
+                      <span onClick={() => goToPlayer(p.id)}
+                        style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13, cursor: "pointer", textDecoration: "underline", textDecorationColor: "transparent" }}
+                        onMouseEnter={e => e.currentTarget.style.textDecorationColor = "currentColor"}
+                        onMouseLeave={e => e.currentTarget.style.textDecorationColor = "transparent"}
+                      >{p.name}</span>
                       {i === 0 && p.played > 0 && <span className="badge badge-top">🏆</span>}
                     </div>
                   </td>
@@ -221,7 +230,7 @@ function NewMatch({ players, onSave }) {
 }
 
 // ── Players ───────────────────────────────────────────────────────────────────
-function Players({ players, matches, onAdd, onRemove, onEdit }) {
+function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin }) {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState(AVATAR_ICONS[0]);
   const [adding, setAdding] = useState(false);
@@ -250,29 +259,31 @@ function Players({ players, matches, onAdd, onRemove, onEdit }) {
 
   return (
     <div>
-      <div className="card" style={{ marginBottom: "1.25rem" }}>
-        <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Add New Player</p>
-        <div style={{ marginBottom: 12 }}>
-          <p className="section-label">Choose an icon</p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {AVATAR_ICONS.map(ic => (
-              <button key={ic} className={`emoji-btn ${ic === icon ? "selected" : ""}`}
-                onClick={() => setIcon(ic)}
-                style={{ border: `1.5px solid ${ic === icon ? "var(--green)" : "var(--border)"}` }}>
-                {ic}
-              </button>
-            ))}
+      {isAdmin && (
+        <div className="card" style={{ marginBottom: "1.25rem" }}>
+          <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Add New Player</p>
+          <div style={{ marginBottom: 12 }}>
+            <p className="section-label">Choose an icon</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {AVATAR_ICONS.map(ic => (
+                <button key={ic} className={`emoji-btn ${ic === icon ? "selected" : ""}`}
+                  onClick={() => setIcon(ic)}
+                  style={{ border: `1.5px solid ${ic === icon ? "var(--green)" : "var(--border)"}` }}>
+                  {ic}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input value={name} onChange={e => setName(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleAdd()}
+              placeholder="Player name" style={{ flex: 1 }} />
+            <button className="btn btn-primary" onClick={handleAdd} disabled={adding} style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
+              {adding ? "..." : "Add"}
+            </button>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input value={name} onChange={e => setName(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleAdd()}
-            placeholder="Player name" style={{ flex: 1 }} />
-          <button className="btn btn-primary" onClick={handleAdd} disabled={adding} style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
-            {adding ? "..." : "Add"}
-          </button>
-        </div>
-      </div>
+      )}
 
       {players.length === 0 ? (
         <div className="empty"><p>No players added yet.</p></div>
@@ -283,17 +294,19 @@ function Players({ players, matches, onAdd, onRemove, onEdit }) {
             const c = PALETTE[i % PALETTE.length];
             return (
               <div key={p.id} className="player-card">
-                <div style={{ position: "absolute", top: 6, right: 6, display: "flex", gap: 2 }}>
-                  <button onClick={() => startEdit(p)} style={{
-                    background: "none", border: "none", cursor: "pointer", fontSize: 14,
-                    lineHeight: 1, padding: "3px 5px", fontFamily: "inherit", touchAction: "manipulation",
-                  }}>✏️</button>
-                  <button onClick={() => onRemove(p.id)} style={{
-                    background: "none", border: "none", cursor: "pointer", fontSize: 17,
-                    color: "var(--text-muted)", lineHeight: 1, padding: "3px 5px",
-                    fontFamily: "inherit", touchAction: "manipulation",
-                  }}>×</button>
-                </div>
+                {isAdmin && (
+                  <div style={{ position: "absolute", top: 6, right: 6, display: "flex", gap: 2 }}>
+                    <button onClick={() => startEdit(p)} style={{
+                      background: "none", border: "none", cursor: "pointer", fontSize: 14,
+                      lineHeight: 1, padding: "3px 5px", fontFamily: "inherit", touchAction: "manipulation",
+                    }}>✏️</button>
+                    <button onClick={() => onRemove(p.id)} style={{
+                      background: "none", border: "none", cursor: "pointer", fontSize: 17,
+                      color: "var(--text-muted)", lineHeight: 1, padding: "3px 5px",
+                      fontFamily: "inherit", touchAction: "manipulation",
+                    }}>×</button>
+                  </div>
+                )}
                 <div style={{
                   width: 46, height: 46, borderRadius: "50%",
                   background: c + "20", border: `2px solid ${c}40`,
@@ -347,7 +360,7 @@ function Players({ players, matches, onAdd, onRemove, onEdit }) {
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
-function History({ players, matches, onDelete }) {
+function History({ players, matches, onDelete, isAdmin }) {
   const getName = id => players.find(p => p.id === id)?.name || "?";
   const getIcon = id => players.find(p => p.id === id)?.icon || "";
 
@@ -376,11 +389,13 @@ function History({ players, matches, onDelete }) {
               </div>
               <p className="text-muted" style={{ fontSize: 11 }}>{date} · {m.type}</p>
             </div>
-            <button onClick={() => onDelete(m.id)} style={{
-              background: "none", border: "none", cursor: "pointer", fontSize: 18,
-              color: "var(--text-muted)", padding: "2px 6px", fontFamily: "inherit",
-              lineHeight: 1, flexShrink: 0, touchAction: "manipulation",
-            }}>×</button>
+            {isAdmin && (
+              <button onClick={() => onDelete(m.id)} style={{
+                background: "none", border: "none", cursor: "pointer", fontSize: 18,
+                color: "var(--text-muted)", padding: "2px 6px", fontFamily: "inherit",
+                lineHeight: 1, flexShrink: 0, touchAction: "manipulation",
+              }}>×</button>
+            )}
           </div>
         );
       })}
@@ -389,9 +404,8 @@ function History({ players, matches, onDelete }) {
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
-function Stats({ players, matches }) {
+function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
   const [mode, setMode] = useState("player");
-  const [selectedPlayer, setSelectedPlayer] = useState("");
   const [dateFilter, setDateFilter] = useState("weekly");
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date();
@@ -785,6 +799,7 @@ export default function CarromTracker() {
   const [matches, setMatches] = useState([]);
   const [synced, setSynced] = useState(false);
   const [authState, setAuthState] = useState("loading"); // loading | guest | admin
+  const [selectedPlayer, setSelectedPlayer] = useState("");
 
   useEffect(() => {
     const saved = sessionStorage.getItem(SESSION_KEY);
@@ -838,13 +853,12 @@ export default function CarromTracker() {
   const TABS = [
     { k: "board", l: "Leaderboard" },
     ...(isAdmin ? [{ k: "match", l: "New Match" }] : []),
-    ...(isAdmin ? [{ k: "players", l: "Players" }] : []),
+    { k: "players", l: "Players" },
     { k: "stats", l: "Stats" },
     { k: "history", l: "History" },
   ];
 
   if (tab === "match" && !isAdmin) setTab("board");
-  if (tab === "players" && !isAdmin) setTab("board");
 
   return (
     <div className="app">
@@ -862,7 +876,7 @@ export default function CarromTracker() {
             <h1>Carrom Tracker</h1>
             <div className="subtitle">{players.length} players · {matches.length} matches</div>
           </div>
-          <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+          <div style={{ marginLeft: "auto", flexShrink: 0 }}>
             <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
               style={{
                 display: "flex", flexDirection: "column", alignItems: "center",
@@ -872,20 +886,6 @@ export default function CarromTracker() {
               <span style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>App by</span>
               <span style={{ fontSize: 12, color: "#ffffff", fontFamily: "'Sora', sans-serif", fontWeight: 800, lineHeight: 1.2 }}>FNF School</span>
             </a>
-            {isAdmin && (
-              <button onClick={handleLogout} style={{
-                background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
-                borderRadius: 6, padding: "4px 10px", color: "rgba(255,255,255,0.85)",
-                fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
-              }}>Logout</button>
-            )}
-            {!isAdmin && (
-              <button onClick={() => setAuthState("login")} style={{
-                background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
-                borderRadius: 6, padding: "4px 10px", color: "rgba(255,255,255,0.85)",
-                fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
-              }}>Login</button>
-            )}
           </div>
         </div>
         <div className="status-bar">
@@ -901,14 +901,27 @@ export default function CarromTracker() {
             <button key={k} className={`tab-btn ${tab === k ? "active" : ""}`} onClick={() => setTab(k)}>{l}</button>
           ))}
         </div>
+        {isAdmin ? (
+          <button onClick={handleLogout} style={{
+            background: "none", border: "1px solid var(--border-strong)",
+            borderRadius: 6, padding: "4px 10px", color: "var(--text-muted)",
+            fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, flexShrink: 0,
+          }}>Logout</button>
+        ) : (
+          <button onClick={() => setAuthState("login")} style={{
+            background: "none", border: "1px solid var(--border-strong)",
+            borderRadius: 6, padding: "4px 10px", color: "var(--text-muted)",
+            fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600, flexShrink: 0,
+          }}>Login</button>
+        )}
       </div>
 
       <div className="content">
-        {tab === "board" && <Leaderboard players={players} matches={matches} />}
+        {tab === "board" && <Leaderboard players={players} matches={matches} setTab={setTab} setSelectedPlayer={setSelectedPlayer} />}
         {tab === "match" && isAdmin && <NewMatch players={players} onSave={saveMatch} />}
-        {tab === "players" && isAdmin && <Players players={players} matches={matches} onAdd={addPlayer} onRemove={removePlayer} onEdit={editPlayer} />}
-        {tab === "stats" && <Stats players={players} matches={matches} />}
-        {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} />}
+        {tab === "players" && <Players players={players} matches={matches} onAdd={addPlayer} onRemove={removePlayer} onEdit={editPlayer} isAdmin={isAdmin} />}
+        {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} />}
+        {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
       </div>
     </div>
   );
