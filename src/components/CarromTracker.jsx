@@ -1072,7 +1072,7 @@ export default function CarromTracker() {
     playersWithoutDesc.forEach((p, index) => {
       setTimeout(() => {
         regeneratePlayerDescription(p.id, players, matches);
-      }, index * 3000);
+      }, index * 8000);
     });
   }, [authState, players.length, matches.length]);
 
@@ -1129,17 +1129,21 @@ export default function CarromTracker() {
     if (!apiKey) return;
 
     try {
+      const prompt = `Write ONE short sentence (max 20 words) describing this carrom player's current form or playing style. Be creative and fun. Player: ${player.name}. Stats: ${playerMatches.length} matches, ${wins} wins, ${losses} losses, ${winRate}% win rate, streak: ${streakStr}, hat-tricks: ${b.hatTricks}, clean wins: ${b.cleanWins}. Return ONLY the sentence.`;
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Write ONE short sentence (max 20 words) describing this carrom player's current form or playing style. Be creative and fun. Player: ${player.name}. Stats: ${playerMatches.length} matches, ${wins} wins, ${losses} losses, ${winRate}% win rate, streak: ${streakStr}, hat-tricks: ${b.hatTricks}, clean wins: ${b.cleanWins}. Return ONLY the sentence.`
-            }]
-          }]
+          contents: [{ parts: [{ text: prompt }] }]
         })
       });
+
+      if (res.status === 429) {
+        console.log("Rate limited, retrying in 15s for", player.name);
+        setTimeout(() => regeneratePlayerDescription(playerId, allPlayers, allMatches), 15000);
+        return;
+      }
+
       const data = await res.json();
       const description = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       if (description) {
