@@ -122,38 +122,47 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
             ))}
           </div>
           <div className="table-wrap">
-            <table>
+            <table style={{ tableLayout: "fixed", width: "100%" }}>
+              <colgroup>
+                <col style={{ width: 30 }} />
+                <col />
+                <col style={{ width: 40 }} />
+                <col style={{ width: 40 }} />
+                <col style={{ width: 40 }} />
+                <col style={{ width: 50 }} />
+                <col style={{ width: 100 }} />
+              </colgroup>
               <thead>
                 <tr>
-                  <th style={{ width: 36 }}>#</th>
+                  <th style={{ textAlign: "center" }}>#</th>
                   <th>Player</th>
-                  <th style={{ width: 44, textAlign: "center" }}>P</th>
-                  <th style={{ width: 44, textAlign: "center" }}>W</th>
-                  <th style={{ width: 44, textAlign: "center" }}>L</th>
-                  <th style={{ width: 52, textAlign: "right" }}>PTS</th>
-                  <th style={{ width: 72, textAlign: "right" }}>Win%</th>
+                  <th style={{ textAlign: "center" }}>P</th>
+                  <th style={{ textAlign: "center" }}>W</th>
+                  <th style={{ textAlign: "center" }}>L</th>
+                  <th style={{ textAlign: "center" }}>PTS</th>
+                  <th style={{ textAlign: "right" }}>Win%</th>
                 </tr>
               </thead>
               <tbody>
                 {sorted.map((p, i) => (
                   <tr key={p.id} onClick={() => goToPlayer(p.id)} style={{ cursor: "pointer" }}>
-                    <td><span className={rankClass(i)} style={{ fontSize: 13, fontFamily: "'Sora', sans-serif" }}>{i + 1}</span></td>
-                    <td>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <td style={{ textAlign: "center" }}><span className={rankClass(i)} style={{ fontSize: 13, fontFamily: "'Sora', sans-serif" }}>{i + 1}</span></td>
+                    <td style={{ maxWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
                         <Avatar id={p.id} allPlayers={players} size={28} />
-                        <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13 }}>{p.name}</span>
-                        {i === 0 && p.played > 0 && <span className="badge badge-top">🏆</span>}
+                        <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                        {i === 0 && p.played > 0 && <span className="badge badge-top" style={{ flexShrink: 0 }}>🏆</span>}
                       </div>
                     </td>
                     <td style={{ textAlign: "center", fontWeight: 500, fontSize: 13 }}>{p.played}</td>
                     <td style={{ textAlign: "center" }} className="text-success"><b style={{ fontSize: 13 }}>{p.won}</b></td>
                     <td style={{ textAlign: "center" }} className="text-danger"><span style={{ fontSize: 13 }}>{p.lost}</span></td>
-                    <td style={{ textAlign: "right" }}>
+                    <td style={{ textAlign: "center" }}>
                       <b style={{ fontSize: 13, color: i < 3 ? "#f59e0b" : "var(--text)" }}>{p.points}</b>
                     </td>
                     <td>
                       <div className="win-bar-wrap">
-                        <div className="win-bar"><div className="win-bar-fill" style={{ width: `${p.winPct}%` }} /></div>
+                        <div className="win-bar" style={{ width: 50 }}><div className="win-bar-fill" style={{ width: `${p.winPct}%` }} /></div>
                         <span className="win-pct">{p.winPct}%</span>
                       </div>
                     </td>
