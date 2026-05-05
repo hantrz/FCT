@@ -674,7 +674,7 @@ export default function CarromTracker() {
             <h1>Carrom Tracker</h1>
             <div className="subtitle">{players.length} players · {matches.length} matches</div>
           </div>
-          <div className="header-badge">App by<br />FNF School</div>
+          <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer" style={{marginLeft:"auto",flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"var(--radius-sm)",padding:"6px 10px",textDecoration:"none",backdropFilter:"blur(4px)",transition:"background 0.15s"}}><span style={{fontSize:9,color:"rgba(255,255,255,0.7)",letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600}}>App by</span><span style={{fontSize:13,color:"#ffffff",fontFamily:"\"Sora\", sans-serif",fontWeight:800,letterSpacing:"-0.2px",lineHeight:1.2}}>FNF School</span></a>
         </div>
         <div className="status-bar">
           <span className={`sync-dot ${synced ? "live" : "loading"}`} />
@@ -700,3 +700,4 @@ export default function CarromTracker() {
     </div>
   );
 }
+
