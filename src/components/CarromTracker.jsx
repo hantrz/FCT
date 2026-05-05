@@ -70,26 +70,27 @@ function calcBadges(playerId, matches) {
   const pm = [...matches]
     .filter(m => (m.team1 || []).includes(playerId) || (m.team2 || []).includes(playerId))
     .sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
-  let maxStreak = 0, currentStreak = 0, cleanWins = 0, cleanLosses = 0;
+  let hatTricks = 0, currentStreak = 0, cleanWins = 0, cleanLosses = 0;
   for (const m of pm) {
     const inT1 = (m.team1 || []).includes(playerId);
     const isWinner = (inT1 && m.winner === "team1") || (!inT1 && m.winner === "team2");
     if (isWinner) {
       currentStreak++;
+      if (currentStreak === 3) { hatTricks++; currentStreak = 0; }
       if (m.loserScore === 0) cleanWins++;
     } else {
       currentStreak = 0;
       if (m.loserScore === 0) cleanLosses++;
     }
-    maxStreak = Math.max(maxStreak, currentStreak);
   }
-  return { fireCount: Math.floor(maxStreak / 3), cleanWins, cleanLosses };
+  return { hatTricks, cleanWins, cleanLosses };
 }
 
 // ── Leaderboard ───────────────────────────────────────────────────────────────
 function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [sortBy, setSortBy] = useState("points");
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 600);
+  const [tooltip, setTooltip] = useState(null);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth <= 600);
@@ -185,9 +186,24 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                         <span style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.played}P</span>
                         <span style={{ fontSize: 11, color: "#16a34a", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.won}W</span>
                         <span style={{ fontSize: 11, color: "#dc2626", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.lost}L</span>
-                        {badges.fireCount > 0 && <span style={{ fontSize: 11, borderRadius: 20, padding: "1px 6px", fontWeight: 600, background: "#fff7ed", color: "#c2410c", border: "0.5px solid #fed7aa" }}>{badges.fireCount} 🔥</span>}
-                        {badges.cleanWins > 0 && <span style={{ fontSize: 11, borderRadius: 20, padding: "1px 6px", fontWeight: 600, background: "#dbeafe", color: "#1d4ed8", border: "0.5px solid #93c5fd" }}>{badges.cleanWins} 💎</span>}
-                        {badges.cleanLosses > 0 && <span style={{ fontSize: 11, borderRadius: 20, padding: "1px 6px", fontWeight: 600, background: "#dc2626", color: "#ffffff", border: "0.5px solid #b91c1c" }}>{badges.cleanLosses} 💎</span>}
+                        {badges.hatTricks > 0 && (
+                          <span style={{ position:"relative", display:"inline-flex" }} onMouseEnter={() => setTooltip(`${p.id}-fire`)} onMouseLeave={() => setTooltip(null)}>
+                            <span style={{ fontSize:11, borderRadius:20, padding:"1px 6px", fontWeight:600, background:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }}>{badges.hatTricks} 🔥</span>
+                            {tooltip === `${p.id}-fire` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>🔥 Hat-trick!<br/>{badges.hatTricks === 1 ? "১টা হ্যাট্রিক করেছে (পরপর ৩ জিত)" : `${badges.hatTricks}টা হ্যাট্রিক করেছে`}<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+                          </span>
+                        )}
+                        {badges.cleanWins > 0 && (
+                          <span style={{ position:"relative", display:"inline-flex" }} onMouseEnter={() => setTooltip(`${p.id}-clean-win`)} onMouseLeave={() => setTooltip(null)}>
+                            <span style={{ fontSize:11, borderRadius:20, padding:"1px 6px", fontWeight:600, background:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }}>{badges.cleanWins} 💎</span>
+                            {tooltip === `${p.id}-clean-win` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💎 Clean Win<br/>অপোনেন্ট ০ পয়েন্ট পেয়েছে<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+                          </span>
+                        )}
+                        {badges.cleanLosses > 0 && (
+                          <span style={{ position:"relative", display:"inline-flex" }} onMouseEnter={() => setTooltip(`${p.id}-clean-loss`)} onMouseLeave={() => setTooltip(null)}>
+                            <span style={{ fontSize:11, borderRadius:20, padding:"1px 6px", fontWeight:600, background:"#fee2e2", color:"#dc2626", border:"0.5px solid #fca5a5" }}>{badges.cleanLosses} 💎</span>
+                            {tooltip === `${p.id}-clean-loss` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💎 Clean Loss<br/>নিজে ০ পয়েন্ট নিয়ে হেরেছে<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -233,13 +249,28 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     <tr key={p.id} onClick={() => goToPlayer(p.id)} style={{ cursor: "pointer" }}>
                       <td style={{ textAlign: "center" }}><span className={rankClass(i)} style={{ fontSize: 13, fontFamily: "'Sora', sans-serif" }}>{i + 1}</span></td>
                       <td style={{ maxWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <Avatar id={p.id} allPlayers={players} size={28} />
-                          <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}>{p.name}</span>
+                          <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1, minWidth: 0 }}>{p.name}</span>
                           {i === 0 && p.played > 0 && <span className="badge badge-top" style={{ flexShrink: 0 }}>🏆</span>}
-                          {badges.fireCount > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa", flexShrink:0 }}>{badges.fireCount} 🔥</span>}
-                          {badges.cleanWins > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd", flexShrink:0 }}>{badges.cleanWins} 💎</span>}
-                          {badges.cleanLosses > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fee2e2", color:"#dc2626", border:"0.5px solid #fca5a5", flexShrink:0 }}>{badges.cleanLosses} 💎</span>}
+                          {badges.hatTricks > 0 && (
+                            <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-fire`)} onMouseLeave={() => setTooltip(null)}>
+                              <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }}>{badges.hatTricks} 🔥</span>
+                              {tooltip === `${p.id}-fire` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>🔥 Hat-trick!<br/>{badges.hatTricks === 1 ? "১টা হ্যাট্রিক করেছে (পরপর ৩ জিত)" : `${badges.hatTricks}টা হ্যাট্রিক করেছে`}<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+                            </span>
+                          )}
+                          {badges.cleanWins > 0 && (
+                            <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-clean-win`)} onMouseLeave={() => setTooltip(null)}>
+                              <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }}>{badges.cleanWins} 💎</span>
+                              {tooltip === `${p.id}-clean-win` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💎 Clean Win<br/>অপোনেন্ট ০ পয়েন্ট পেয়েছে<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+                            </span>
+                          )}
+                          {badges.cleanLosses > 0 && (
+                            <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-clean-loss`)} onMouseLeave={() => setTooltip(null)}>
+                              <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fee2e2", color:"#dc2626", border:"0.5px solid #fca5a5" }}>{badges.cleanLosses} 💎</span>
+                              {tooltip === `${p.id}-clean-loss` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💎 Clean Loss<br/>নিজে ০ পয়েন্ট নিয়ে হেরেছে<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td style={{ textAlign: "center", fontWeight: 500, fontSize: 13 }}>{p.played}</td>
@@ -261,6 +292,19 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
               </table>
             </div>
           )}
+          <div style={{ marginTop: 16, padding: "12px 14px", background: "var(--bg-secondary)", borderRadius: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", marginBottom: 2 }}>BADGE GUIDE</div>
+            {[
+              { bg:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa", icon:"🔥", label:"Hat-trick — পরপর ৩টা ম্যাচ জেতার জন্য" },
+              { bg:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd", icon:"💎", label:"Clean Win — অপোনেন্ট ০ পয়েন্ট পেয়েছে" },
+              { bg:"#fee2e2", color:"#dc2626", border:"0.5px solid #fca5a5", icon:"💎", label:"Clean Loss — নিজে ০ পয়েন্ট নিয়ে হেরেছে" },
+            ].map((item, i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:item.bg, color:item.color, border:item.border, flexShrink:0 }}>1 {item.icon}</span>
+                <span style={{ fontSize:12, color:"var(--text-muted)" }}>{item.label}</span>
+              </div>
+            ))}
+          </div>
         </>
       )}
     </div>
