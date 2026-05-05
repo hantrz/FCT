@@ -239,7 +239,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                           {i === 0 && p.played > 0 && <span className="badge badge-top" style={{ flexShrink: 0 }}>🏆</span>}
                           {badges.fireCount > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa", flexShrink:0 }}>{badges.fireCount} 🔥</span>}
                           {badges.cleanWins > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd", flexShrink:0 }}>{badges.cleanWins} 💎</span>}
-                          {badges.cleanLosses > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#dc2626", color:"#ffffff", border:"0.5px solid #b91c1c", flexShrink:0 }}>{badges.cleanLosses} 💎</span>}
+                          {badges.cleanLosses > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fee2e2", color:"#dc2626", border:"0.5px solid #fca5a5", flexShrink:0 }}>{badges.cleanLosses} 💎</span>}
                         </div>
                       </td>
                       <td style={{ textAlign: "center", fontWeight: 500, fontSize: 13 }}>{p.played}</td>
