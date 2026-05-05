@@ -130,8 +130,8 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                   <th style={{ width: 44, textAlign: "center" }}>P</th>
                   <th style={{ width: 44, textAlign: "center" }}>W</th>
                   <th style={{ width: 44, textAlign: "center" }}>L</th>
-                  <th style={{ width: 72, textAlign: "right" }}>Win%</th>
                   <th style={{ width: 52, textAlign: "right" }}>PTS</th>
+                  <th style={{ width: 72, textAlign: "right" }}>Win%</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,14 +148,14 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     <td style={{ textAlign: "center", fontWeight: 500, fontSize: 13 }}>{p.played}</td>
                     <td style={{ textAlign: "center" }} className="text-success"><b style={{ fontSize: 13 }}>{p.won}</b></td>
                     <td style={{ textAlign: "center" }} className="text-danger"><span style={{ fontSize: 13 }}>{p.lost}</span></td>
+                    <td style={{ textAlign: "right" }}>
+                      <b style={{ fontSize: 13, color: i < 3 ? "#f59e0b" : "var(--text)" }}>{p.points}</b>
+                    </td>
                     <td>
                       <div className="win-bar-wrap">
                         <div className="win-bar"><div className="win-bar-fill" style={{ width: `${p.winPct}%` }} /></div>
                         <span className="win-pct">{p.winPct}%</span>
                       </div>
-                    </td>
-                    <td style={{ textAlign: "right" }}>
-                      <b style={{ fontSize: 13, color: i < 3 ? "#f59e0b" : "var(--text)" }}>{p.points}</b>
                     </td>
                   </tr>
                 ))}
