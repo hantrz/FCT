@@ -69,6 +69,13 @@ function Avatar({ id, allPlayers, size = 30 }) {
 // ── Leaderboard ───────────────────────────────────────────────────────────────
 function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [sortBy, setSortBy] = useState("points");
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 600);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= 600);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   const raw = computeStats(players, matches);
   const stats = raw.map(p => ({ ...p, points: 10 + p.won * 3 + p.lost * -1 }));
@@ -83,6 +90,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
 
   const thisWeek = matches.filter(m => m.createdAt && Date.now() - m.createdAt.toMillis() < 7 * 864e5).length;
   const rankClass = i => i === 0 ? "rank-1" : i === 1 ? "rank-2" : i === 2 ? "rank-3" : "text-muted";
+  const rankColors = ["#f59e0b", "#9ca3af", "#cd7c41"];
 
   const SORT_OPTIONS = [
     { k: "points",  l: "Points" },
@@ -99,6 +107,20 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     }
   }
 
+  const sortPills = (
+    <div style={{ display: "flex", gap: 8, marginBottom: "1rem", overflowX: "auto", paddingBottom: 2 }}>
+      {SORT_OPTIONS.map(({ k, l }) => (
+        <button key={k} onClick={() => setSortBy(k)} style={{
+          padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
+          cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0,
+          background: sortBy === k ? "#16a34a" : "#ffffff",
+          color: sortBy === k ? "#ffffff" : "#374151",
+          border: sortBy === k ? "1.5px solid #16a34a" : "1.5px solid #d1d5db",
+        }}>{l}</button>
+      ))}
+    </div>
+  );
+
   return (
     <div>
       <div className="metrics">
@@ -110,67 +132,105 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
         <div className="empty"><p>No data yet. Add players and record matches!</p></div>
       ) : (
         <>
-          <div style={{ display: "flex", gap: 8, marginBottom: "1rem", overflowX: "auto", paddingBottom: 2 }}>
-            {SORT_OPTIONS.map(({ k, l }) => (
-              <button key={k} onClick={() => setSortBy(k)} style={{
-                padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
-                cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0,
-                background: sortBy === k ? "#16a34a" : "#ffffff",
-                color: sortBy === k ? "#ffffff" : "#374151",
-                border: sortBy === k ? "1.5px solid #16a34a" : "1.5px solid #d1d5db",
-              }}>{l}</button>
-            ))}
-          </div>
-          <div className="table-wrap">
-            <table style={{ tableLayout: "fixed", width: "100%" }}>
-              <colgroup>
-                <col style={{ width: 30 }} />
-                <col />
-                <col style={{ width: 40 }} />
-                <col style={{ width: 40 }} />
-                <col style={{ width: 40 }} />
-                <col style={{ width: 50 }} />
-                <col style={{ width: 100 }} />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: "center" }}>#</th>
-                  <th>Player</th>
-                  <th style={{ textAlign: "center" }}>P</th>
-                  <th style={{ textAlign: "center" }}>W</th>
-                  <th style={{ textAlign: "center" }}>L</th>
-                  <th style={{ textAlign: "center" }}>PTS</th>
-                  <th style={{ textAlign: "right" }}>Win%</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map((p, i) => (
-                  <tr key={p.id} onClick={() => goToPlayer(p.id)} style={{ cursor: "pointer" }}>
-                    <td style={{ textAlign: "center" }}><span className={rankClass(i)} style={{ fontSize: 13, fontFamily: "'Sora', sans-serif" }}>{i + 1}</span></td>
-                    <td style={{ maxWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
-                        <Avatar id={p.id} allPlayers={players} size={28} />
-                        <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
-                        {i === 0 && p.played > 0 && <span className="badge badge-top" style={{ flexShrink: 0 }}>🏆</span>}
+          {sortPills}
+          {isMobile ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {sorted.map((p, i) => {
+                const rankColor = i < 3 ? rankColors[i] : "var(--text-muted)";
+                const ptsColor = i < 3 ? "#f59e0b" : "var(--text)";
+                return (
+                  <div key={p.id} onClick={() => goToPlayer(p.id)} style={{
+                    background: "var(--card-bg)", borderRadius: 14,
+                    border: "1px solid var(--border)", padding: "10px 14px",
+                    display: "flex", alignItems: "center", gap: 10,
+                    cursor: onSelectPlayer ? "pointer" : "default",
+                  }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, width: 18, textAlign: "center", color: rankColor, flexShrink: 0 }}>{i + 1}</div>
+                    <div style={{
+                      width: 38, height: 38, borderRadius: "50%",
+                      background: PALETTE[players.findIndex(pl => pl.id === p.id) % PALETTE.length] + "20",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: p.icon ? 22 : 14, fontWeight: 700,
+                      color: PALETTE[players.findIndex(pl => pl.id === p.id) % PALETTE.length],
+                      flexShrink: 0,
+                    }}>
+                      {p.icon || (p.name || "?").trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {p.name}{i === 0 && p.played > 0 && " 🏆"}
                       </div>
-                    </td>
-                    <td style={{ textAlign: "center", fontWeight: 500, fontSize: 13 }}>{p.played}</td>
-                    <td style={{ textAlign: "center" }} className="text-success"><b style={{ fontSize: 13 }}>{p.won}</b></td>
-                    <td style={{ textAlign: "center" }} className="text-danger"><span style={{ fontSize: 13 }}>{p.lost}</span></td>
-                    <td style={{ textAlign: "center" }}>
-                      <b style={{ fontSize: 13, color: i < 3 ? "#f59e0b" : "var(--text)" }}>{p.points}</b>
-                    </td>
-                    <td>
-                      <div className="win-bar-wrap">
-                        <div className="win-bar" style={{ width: 50 }}><div className="win-bar-fill" style={{ width: `${p.winPct}%` }} /></div>
-                        <span className="win-pct">{p.winPct}%</span>
+                      <div style={{ display: "flex", gap: 5, marginTop: 3 }}>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.played}P</span>
+                        <span style={{ fontSize: 11, color: "#16a34a", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.won}W</span>
+                        <span style={{ fontSize: 11, color: "#dc2626", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.lost}L</span>
                       </div>
-                    </td>
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: ptsColor, lineHeight: 1 }}>{p.points}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, justifyContent: "flex-end" }}>
+                        <div style={{ height: 4, borderRadius: 4, background: "var(--border)", width: 48, overflow: "hidden" }}>
+                          <div style={{ height: "100%", borderRadius: 4, background: "#16a34a", width: `${p.winPct}%` }} />
+                        </div>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{p.winPct}%</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <table style={{ tableLayout: "fixed", width: "100%" }}>
+                <colgroup>
+                  <col style={{ width: 30 }} />
+                  <col />
+                  <col style={{ width: 40 }} />
+                  <col style={{ width: 40 }} />
+                  <col style={{ width: 40 }} />
+                  <col style={{ width: 50 }} />
+                  <col style={{ width: 100 }} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "center" }}>#</th>
+                    <th>Player</th>
+                    <th style={{ textAlign: "center" }}>P</th>
+                    <th style={{ textAlign: "center" }}>W</th>
+                    <th style={{ textAlign: "center" }}>L</th>
+                    <th style={{ textAlign: "center" }}>PTS</th>
+                    <th style={{ textAlign: "right" }}>Win%</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {sorted.map((p, i) => (
+                    <tr key={p.id} onClick={() => goToPlayer(p.id)} style={{ cursor: "pointer" }}>
+                      <td style={{ textAlign: "center" }}><span className={rankClass(i)} style={{ fontSize: 13, fontFamily: "'Sora', sans-serif" }}>{i + 1}</span></td>
+                      <td style={{ maxWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
+                          <Avatar id={p.id} allPlayers={players} size={28} />
+                          <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                          {i === 0 && p.played > 0 && <span className="badge badge-top" style={{ flexShrink: 0 }}>🏆</span>}
+                        </div>
+                      </td>
+                      <td style={{ textAlign: "center", fontWeight: 500, fontSize: 13 }}>{p.played}</td>
+                      <td style={{ textAlign: "center" }} className="text-success"><b style={{ fontSize: 13 }}>{p.won}</b></td>
+                      <td style={{ textAlign: "center" }} className="text-danger"><span style={{ fontSize: 13 }}>{p.lost}</span></td>
+                      <td style={{ textAlign: "center" }}>
+                        <b style={{ fontSize: 13, color: i < 3 ? "#f59e0b" : "var(--text)" }}>{p.points}</b>
+                      </td>
+                      <td>
+                        <div className="win-bar-wrap">
+                          <div className="win-bar" style={{ width: 50 }}><div className="win-bar-fill" style={{ width: `${p.winPct}%` }} /></div>
+                          <span className="win-pct">{p.winPct}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </>
       )}
     </div>
