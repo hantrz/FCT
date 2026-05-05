@@ -617,11 +617,127 @@ function Stats({ players, matches }) {
 }
 
 // ── Main App ──────────────────────────────────────────────────────────────────
+const PASSCODE = process.env.NEXT_PUBLIC_APP_PASSCODE || "fnf2024";
+const SESSION_KEY = "ct_auth";
+
+function LoginScreen({ onLogin }) {
+  const [code, setCode] = useState("");
+  const [error, setError] = useState(false);
+  const [shake, setShake] = useState(false);
+
+  function handleLogin() {
+    if (code === PASSCODE) {
+      sessionStorage.setItem(SESSION_KEY, "1");
+      onLogin();
+    } else {
+      setError(true);
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+    }
+  }
+
+  return (
+    <div style={{
+      minHeight: "100dvh", display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      background: "linear-gradient(135deg, #0e7a00 0%, #14a800 60%, #1dc400 100%)",
+      padding: "1.5rem",
+    }}>
+      <div style={{
+        width: "100%", maxWidth: 360,
+        background: "#ffffff", borderRadius: 16,
+        padding: "2rem 1.75rem",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+        animation: shake ? "shake 0.4s ease" : "none",
+      }}>
+        <div style={{ textAlign: "center", marginBottom: "1.75rem" }}>
+          <div style={{
+            width: 60, height: 60, borderRadius: 14,
+            background: "linear-gradient(135deg, #0e7a00, #14a800)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            margin: "0 auto 1rem",
+            boxShadow: "0 4px 16px rgba(20,168,0,0.35)",
+          }}>
+            <svg width="28" height="28" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="9" stroke="white" strokeWidth="1.5" />
+              <circle cx="11" cy="11" r="3" fill="white" />
+              <circle cx="6.5" cy="6.5" r="1.8" fill="white" opacity="0.5" />
+              <circle cx="15.5" cy="15.5" r="1.8" fill="white" opacity="0.5" />
+            </svg>
+          </div>
+          <h1 style={{ fontFamily: "'Sora', sans-serif", fontSize: 22, fontWeight: 800, color: "#0d1f0b", marginBottom: 4 }}>
+            Carrom Tracker
+          </h1>
+          <p style={{ fontSize: 13, color: "#5a7055" }}>Enter passcode to manage data</p>
+        </div>
+
+        <div style={{ marginBottom: "1rem" }}>
+          <input
+            type="password"
+            value={code}
+            onChange={e => { setCode(e.target.value); setError(false); }}
+            onKeyDown={e => e.key === "Enter" && handleLogin()}
+            placeholder="Enter passcode"
+            style={{
+              width: "100%", padding: "12px 14px", fontSize: 15,
+              border: `1.5px solid ${error ? "#dc2626" : "#d4e8cf"}`,
+              borderRadius: 8, outline: "none", fontFamily: "inherit",
+              background: error ? "#fef2f2" : "#f7faf7",
+              color: "#0d1f0b", letterSpacing: "0.1em",
+              transition: "border-color 0.15s",
+            }}
+            autoFocus
+          />
+          {error && <p style={{ fontSize: 12, color: "#dc2626", marginTop: 6 }}>Wrong passcode. Try again.</p>}
+        </div>
+
+        <button onClick={handleLogin} style={{
+          width: "100%", padding: "13px", fontSize: 15, fontWeight: 700,
+          background: "linear-gradient(135deg, #0e7a00, #14a800)",
+          color: "#fff", border: "none", borderRadius: 8, cursor: "pointer",
+          fontFamily: "inherit", boxShadow: "0 4px 12px rgba(20,168,0,0.3)",
+          transition: "opacity 0.15s",
+        }}>
+          Login
+        </button>
+
+        <p style={{ textAlign: "center", fontSize: 11, color: "#5a7055", marginTop: "1.25rem" }}>
+          You can also <button onClick={() => onLogin(true)} style={{
+            background: "none", border: "none", color: "#14a800", fontSize: 11,
+            fontWeight: 600, cursor: "pointer", padding: 0, fontFamily: "inherit",
+          }}>view only</button> without passcode
+        </p>
+      </div>
+
+      <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
+        style={{ marginTop: "1.5rem", fontSize: 12, color: "rgba(255,255,255,0.7)", textDecoration: "none", fontWeight: 600 }}>
+        fnfschool.com
+      </a>
+
+      <style>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          20% { transform: translateX(-8px); }
+          40% { transform: translateX(8px); }
+          60% { transform: translateX(-6px); }
+          80% { transform: translateX(6px); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export default function CarromTracker() {
   const [tab, setTab] = useState("board");
   const [players, setPlayers] = useState([]);
   const [matches, setMatches] = useState([]);
   const [synced, setSynced] = useState(false);
+  const [authState, setAuthState] = useState("loading"); // loading | guest | admin
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem(SESSION_KEY);
+    setAuthState(saved ? "admin" : "login");
+  }, []);
 
   useEffect(() => {
     const unsubP = onSnapshot(query(collection(db, "players"), orderBy("createdAt", "asc")), snap => {
@@ -633,6 +749,15 @@ export default function CarromTracker() {
     });
     return () => { unsubP(); unsubM(); };
   }, []);
+
+  function handleLogin(guestOnly = false) {
+    setAuthState(guestOnly ? "guest" : "admin");
+  }
+
+  function handleLogout() {
+    sessionStorage.removeItem(SESSION_KEY);
+    setAuthState("login");
+  }
 
   async function addPlayer(name, icon) {
     await addDoc(collection(db, "players"), { name, icon, createdAt: serverTimestamp() });
@@ -650,13 +775,21 @@ export default function CarromTracker() {
     await deleteDoc(doc(db, "matches", id));
   }
 
+  if (authState === "loading") return null;
+  if (authState === "login") return <LoginScreen onLogin={handleLogin} />;
+
+  const isAdmin = authState === "admin";
+
   const TABS = [
     { k: "board", l: "Leaderboard" },
-    { k: "match", l: "New Match" },
-    { k: "players", l: "Players" },
+    ...(isAdmin ? [{ k: "match", l: "New Match" }] : []),
+    ...(isAdmin ? [{ k: "players", l: "Players" }] : []),
     { k: "stats", l: "Stats" },
     { k: "history", l: "History" },
   ];
+
+  if (tab === "match" && !isAdmin) setTab("board");
+  if (tab === "players" && !isAdmin) setTab("board");
 
   return (
     <div className="app">
@@ -674,11 +807,36 @@ export default function CarromTracker() {
             <h1>Carrom Tracker</h1>
             <div className="subtitle">{players.length} players · {matches.length} matches</div>
           </div>
-          <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer" style={{marginLeft:"auto",flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:"var(--radius-sm)",padding:"6px 10px",textDecoration:"none",backdropFilter:"blur(4px)",transition:"background 0.15s"}}><span style={{fontSize:9,color:"rgba(255,255,255,0.7)",letterSpacing:"0.06em",textTransform:"uppercase",fontWeight:600}}>App by</span><span style={{fontSize:13,color:"#ffffff",fontFamily:"\"Sora\", sans-serif",fontWeight:800,letterSpacing:"-0.2px",lineHeight:1.2}}>FNF School</span></a>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            {isAdmin && (
+              <button onClick={handleLogout} style={{
+                background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
+                borderRadius: 6, padding: "4px 10px", color: "rgba(255,255,255,0.85)",
+                fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+              }}>Logout</button>
+            )}
+            {!isAdmin && (
+              <button onClick={() => setAuthState("login")} style={{
+                background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
+                borderRadius: 6, padding: "4px 10px", color: "rgba(255,255,255,0.85)",
+                fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+              }}>Login</button>
+            )}
+            <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center",
+                background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
+                borderRadius: "var(--radius-sm)", padding: "5px 10px", textDecoration: "none",
+              }}>
+              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>App by</span>
+              <span style={{ fontSize: 12, color: "#ffffff", fontFamily: "'Sora', sans-serif", fontWeight: 800, lineHeight: 1.2 }}>FNF School</span>
+            </a>
+          </div>
         </div>
         <div className="status-bar">
           <span className={`sync-dot ${synced ? "live" : "loading"}`} />
           {synced ? "Live sync active" : "Connecting..."}
+          {isAdmin && <span style={{ marginLeft: 8, background: "rgba(212,160,23,0.3)", color: "#fef3c7", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10 }}>Admin</span>}
         </div>
       </div>
 
@@ -692,12 +850,11 @@ export default function CarromTracker() {
 
       <div className="content">
         {tab === "board" && <Leaderboard players={players} matches={matches} />}
-        {tab === "match" && <NewMatch players={players} onSave={saveMatch} />}
-        {tab === "players" && <Players players={players} matches={matches} onAdd={addPlayer} onRemove={removePlayer} />}
+        {tab === "match" && isAdmin && <NewMatch players={players} onSave={saveMatch} />}
+        {tab === "players" && isAdmin && <Players players={players} matches={matches} onAdd={addPlayer} onRemove={removePlayer} />}
         {tab === "stats" && <Stats players={players} matches={matches} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} />}
       </div>
     </div>
   );
 }
-
