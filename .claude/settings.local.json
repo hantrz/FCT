@@ -5,7 +5,12 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(git branch *)",
-      "Bash(git remote *)"
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Skill(claude-api)",
+      "Bash(Select-String \"anthropic\")",
+      "Bash(findstr /i \"anthropic\")",
+      "PowerShell(New-Item *)"
     ]
   }
 }

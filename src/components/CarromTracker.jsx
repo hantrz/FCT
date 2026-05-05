@@ -1109,32 +1109,40 @@ export default function CarromTracker() {
     const losses = playerMatches.length - wins;
     const winRate = playerMatches.length > 0 ? Math.round((wins / playerMatches.length) * 100) : 0;
     const b = calcBadges(playerId, allMatches);
-    const streakStr = getStreak(playerId, allMatches);
+
+    const sorted = [...playerMatches].sort((a, b) => new Date(b.date) - new Date(a.date));
+    let streak = 0, streakType = "";
+    for (const m of sorted) {
+      const wids = m.winner === "team1" ? (m.team1 || [m.player1]) : (m.team2 || [m.player2]);
+      const won = wids.includes(playerId);
+      if (streak === 0) { streakType = won ? "W" : "L"; streak = 1; }
+      else if ((won && streakType === "W") || (!won && streakType === "L")) streak++;
+      else break;
+    }
+    const streakStr = streak > 1 ? `${streak}${streakType}` : "none";
+
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    if (!apiKey) return;
 
     try {
-      const res = await fetch("/api/player-description", {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          playerName: player.name,
-          played: playerMatches.length,
-          wins, losses, winRate,
-          hatTricks: b.hatTricks,
-          cleanWins: b.cleanWins,
-          cleanLosses: b.cleanLosses,
-          streak: streakStr
+          contents: [{
+            parts: [{
+              text: `Write ONE short sentence (max 20 words) describing this carrom player's current form or playing style. Be creative and fun. Player: ${player.name}. Stats: ${playerMatches.length} matches, ${wins} wins, ${losses} losses, ${winRate}% win rate, streak: ${streakStr}, hat-tricks: ${b.hatTricks}, clean wins: ${b.cleanWins}. Return ONLY the sentence.`
+            }]
+          }]
         })
       });
       const data = await res.json();
-      console.log("Description API response:", data);
-      if (data.error) {
-        console.error("API error:", data.error);
-      }
-      if (data.description) {
-        await updateDoc(doc(db, "players", playerId), { aiDescription: data.description });
+      const description = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (description) {
+        await updateDoc(doc(db, "players", playerId), { aiDescription: description });
       }
     } catch (e) {
-      console.error("Failed to generate description for", player.name, e);
+      console.error("Gemini error:", e);
     }
   }
   async function saveMatch(data) {
