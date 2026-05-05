@@ -788,7 +788,7 @@ export default function CarromTracker() {
 
   useEffect(() => {
     const saved = sessionStorage.getItem(SESSION_KEY);
-    setAuthState(saved ? "admin" : "login");
+    setAuthState(saved ? "admin" : "guest");
   }, []);
 
   useEffect(() => {
@@ -862,7 +862,16 @@ export default function CarromTracker() {
             <h1>Carrom Tracker</h1>
             <div className="subtitle">{players.length} players · {matches.length} matches</div>
           </div>
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+            <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center",
+                background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
+                borderRadius: "var(--radius-sm)", padding: "5px 10px", textDecoration: "none",
+              }}>
+              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>App by</span>
+              <span style={{ fontSize: 12, color: "#ffffff", fontFamily: "'Sora', sans-serif", fontWeight: 800, lineHeight: 1.2 }}>FNF School</span>
+            </a>
             {isAdmin && (
               <button onClick={handleLogout} style={{
                 background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
@@ -877,15 +886,6 @@ export default function CarromTracker() {
                 fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
               }}>Login</button>
             )}
-            <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
-              style={{
-                display: "flex", flexDirection: "column", alignItems: "center",
-                background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
-                borderRadius: "var(--radius-sm)", padding: "5px 10px", textDecoration: "none",
-              }}>
-              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>App by</span>
-              <span style={{ fontSize: 12, color: "#ffffff", fontFamily: "'Sora', sans-serif", fontWeight: 800, lineHeight: 1.2 }}>FNF School</span>
-            </a>
           </div>
         </div>
         <div className="status-bar">
