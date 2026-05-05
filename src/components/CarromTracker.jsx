@@ -1126,6 +1126,10 @@ export default function CarromTracker() {
         })
       });
       const data = await res.json();
+      console.log("Description API response:", data);
+      if (data.error) {
+        console.error("API error:", data.error);
+      }
       if (data.description) {
         await updateDoc(doc(db, "players", playerId), { aiDescription: data.description });
       }
