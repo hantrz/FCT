@@ -700,6 +700,11 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
                 </div>
               ) : null;
             })()}
+            {p.aiDescription && (
+              <div style={{ marginTop:8, paddingLeft:10, borderLeft:"3px solid #7c3aed", color:"var(--text-muted)", fontSize:12, fontStyle:"italic" }}>
+                <span style={{ fontSize:10, fontWeight:700, color:"#7c3aed", textTransform:"uppercase", letterSpacing:"0.05em", fontStyle:"normal" }}>✦ AI</span>{" "}{p.aiDescription}
+              </div>
+            )}
           </div>
         </div>
         <div className="metrics" style={{ marginBottom: "1rem" }}>
@@ -1063,9 +1068,41 @@ export default function CarromTracker() {
   async function editPlayer(id, name, icon) {
     await updateDoc(doc(db, "players", id), { name, icon });
   }
+  async function regeneratePlayerDescription(playerId, allPlayers, allMatches) {
+    const player = allPlayers.find(p => p.id === playerId);
+    if (!player) return;
+    const pm = allMatches.filter(m => (m.team1 || []).includes(playerId) || (m.team2 || []).includes(playerId));
+    let won = 0, lost = 0;
+    for (const m of pm) {
+      const inT1 = (m.team1 || []).includes(playerId);
+      const isW = (inT1 && m.winner === "team1") || (!inT1 && m.winner === "team2");
+      if (isW) won++; else lost++;
+    }
+    const played = won + lost;
+    const winRate = played > 0 ? Math.round((won / played) * 100) : 0;
+    const streak = getStreak(playerId, allMatches);
+    const b = calcBadges(playerId, allMatches);
+    try {
+      const res = await fetch("/api/player-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playerName: player.name, played, wins: won, losses: lost,
+          winRate, streak, hatTricks: b.hatTricks, cleanWins: b.cleanWins, cleanLosses: b.cleanLosses,
+        }),
+      });
+      const { description } = await res.json();
+      await updateDoc(doc(db, "players", playerId), { aiDescription: description });
+    } catch (e) { /* silent fail */ }
+  }
   async function saveMatch(data) {
-    await addDoc(collection(db, "matches"), { ...data, createdAt: serverTimestamp() });
+    const ref = await addDoc(collection(db, "matches"), { ...data, createdAt: serverTimestamp() });
     setTab("board");
+    const updatedMatches = [...matches, { ...data, id: ref.id, createdAt: { toMillis: () => Date.now() } }];
+    const allPids = [...new Set([...(data.team1 || []), ...(data.team2 || [])])];
+    for (const pid of allPids) {
+      regeneratePlayerDescription(pid, players, updatedMatches);
+    }
   }
   async function deleteMatch(id) {
     if (!confirm("Delete this match?")) return;
