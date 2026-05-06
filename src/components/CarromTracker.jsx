@@ -1009,37 +1009,50 @@ function TeamSpin({ players, onClose }) {
     <div
       onClick={onClose}
       style={{
-        position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
         display: "flex", alignItems: "center", justifyContent: "center",
-        zIndex: 1000, padding: 16, backdropFilter: "blur(4px)",
+        zIndex: 1000, padding: 16, backdropFilter: "blur(6px)",
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "var(--card, #1a1a1a)", borderRadius: 16, padding: 20,
+          background: "#ffffff",
+          color: "#1a1a1a",
+          borderRadius: 16, padding: 24,
           maxWidth: 480, width: "100%", maxHeight: "90vh", overflowY: "auto",
-          border: "1px solid var(--border, rgba(255,255,255,0.1))",
+          border: "1px solid rgba(0,0,0,0.1)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
           position: "relative",
         }}
       >
         <button
           onClick={onClose}
           style={{
-            position: "absolute", top: 12, right: 12, background: "transparent",
-            border: "none", color: "var(--text)", fontSize: 22, cursor: "pointer",
-            lineHeight: 1, padding: 4,
+            position: "absolute", top: 12, right: 12, background: "rgba(0,0,0,0.05)",
+            border: "none", color: "#1a1a1a", fontSize: 20, cursor: "pointer",
+            lineHeight: 1, padding: "4px 10px", borderRadius: 6, fontWeight: 700,
           }}
         >×</button>
 
-        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6, textAlign: "center" }}>
+        <h2 style={{
+          fontSize: 22, fontWeight: 800, marginBottom: 6, marginTop: 0,
+          textAlign: "center", color: "#1a1a1a"
+        }}>
           🎲 Random Team Spin
         </h2>
-        <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, marginBottom: 16 }}>
+        <p style={{
+          textAlign: "center", color: "#6b7280", fontSize: 13,
+          marginBottom: 20, marginTop: 0
+        }}>
           Select 4 players ({selected.length}/4)
         </p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8, marginBottom: 20 }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))",
+          gap: 8, marginBottom: 20
+        }}>
           {players.map(p => {
             const isSelected = selected.includes(p.id);
             const disabled = !isSelected && selected.length >= 4;
@@ -1050,9 +1063,9 @@ function TeamSpin({ players, onClose }) {
                 disabled={disabled || spinning}
                 style={{
                   padding: "10px 8px", borderRadius: 8,
-                  border: isSelected ? "2px solid #4ade80" : "1px solid var(--border)",
-                  background: isSelected ? "rgba(74, 222, 128, 0.15)" : "var(--card)",
-                  color: "var(--text)",
+                  border: isSelected ? "2px solid #16a34a" : "1px solid #d1d5db",
+                  background: isSelected ? "#dcfce7" : "#f9fafb",
+                  color: "#1a1a1a",
                   cursor: disabled || spinning ? "not-allowed" : "pointer",
                   opacity: disabled ? 0.4 : 1,
                   fontSize: 13, fontWeight: 600, fontFamily: "inherit",
@@ -1070,11 +1083,16 @@ function TeamSpin({ players, onClose }) {
             onClick={spin}
             disabled={selected.length !== 4 || spinning}
             style={{
-              padding: "10px 24px", borderRadius: 8, border: "none",
-              background: selected.length === 4 && !spinning ? "linear-gradient(135deg, #f59e0b, #ef4444)" : "var(--muted)",
+              padding: "12px 28px", borderRadius: 8, border: "none",
+              background: selected.length === 4 && !spinning
+                ? "linear-gradient(135deg, #f59e0b, #ef4444)"
+                : "#9ca3af",
               color: "white", fontWeight: 700, fontSize: 15,
               cursor: selected.length === 4 && !spinning ? "pointer" : "not-allowed",
               fontFamily: "inherit",
+              boxShadow: selected.length === 4 && !spinning
+                ? "0 4px 12px rgba(245, 158, 11, 0.4)"
+                : "none",
             }}
           >
             {spinning ? "🌀 Spinning..." : "🎰 Spin!"}
@@ -1084,9 +1102,9 @@ function TeamSpin({ players, onClose }) {
               onClick={reset}
               disabled={spinning}
               style={{
-                padding: "10px 18px", borderRadius: 8,
-                border: "1px solid var(--border)", background: "transparent",
-                color: "var(--text)", fontWeight: 600, fontSize: 14,
+                padding: "12px 20px", borderRadius: 8,
+                border: "1px solid #d1d5db", background: "#ffffff",
+                color: "#1a1a1a", fontWeight: 600, fontSize: 14,
                 cursor: spinning ? "not-allowed" : "pointer", fontFamily: "inherit",
               }}
             >
@@ -1096,7 +1114,11 @@ function TeamSpin({ players, onClose }) {
         </div>
 
         {spinning && shuffleNames.length > 0 && (
-          <div style={{ textAlign: "center", fontSize: 16, fontWeight: 700, padding: 20, color: "var(--text)" }}>
+          <div style={{
+            textAlign: "center", fontSize: 16, fontWeight: 700,
+            padding: 20, color: "#1a1a1a",
+            background: "#f3f4f6", borderRadius: 8, marginBottom: 8
+          }}>
             {shuffleNames.join(" • ")}
           </div>
         )}
@@ -1104,22 +1126,35 @@ function TeamSpin({ players, onClose }) {
         {teams && (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div style={{ padding: 16, borderRadius: 12, background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", textAlign: "center", color: "white" }}>
-                <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8, fontWeight: 600 }}>TEAM A</div>
+              <div style={{
+                padding: 16, borderRadius: 12,
+                background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+                textAlign: "center", color: "white",
+                boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)"
+              }}>
+                <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>TEAM A</div>
                 <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.6 }}>
                   {teams.teamA[0].icon || "👤"} {teams.teamA[0].name}<br />
                   {teams.teamA[1].icon || "👤"} {teams.teamA[1].name}
                 </div>
               </div>
-              <div style={{ padding: 16, borderRadius: 12, background: "linear-gradient(135deg, #ef4444, #b91c1c)", textAlign: "center", color: "white" }}>
-                <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8, fontWeight: 600 }}>TEAM B</div>
+              <div style={{
+                padding: 16, borderRadius: 12,
+                background: "linear-gradient(135deg, #ef4444, #b91c1c)",
+                textAlign: "center", color: "white",
+                boxShadow: "0 4px 12px rgba(239, 68, 68, 0.3)"
+              }}>
+                <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>TEAM B</div>
                 <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.6 }}>
                   {teams.teamB[0].icon || "👤"} {teams.teamB[0].name}<br />
                   {teams.teamB[1].icon || "👤"} {teams.teamB[1].name}
                 </div>
               </div>
             </div>
-            <p style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "var(--muted)" }}>
+            <p style={{
+              textAlign: "center", marginTop: 16, marginBottom: 0,
+              fontSize: 13, color: "#6b7280"
+            }}>
               🎉 Teams ready! Let the game begin.
             </p>
           </>
@@ -1311,7 +1346,7 @@ export default function CarromTracker() {
   return (
     <div className="app">
       <div className="app-header">
-        <div className="header-top">
+        <div className="header-top" style={{ alignItems: "center" }}>
           <div className="header-logo">
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
               <circle cx="11" cy="11" r="9" stroke="white" strokeWidth="1.5" />
@@ -1324,7 +1359,7 @@ export default function CarromTracker() {
             <h1>Carrom Tracker</h1>
             <div className="subtitle">{players.length} players · {matches.length} matches</div>
           </div>
-          <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "stretch", gap: 4, flexShrink: 0 }}>
+          <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", gap: 6, flexShrink: 0 }}>
             <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
               style={{
                 display: "flex", flexDirection: "column", alignItems: "center",
@@ -1338,17 +1373,18 @@ export default function CarromTracker() {
               onClick={() => setShowSpin(true)}
               style={{
                 display: "flex", flexDirection: "column", alignItems: "center",
-                background: "rgba(255,255,255,0.15)",
-                border: "1px solid rgba(255,255,255,0.3)",
+                background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)",
+                border: "1px solid rgba(255, 215, 0, 0.6)",
                 borderRadius: "var(--radius-sm)",
                 padding: "5px 10px", cursor: "pointer",
                 fontFamily: "inherit", width: "100%",
+                boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
               }}
             >
-              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>
+              <span style={{ fontSize: 9, color: "rgba(0, 0, 0, 0.7)", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700 }}>
                 🎲 Random
               </span>
-              <span style={{ fontSize: 12, color: "#ffffff", fontFamily: "'Sora', sans-serif", fontWeight: 800, lineHeight: 1.2 }}>
+              <span style={{ fontSize: 12, color: "#1a1a1a", fontFamily: "'Sora', sans-serif", fontWeight: 800, lineHeight: 1.2 }}>
                 Team Spin
               </span>
             </button>
