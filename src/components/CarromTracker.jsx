@@ -122,7 +122,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     if (sortBy === "winrate")  return b.winPct - a.winPct;
     if (sortBy === "matches")  return b.played - a.played;
     if (sortBy === "wins")     return b.won - a.won;
-    if (sortBy === "losses")   return a.lost - b.lost;
+    if (sortBy === "losses")   return b.lost - a.lost;
     return 0;
   });
 
@@ -884,11 +884,15 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
                 <td className={i === 0 ? "rank-1" : "text-muted"} style={{ fontWeight: 700 }}>{i + 1}</td>
                 <td>
                   <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-                    <Avatar id={d.p1} allPlayers={players} size={24} />
-                    <span style={{ fontSize: 12, fontWeight: 600 }}>{getIcon(d.p1)} {getName(d.p1)}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ width: 28, height: 28, borderRadius: "50%", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{getIcon(d.p1) || "👤"}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>{getName(d.p1)}</span>
+                    </div>
                     <span className="text-muted" style={{ fontSize: 10, fontWeight: 700 }}>+</span>
-                    <Avatar id={d.p2} allPlayers={players} size={24} />
-                    <span style={{ fontSize: 12, fontWeight: 600 }}>{getIcon(d.p2)} {getName(d.p2)}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ width: 28, height: 28, borderRadius: "50%", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{getIcon(d.p2) || "👤"}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>{getName(d.p2)}</span>
+                    </div>
                     {i === 0 && <span className="badge badge-best">Best</span>}
                   </div>
                 </td>
