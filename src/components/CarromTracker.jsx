@@ -958,16 +958,74 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
   );
 }
 
+// ── Team Spin helpers ─────────────────────────────────────────────────────────
+function getPlayerWinRate(playerId, matches) {
+  let wins = 0, total = 0;
+  matches.forEach(m => {
+    const in1 = (m.team1 || []).includes(playerId);
+    const in2 = (m.team2 || []).includes(playerId);
+    if (in1) { total++; if (m.winner === "team1") wins++; }
+    if (in2) { total++; if (m.winner === "team2") wins++; }
+  });
+  return total > 0 ? (wins / total) * 100 : 50;
+}
+
+function getRecentForm(playerId, matches) {
+  const recent = matches
+    .filter(m => (m.team1 || []).includes(playerId) || (m.team2 || []).includes(playerId))
+    .slice(-5);
+  if (!recent.length) return 50;
+  let wins = 0;
+  recent.forEach(m => {
+    const in1 = (m.team1 || []).includes(playerId);
+    if ((in1 && m.winner === "team1") || (!in1 && m.winner === "team2")) wins++;
+  });
+  return (wins / recent.length) * 100;
+}
+
+function getPartnershipCount(p1Id, p2Id, matches) {
+  let count = 0;
+  matches.forEach(m => {
+    const a = m.team1 || [], b = m.team2 || [];
+    if (a.includes(p1Id) && a.includes(p2Id)) count++;
+    if (b.includes(p1Id) && b.includes(p2Id)) count++;
+  });
+  return count;
+}
+
+function getLastMatchLosers(matches) {
+  if (!matches.length) return [];
+  const sorted = [...matches].sort((a, b) =>
+    (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)
+  );
+  const last = sorted[0];
+  if (last.winner === "team1") return last.team2 || [];
+  if (last.winner === "team2") return last.team1 || [];
+  return [];
+}
+
 // ── Team Spin ─────────────────────────────────────────────────────────────────
-function TeamSpin({ players, onClose }) {
+function TeamSpin({ players, matches, onClose }) {
   const [selected, setSelected] = useState([]);
   const [spinning, setSpinning] = useState(false);
   const [teams, setTeams] = useState(null);
   const [shuffleNames, setShuffleNames] = useState([]);
+  const [appliedConditions, setAppliedConditions] = useState([]);
+
+  const AVOID_PAIRS = [["Mr Zed", "Firoz Mall"]];
+
+  const SOFT_CONDITIONS = [
+    { id: "winRate", label: "⚖️ Win rate balanced" },
+    { id: "recentForm", label: "🔥 Recent form balanced" },
+    { id: "headToHead", label: "🔀 Frequent partners split" },
+    { id: "lastLosers", label: "💔 Last losers separated" },
+    { id: "topBottom", label: "🏆 Top + bottom paired" },
+  ];
 
   const togglePlayer = (id) => {
     if (spinning) return;
     setTeams(null);
+    setAppliedConditions([]);
     if (selected.includes(id)) {
       setSelected(selected.filter(p => p !== id));
     } else if (selected.length < 4) {
@@ -979,20 +1037,75 @@ function TeamSpin({ players, onClose }) {
     if (selected.length !== 4 || spinning) return;
     setSpinning(true);
     setTeams(null);
+    setAppliedConditions([]);
 
     const selectedPlayers = selected.map(id => players.find(p => p.id === id));
+    const [p1, p2, p3, p4] = selectedPlayers;
+
+    let configs = [
+      { teamA: [p1, p2], teamB: [p3, p4] },
+      { teamA: [p1, p3], teamB: [p2, p4] },
+      { teamA: [p1, p4], teamB: [p2, p3] },
+    ];
+
+    const filtered = configs.filter(c => {
+      return !AVOID_PAIRS.some(([n1, n2]) => {
+        const aBoth = c.teamA.some(p => p.name === n1) && c.teamA.some(p => p.name === n2);
+        const bBoth = c.teamB.some(p => p.name === n1) && c.teamB.some(p => p.name === n2);
+        return aBoth || bBoth;
+      });
+    });
+    if (filtered.length > 0) configs = filtered;
+
+    const numConds = 1 + Math.floor(Math.random() * 3);
+    const shuffledConds = [...SOFT_CONDITIONS].sort(() => Math.random() - 0.5);
+    const active = shuffledConds.slice(0, numConds);
+
+    const scored = configs.map(cfg => {
+      let score = 0;
+      active.forEach(cond => {
+        if (cond.id === "winRate") {
+          const a = (getPlayerWinRate(cfg.teamA[0].id, matches) + getPlayerWinRate(cfg.teamA[1].id, matches)) / 2;
+          const b = (getPlayerWinRate(cfg.teamB[0].id, matches) + getPlayerWinRate(cfg.teamB[1].id, matches)) / 2;
+          score += 100 - Math.abs(a - b);
+        } else if (cond.id === "recentForm") {
+          const a = (getRecentForm(cfg.teamA[0].id, matches) + getRecentForm(cfg.teamA[1].id, matches)) / 2;
+          const b = (getRecentForm(cfg.teamB[0].id, matches) + getRecentForm(cfg.teamB[1].id, matches)) / 2;
+          score += 100 - Math.abs(a - b);
+        } else if (cond.id === "headToHead") {
+          const aP = getPartnershipCount(cfg.teamA[0].id, cfg.teamA[1].id, matches);
+          const bP = getPartnershipCount(cfg.teamB[0].id, cfg.teamB[1].id, matches);
+          score += Math.max(0, 100 - (aP + bP) * 10);
+        } else if (cond.id === "lastLosers") {
+          const losers = getLastMatchLosers(matches);
+          const aL = cfg.teamA.filter(p => losers.includes(p.id)).length;
+          const bL = cfg.teamB.filter(p => losers.includes(p.id)).length;
+          if (aL + bL < 2) score += 50;
+          else if (aL === 1 && bL === 1) score += 100;
+        } else if (cond.id === "topBottom") {
+          const sortedByRate = [...selectedPlayers].sort((x, y) => getPlayerWinRate(y.id, matches) - getPlayerWinRate(x.id, matches));
+          const top = sortedByRate[0], bottom = sortedByRate[3];
+          const topInA = cfg.teamA.some(p => p.id === top.id);
+          const botInA = cfg.teamA.some(p => p.id === bottom.id);
+          if (topInA === botInA) score += 100;
+        }
+      });
+      score += Math.random() * 0.5;
+      return { cfg, score };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    const finalConfig = scored[0].cfg;
+
     let count = 0;
     const interval = setInterval(() => {
-      const shuffled = [...selectedPlayers].sort(() => Math.random() - 0.5);
-      setShuffleNames(shuffled.map(p => p.name));
+      const shuffleArr = [...selectedPlayers].sort(() => Math.random() - 0.5);
+      setShuffleNames(shuffleArr.map(p => p.name));
       count++;
       if (count >= 20) {
         clearInterval(interval);
-        const finalShuffle = [...selectedPlayers].sort(() => Math.random() - 0.5);
-        setTeams({
-          teamA: [finalShuffle[0], finalShuffle[1]],
-          teamB: [finalShuffle[2], finalShuffle[3]],
-        });
+        setTeams(finalConfig);
+        setAppliedConditions(active.map(c => c.label));
         setSpinning(false);
         setShuffleNames([]);
       }
@@ -1003,6 +1116,7 @@ function TeamSpin({ players, onClose }) {
     setSelected([]);
     setTeams(null);
     setShuffleNames([]);
+    setAppliedConditions([]);
   };
 
   return (
@@ -1157,6 +1271,32 @@ function TeamSpin({ players, onClose }) {
             }}>
               🎉 Teams ready! Let the game begin.
             </p>
+            {appliedConditions.length > 0 && (
+              <div style={{
+                marginTop: 16, padding: 12,
+                background: "#fef3c7", borderRadius: 10,
+                border: "1px solid #fbbf24",
+              }}>
+                <div style={{
+                  fontSize: 11, fontWeight: 700, color: "#92400e",
+                  textTransform: "uppercase", letterSpacing: "0.06em",
+                  marginBottom: 8, textAlign: "center",
+                }}>
+                  ⚙️ Balancing rules applied
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
+                  {appliedConditions.map((label, i) => (
+                    <span key={i} style={{
+                      fontSize: 12, fontWeight: 600,
+                      padding: "4px 10px", borderRadius: 12,
+                      background: "#fbbf24", color: "#1a1a1a",
+                    }}>
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -1456,7 +1596,7 @@ export default function CarromTracker() {
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
       </div>
-      {showSpin && <TeamSpin players={players} onClose={() => setShowSpin(false)} />}
+      {showSpin && <TeamSpin players={players} matches={matches} onClose={() => setShowSpin(false)} />}
 
       {/* Upwork Promotional Banner */}
       <a
