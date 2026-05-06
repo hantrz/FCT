@@ -1016,7 +1016,7 @@ function TeamSpin({ players, matches, onClose }) {
   const [shuffleNames, setShuffleNames] = useState([]);
   const [appliedConditions, setAppliedConditions] = useState([]);
 
-  const AVOID_PAIRS = [["Mr Zed", "Firoz Mall"]];
+  const AVOID_PAIRS = [["Mr. Zed", "Firoz Hassan"]];
 
   const SOFT_CONDITIONS = [
     { id: "winRate", label: "⚖️ Win rate balanced" },
