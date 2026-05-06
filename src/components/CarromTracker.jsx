@@ -86,6 +86,23 @@ function calcBadges(playerId, matches) {
   return { hatTricks, cleanWins, cleanLosses };
 }
 
+function generatePlayerDescription(played, wins, losses, winRate, hatTricks, cleanWins, cleanLosses, streak, streakType) {
+  if (played === 0) return "No matches yet — the journey begins!";
+  if (winRate === 100 && played >= 3) return `Unbeatable so far — ${played} matches, zero defeats.`;
+  if (winRate === 0 && played >= 3) return `Tough times, but every legend has a comeback story.`;
+  if (streakType === "W" && streak >= 5) return `On fire! ${streak} wins in a row — absolutely unstoppable.`;
+  if (streakType === "W" && streak >= 3) return `${streak}-game winning streak — riding high right now.`;
+  if (streakType === "L" && streak >= 4) return `${streak} losses in a row — a big win is long overdue.`;
+  if (hatTricks >= 2) return `${hatTricks} hat-tricks earned — knows how to string wins together.`;
+  if (hatTricks === 1) return `A hat-trick achieved — capable of going on serious runs.`;
+  if (cleanWins >= 3) return `Dominant and clinical — ${cleanWins} times kept opponents scoreless.`;
+  if (cleanLosses >= 3) return `Struggles to get on the board, but never stops showing up.`;
+  if (winRate >= 75) return `One of the sharpest players with a ${winRate}% win rate.`;
+  if (winRate >= 60) return `Solid and consistent — wins more often than not.`;
+  if (winRate >= 40) return `A balanced competitor — every match is a real contest.`;
+  return `Building experience with every game — the wins will come.`;
+}
+
 // ── Leaderboard ───────────────────────────────────────────────────────────────
 function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [sortBy, setSortBy] = useState("points");
@@ -701,25 +718,36 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
               ) : null;
             })()}
             {(() => {
-              const player = players.find(pl => pl.id === selectedPlayer);
-              const desc = player?.aiDescription;
-              return desc ? (
+              const playerMatches = matches.filter(m => {
+                const ids = [...(m.team1 || [m.player1]), ...(m.team2 || [m.player2])];
+                return ids.includes(selectedPlayer);
+              });
+              const wins = playerMatches.filter(m => {
+                const wids = m.winner === "team1" ? (m.team1 || [m.player1]) : (m.team2 || [m.player2]);
+                return wids.includes(selectedPlayer);
+              }).length;
+              const losses = playerMatches.length - wins;
+              const winRate = playerMatches.length > 0 ? Math.round((wins / playerMatches.length) * 100) : 0;
+              const b = calcBadges(selectedPlayer, matches);
+              const sorted = [...playerMatches].sort((a, b) => new Date(b.date) - new Date(a.date));
+              let streak = 0, streakType = "";
+              for (const m of sorted) {
+                const wids = m.winner === "team1" ? (m.team1 || [m.player1]) : (m.team2 || [m.player2]);
+                const won = wids.includes(selectedPlayer);
+                if (streak === 0) { streakType = won ? "W" : "L"; streak = 1; }
+                else if ((won && streakType === "W") || (!won && streakType === "L")) streak++;
+                else break;
+              }
+              const desc = generatePlayerDescription(playerMatches.length, wins, losses, winRate, b.hatTricks, b.cleanWins, b.cleanLosses, streak, streakType);
+              return (
                 <div style={{
                   marginTop: 8, fontSize: 13, color: "var(--text-muted)",
                   lineHeight: 1.5, padding: "8px 10px",
                   background: "var(--bg-secondary)",
-                  borderRadius: 8, borderLeft: "3px solid #4f46e5",
+                  borderRadius: 8, borderLeft: "3px solid #16a34a",
                   fontStyle: "italic"
-                }}>
-                  <div style={{
-                    display: "inline-flex", alignItems: "center", gap: 4,
-                    fontSize: 10, fontWeight: 600, color: "#4f46e5",
-                    background: "#eef2ff", borderRadius: 10,
-                    padding: "1px 7px", marginBottom: 5
-                  }}>✦ AI</div>
-                  <div>{desc}</div>
-                </div>
-              ) : null;
+                }}>{desc}</div>
+              );
             })()}
           </div>
         </div>
@@ -1065,17 +1093,6 @@ export default function CarromTracker() {
     return () => { unsubP(); unsubM(); };
   }, []);
 
-  useEffect(() => {
-    if (authState !== "admin" || players.length === 0 || matches.length === 0) return;
-    const playersWithoutDesc = players.filter(p => !p.aiDescription);
-    if (playersWithoutDesc.length === 0) return;
-    playersWithoutDesc.forEach((p, index) => {
-      setTimeout(() => {
-        regeneratePlayerDescription(p.id, players, matches);
-      }, index * 8000);
-    });
-  }, [authState, players.length, matches.length]);
-
   function handleLogin(guestOnly = false) {
     setAuthState(guestOnly ? "guest" : "admin");
   }
@@ -1095,72 +1112,9 @@ export default function CarromTracker() {
   async function editPlayer(id, name, icon) {
     await updateDoc(doc(db, "players", id), { name, icon });
   }
-  async function regeneratePlayerDescription(playerId, allPlayers, allMatches) {
-    console.log("regeneratePlayerDescription called for:", playerId);
-    console.log("GEMINI KEY exists:", !!process.env.NEXT_PUBLIC_GEMINI_API_KEY);
-    const player = allPlayers.find(p => p.id === playerId);
-    if (!player) return;
-
-    const playerMatches = allMatches.filter(m => {
-      const ids = [...(m.team1 || [m.player1]), ...(m.team2 || [m.player2])];
-      return ids.includes(playerId);
-    });
-
-    const wins = playerMatches.filter(m => {
-      const wids = m.winner === "team1" ? (m.team1 || [m.player1]) : (m.team2 || [m.player2]);
-      return wids.includes(playerId);
-    }).length;
-    const losses = playerMatches.length - wins;
-    const winRate = playerMatches.length > 0 ? Math.round((wins / playerMatches.length) * 100) : 0;
-    const b = calcBadges(playerId, allMatches);
-
-    const sorted = [...playerMatches].sort((a, b) => new Date(b.date) - new Date(a.date));
-    let streak = 0, streakType = "";
-    for (const m of sorted) {
-      const wids = m.winner === "team1" ? (m.team1 || [m.player1]) : (m.team2 || [m.player2]);
-      const won = wids.includes(playerId);
-      if (streak === 0) { streakType = won ? "W" : "L"; streak = 1; }
-      else if ((won && streakType === "W") || (!won && streakType === "L")) streak++;
-      else break;
-    }
-    const streakStr = streak > 1 ? `${streak}${streakType}` : "none";
-
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    if (!apiKey) return;
-
-    try {
-      const prompt = `Write ONE short sentence (max 20 words) describing this carrom player's current form or playing style. Be creative and fun. Player: ${player.name}. Stats: ${playerMatches.length} matches, ${wins} wins, ${losses} losses, ${winRate}% win rate, streak: ${streakStr}, hat-tricks: ${b.hatTricks}, clean wins: ${b.cleanWins}. Return ONLY the sentence.`;
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
-      });
-
-      if (res.status === 429) {
-        console.log("Rate limited, retrying in 15s for", player.name);
-        setTimeout(() => regeneratePlayerDescription(playerId, allPlayers, allMatches), 15000);
-        return;
-      }
-
-      const data = await res.json();
-      const description = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-      if (description) {
-        await updateDoc(doc(db, "players", playerId), { aiDescription: description });
-      }
-    } catch (e) {
-      console.error("Gemini error:", e);
-    }
-  }
   async function saveMatch(data) {
-    const ref = await addDoc(collection(db, "matches"), { ...data, createdAt: serverTimestamp() });
+    await addDoc(collection(db, "matches"), { ...data, createdAt: serverTimestamp() });
     setTab("board");
-    const involvedPlayerIds = [...(data.team1 || [data.player1]), ...(data.team2 || [data.player2])];
-    const updatedMatches = [...matches, { ...data, id: ref.id }];
-    for (const pid of involvedPlayerIds) {
-      regeneratePlayerDescription(pid, players, updatedMatches);
-    }
   }
   async function deleteMatch(id) {
     if (!confirm("Delete this match?")) return;
