@@ -958,6 +958,164 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
   );
 }
 
+// ── Team Spin ─────────────────────────────────────────────────────────────────
+function TeamSpin({ players }) {
+  const [selected, setSelected] = useState([]);
+  const [spinning, setSpinning] = useState(false);
+  const [teams, setTeams] = useState(null);
+  const [shuffleNames, setShuffleNames] = useState([]);
+
+  const togglePlayer = (id) => {
+    if (spinning) return;
+    setTeams(null);
+    if (selected.includes(id)) {
+      setSelected(selected.filter(p => p !== id));
+    } else if (selected.length < 4) {
+      setSelected([...selected, id]);
+    }
+  };
+
+  const spin = () => {
+    if (selected.length !== 4 || spinning) return;
+    setSpinning(true);
+    setTeams(null);
+
+    const selectedPlayers = selected.map(id => players.find(p => p.id === id));
+    let count = 0;
+    const interval = setInterval(() => {
+      const shuffled = [...selectedPlayers].sort(() => Math.random() - 0.5);
+      setShuffleNames(shuffled.map(p => p.name));
+      count++;
+      if (count >= 20) {
+        clearInterval(interval);
+        const finalShuffle = [...selectedPlayers].sort(() => Math.random() - 0.5);
+        setTeams({
+          teamA: [finalShuffle[0], finalShuffle[1]],
+          teamB: [finalShuffle[2], finalShuffle[3]],
+        });
+        setSpinning(false);
+        setShuffleNames([]);
+      }
+    }, 100);
+  };
+
+  const reset = () => {
+    setSelected([]);
+    setTeams(null);
+    setShuffleNames([]);
+  };
+
+  return (
+    <div style={{ padding: 16 }}>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>
+        🎲 র‍্যান্ডোম টিম সিলেকশন
+      </h2>
+      <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, marginBottom: 16 }}>
+        ৪ জন প্লেয়ার সিলেক্ট করো ({selected.length}/4)
+      </p>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8, marginBottom: 20 }}>
+        {players.map(p => {
+          const isSelected = selected.includes(p.id);
+          const disabled = !isSelected && selected.length >= 4;
+          return (
+            <button
+              key={p.id}
+              onClick={() => togglePlayer(p.id)}
+              disabled={disabled || spinning}
+              style={{
+                padding: "10px 8px",
+                borderRadius: 8,
+                border: isSelected ? "2px solid #4ade80" : "1px solid var(--border)",
+                background: isSelected ? "rgba(74, 222, 128, 0.15)" : "var(--card)",
+                color: "var(--text)",
+                cursor: disabled || spinning ? "not-allowed" : "pointer",
+                opacity: disabled ? 0.4 : 1,
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: "inherit",
+                transition: "all 0.2s",
+              }}
+            >
+              {p.icon || "👤"} {p.name}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 24 }}>
+        <button
+          onClick={spin}
+          disabled={selected.length !== 4 || spinning}
+          style={{
+            padding: "10px 24px",
+            borderRadius: 8,
+            border: "none",
+            background: selected.length === 4 && !spinning ? "linear-gradient(135deg, #f59e0b, #ef4444)" : "var(--muted)",
+            color: "white",
+            fontWeight: 700,
+            fontSize: 15,
+            cursor: selected.length === 4 && !spinning ? "pointer" : "not-allowed",
+            fontFamily: "inherit",
+          }}
+        >
+          {spinning ? "🌀 স্পিন হচ্ছে..." : "🎰 স্পিন!"}
+        </button>
+        {(selected.length > 0 || teams) && (
+          <button
+            onClick={reset}
+            disabled={spinning}
+            style={{
+              padding: "10px 18px",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+              background: "transparent",
+              color: "var(--text)",
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: spinning ? "not-allowed" : "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            রিসেট
+          </button>
+        )}
+      </div>
+
+      {spinning && shuffleNames.length > 0 && (
+        <div style={{ textAlign: "center", fontSize: 16, fontWeight: 700, padding: 20, color: "var(--text)" }}>
+          {shuffleNames.join(" • ")}
+        </div>
+      )}
+
+      {teams && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 16 }}>
+          <div style={{ padding: 16, borderRadius: 12, background: "linear-gradient(135deg, #3b82f6, #1d4ed8)", textAlign: "center", color: "white" }}>
+            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8, fontWeight: 600 }}>টিম A</div>
+            <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.6 }}>
+              {teams.teamA[0].icon || "👤"} {teams.teamA[0].name}<br />
+              {teams.teamA[1].icon || "👤"} {teams.teamA[1].name}
+            </div>
+          </div>
+          <div style={{ padding: 16, borderRadius: 12, background: "linear-gradient(135deg, #ef4444, #b91c1c)", textAlign: "center", color: "white" }}>
+            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8, fontWeight: 600 }}>টিম B</div>
+            <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.6 }}>
+              {teams.teamB[0].icon || "👤"} {teams.teamB[0].name}<br />
+              {teams.teamB[1].icon || "👤"} {teams.teamB[1].name}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {teams && (
+        <p style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "var(--muted)" }}>
+          🎉 টিম রেডি! এবার খেলা শুরু করো।
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── Main App ──────────────────────────────────────────────────────────────────
 const PASSCODE = process.env.NEXT_PUBLIC_APP_PASSCODE || "fnf2024";
 const SESSION_KEY = "ct_auth";
@@ -1129,6 +1287,7 @@ export default function CarromTracker() {
   const TABS = [
     { k: "board", l: "Leaderboard" },
     ...(isAdmin ? [{ k: "match", l: "New Match" }] : []),
+    { k: "spin", l: "টিম স্পিন" },
     { k: "players", l: "Players" },
     { k: "stats", l: "Stats" },
     { k: "history", l: "History" },
@@ -1197,6 +1356,7 @@ export default function CarromTracker() {
       <div className="content">
         {tab === "board" && <Leaderboard players={players} matches={matches} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
         {tab === "match" && isAdmin && <NewMatch players={players} onSave={saveMatch} />}
+        {tab === "spin" && <TeamSpin players={players} />}
         {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
