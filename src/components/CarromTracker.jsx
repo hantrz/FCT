@@ -1367,6 +1367,10 @@ export default function CarromTracker() {
   .nav-btn-hover:active {
     transform: translateY(0) scale(0.98);
   }
+  .upwork-banner:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(6, 78, 59, 0.4) !important;
+  }
 `}</style>
       <div className="app-header" style={{ position: "relative" }}>
         <div className="header-top" style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 140 }}>
@@ -1453,6 +1457,111 @@ export default function CarromTracker() {
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
       </div>
       {showSpin && <TeamSpin players={players} onClose={() => setShowSpin(false)} />}
+
+      {/* Upwork Promotional Banner */}
+      <a
+        href="https://fnfschool.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: "block",
+          margin: "32px 16px 16px",
+          background: "linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)",
+          borderRadius: 16,
+          padding: "20px 24px",
+          textDecoration: "none",
+          position: "relative",
+          overflow: "hidden",
+          boxShadow: "0 4px 20px rgba(6, 78, 59, 0.25)",
+          transition: "transform 0.2s ease, box-shadow 0.3s ease",
+        }}
+        className="upwork-banner"
+      >
+        <div style={{
+          position: "absolute", top: -40, right: -40, width: 160, height: 160,
+          borderRadius: "50%", background: "rgba(255, 255, 255, 0.05)",
+          pointerEvents: "none",
+        }} />
+        <div style={{
+          position: "absolute", bottom: -30, right: 80, width: 100, height: 100,
+          borderRadius: "50%", background: "rgba(255, 255, 255, 0.04)",
+          pointerEvents: "none",
+        }} />
+
+        <div style={{
+          display: "flex", alignItems: "center", gap: 16,
+          position: "relative", zIndex: 1, flexWrap: "wrap",
+        }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 12,
+            background: "linear-gradient(135deg, #fbbf24, #f59e0b)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 26, flexShrink: 0,
+            boxShadow: "0 4px 12px rgba(251, 191, 36, 0.4)",
+          }}>
+            🎓
+          </div>
+
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{
+              fontSize: 11, fontWeight: 700, color: "#fbbf24",
+              letterSpacing: "0.1em", textTransform: "uppercase",
+              marginBottom: 4,
+            }}>
+              Powered by FNF School
+            </div>
+            <div style={{
+              fontSize: 17, fontWeight: 800, color: "#ffffff",
+              marginBottom: 4, lineHeight: 1.3,
+            }}>
+              Upwork এ সফল ফ্রিল্যান্সার হতে চান?
+            </div>
+            <div style={{
+              fontSize: 13, color: "rgba(255, 255, 255, 0.85)",
+              lineHeight: 1.4,
+            }}>
+              Profile optimization, proposal writing, এবং client management শিখুন।
+            </div>
+          </div>
+
+          <div style={{
+            background: "linear-gradient(135deg, #fbbf24, #f59e0b)",
+            color: "#1a1a1a", fontWeight: 700, fontSize: 14,
+            padding: "10px 18px", borderRadius: 8,
+            whiteSpace: "nowrap", flexShrink: 0,
+            boxShadow: "0 4px 12px rgba(251, 191, 36, 0.4)",
+          }}>
+            বিস্তারিত →
+          </div>
+        </div>
+      </a>
+
+      {/* Footer */}
+      <footer style={{
+        margin: "16px 16px 24px",
+        padding: "20px 16px",
+        borderTop: "1px solid var(--border, rgba(0,0,0,0.1))",
+        textAlign: "center",
+        fontSize: 13,
+        color: "var(--muted, #6b7280)",
+        lineHeight: 1.8,
+      }}>
+        <div>
+          Built by{" "}
+          <a
+            href="https://fnfschool.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "#16a34a", fontWeight: 700, textDecoration: "none" }}
+          >
+            FNF School
+          </a>
+          {" · "}Carrom Tracker for Friends
+        </div>
+        <div style={{ fontSize: 12, marginTop: 4, opacity: 0.8 }}>
+          © 2026 · Realtime sync · Made with ❤️ for carrom lovers
+        </div>
+      </footer>
     </div>
   );
 }
