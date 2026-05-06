@@ -1369,7 +1369,7 @@ export default function CarromTracker() {
   }
 `}</style>
       <div className="app-header">
-        <div className="header-top" style={{ alignItems: "center" }}>
+        <div className="header-top" style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div className="header-logo">
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
               <circle cx="11" cy="11" r="9" stroke="white" strokeWidth="1.5" />
@@ -1382,7 +1382,7 @@ export default function CarromTracker() {
             <h1>Carrom Tracker</h1>
             <div className="subtitle">{players.length} players · {matches.length} matches</div>
           </div>
-          <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", gap: 6, flexShrink: 0 }}>
+          <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", alignSelf: "center", gap: 6, flexShrink: 0 }}>
             <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
               className="nav-btn-hover nav-btn-fnf"
               style={{
