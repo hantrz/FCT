@@ -1368,8 +1368,8 @@ export default function CarromTracker() {
     transform: translateY(0) scale(0.98);
   }
 `}</style>
-      <div className="app-header">
-        <div className="header-top" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div className="app-header" style={{ position: "relative" }}>
+        <div className="header-top" style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 140 }}>
           <div className="header-logo">
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
               <circle cx="11" cy="11" r="9" stroke="white" strokeWidth="1.5" />
@@ -1382,38 +1382,38 @@ export default function CarromTracker() {
             <h1>Carrom Tracker</h1>
             <div className="subtitle">{players.length} players · {matches.length} matches</div>
           </div>
-          <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", alignSelf: "center", gap: 6, flexShrink: 0 }}>
-            <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
-              className="nav-btn-hover nav-btn-fnf"
-              style={{
-                display: "flex", flexDirection: "column", alignItems: "center",
-                background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
-                borderRadius: "var(--radius-sm)", padding: "5px 10px", textDecoration: "none",
-              }}>
-              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>App by</span>
-              <span style={{ fontSize: 12, color: "#ffffff", fontFamily: "'Sora', sans-serif", fontWeight: 800, lineHeight: 1.2 }}>FNF School</span>
-            </a>
-            <button
-              onClick={() => setShowSpin(true)}
-              className="nav-btn-hover nav-btn-spin"
-              style={{
-                display: "flex", flexDirection: "column", alignItems: "center",
-                background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)",
-                border: "1px solid rgba(255, 215, 0, 0.6)",
-                borderRadius: "var(--radius-sm)",
-                padding: "5px 10px", cursor: "pointer",
-                fontFamily: "inherit", width: "100%",
-                boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
-              }}
-            >
-              <span style={{ fontSize: 9, color: "rgba(0, 0, 0, 0.7)", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700 }}>
-                🎲 Random
-              </span>
-              <span style={{ fontSize: 12, color: "#1a1a1a", fontFamily: "'Sora', sans-serif", fontWeight: 800, lineHeight: 1.2 }}>
-                Team Spin
-              </span>
-            </button>
-          </div>
+        </div>
+        <div style={{ position: "absolute", top: "50%", right: 16, transform: "translateY(-50%)", display: "flex", flexDirection: "column", alignItems: "stretch", gap: 6, zIndex: 2 }}>
+          <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
+            className="nav-btn-hover nav-btn-fnf"
+            style={{
+              display: "flex", flexDirection: "column", alignItems: "center",
+              background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
+              borderRadius: "var(--radius-sm)", padding: "5px 10px", textDecoration: "none",
+            }}>
+            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>App by</span>
+            <span style={{ fontSize: 12, color: "#ffffff", fontFamily: "'Sora', sans-serif", fontWeight: 800, lineHeight: 1.2 }}>FNF School</span>
+          </a>
+          <button
+            onClick={() => setShowSpin(true)}
+            className="nav-btn-hover nav-btn-spin"
+            style={{
+              display: "flex", flexDirection: "column", alignItems: "center",
+              background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)",
+              border: "1px solid rgba(255, 215, 0, 0.6)",
+              borderRadius: "var(--radius-sm)",
+              padding: "5px 10px", cursor: "pointer",
+              fontFamily: "inherit", width: "100%",
+              boxShadow: "0 2px 8px rgba(251, 191, 36, 0.3)",
+            }}
+          >
+            <span style={{ fontSize: 9, color: "rgba(0, 0, 0, 0.7)", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700 }}>
+              🎲 Random
+            </span>
+            <span style={{ fontSize: 12, color: "#1a1a1a", fontFamily: "'Sora', sans-serif", fontWeight: 800, lineHeight: 1.2 }}>
+              Team Spin
+            </span>
+          </button>
         </div>
         <div className="status-bar">
           <span className={`sync-dot ${synced ? "live" : "loading"}`} />
