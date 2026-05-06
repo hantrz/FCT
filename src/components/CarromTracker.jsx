@@ -1,11 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   collection, addDoc, deleteDoc, doc, updateDoc,
-  onSnapshot, query, orderBy, serverTimestamp,
+  onSnapshot, query, orderBy, serverTimestamp, deleteField,
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
+
+async function fileToResizedBase64(file, maxSize = 200, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxSize) { height *= maxSize / width; width = maxSize; }
+        } else {
+          if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 const PALETTE = [
   "#14a800","#D4A017","#2563eb","#dc2626","#7c3aed",
@@ -103,6 +129,20 @@ function generatePlayerDescription(played, wins, losses, winRate, hatTricks, cle
   return `Building experience with every game — the wins will come.`;
 }
 
+function PlayerAvatar({ player, size = 40 }) {
+  if (player?.imageUrl) {
+    return (
+      <img src={player.imageUrl} alt={player.name}
+        style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", border: "0.5px solid var(--border)", flexShrink: 0 }} />
+    );
+  }
+  return (
+    <div style={{ width: size, height: size, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.55, background: "var(--bg-secondary, #f3f4f6)", flexShrink: 0 }}>
+      {player?.icon || "🎮"}
+    </div>
+  );
+}
+
 // ── Leaderboard ───────────────────────────────────────────────────────────────
 function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [sortBy, setSortBy] = useState("points");
@@ -185,16 +225,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     cursor: onSelectPlayer ? "pointer" : "default",
                   }}>
                     <div style={{ fontSize: 13, fontWeight: 700, width: 18, textAlign: "center", color: rankColor, flexShrink: 0 }}>{i + 1}</div>
-                    <div style={{
-                      width: 38, height: 38, borderRadius: "50%",
-                      background: PALETTE[players.findIndex(pl => pl.id === p.id) % PALETTE.length] + "20",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: p.icon ? 22 : 14, fontWeight: 700,
-                      color: PALETTE[players.findIndex(pl => pl.id === p.id) % PALETTE.length],
-                      flexShrink: 0,
-                    }}>
-                      {p.icon || (p.name || "?").trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2)}
-                    </div>
+                    <PlayerAvatar player={p} size={38} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -470,26 +501,57 @@ function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectP
   const [name, setName] = useState("");
   const [icon, setIcon] = useState(AVATAR_ICONS[0]);
   const [adding, setAdding] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const fileInputRef = useRef(null);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
   const [editIcon, setEditIcon] = useState("");
+  const [editImage, setEditImage] = useState(null);
+  const editFileRef = useRef(null);
   const stats = computeStats(players, matches);
+
+  async function handleImageSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { alert("Please select an image file"); return; }
+    try {
+      const base64 = await fileToResizedBase64(file);
+      setUploadedImage(base64);
+    } catch {
+      alert("Failed to process image");
+    }
+    e.target.value = "";
+  }
+
+  async function handleEditImage(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    try {
+      const base64 = await fileToResizedBase64(file);
+      setEditImage(base64);
+    } catch {
+      alert("Failed to process image");
+    }
+    e.target.value = "";
+  }
 
   async function handleAdd() {
     if (!name.trim() || adding) return;
     setAdding(true);
-    await onAdd(name.trim(), icon);
-    setName(""); setAdding(false);
+    await onAdd(name.trim(), icon, uploadedImage);
+    setName(""); setUploadedImage(null); setAdding(false);
   }
 
   function startEdit(p) {
     setEditingId(p.id);
     setEditName(p.name);
     setEditIcon(p.icon || AVATAR_ICONS[0]);
+    setEditImage(p.imageUrl || null);
   }
 
   async function handleEdit() {
-    await onEdit(editingId, editName, editIcon);
+    await onEdit(editingId, editName, editIcon, editImage);
     setEditingId(null);
   }
 
@@ -498,6 +560,22 @@ function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectP
       {isAdmin && (
         <div className="card" style={{ marginBottom: "1.25rem" }}>
           <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Add New Player</p>
+          <div style={{ marginBottom: 12 }}>
+            <p className="section-label">Profile Photo (optional)</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {uploadedImage ? (
+                <div style={{ position: "relative" }}>
+                  <img src={uploadedImage} alt="preview" style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--border)" }} />
+                  <button type="button" onClick={() => setUploadedImage(null)}
+                    style={{ position: "absolute", top: -4, right: -4, width: 20, height: 20, borderRadius: "50%", background: "#dc2626", color: "white", border: "none", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>×</button>
+                </div>
+              ) : (
+                <button type="button" className="btn" onClick={() => fileInputRef.current?.click()} style={{ fontSize: 12 }}>📷 Upload Photo</button>
+              )}
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} style={{ display: "none" }} />
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Photo replaces the emoji icon</span>
+            </div>
+          </div>
           <div style={{ marginBottom: 12 }}>
             <p className="section-label">Choose an icon</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -543,13 +621,8 @@ function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectP
                     }}>×</button>
                   </div>
                 )}
-                <div style={{
-                  width: 46, height: 46, borderRadius: "50%",
-                  background: c + "20", border: `2px solid ${c}40`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  marginBottom: 10, fontSize: p.icon ? 24 : 16, fontWeight: 700, color: c,
-                }}>
-                  {p.icon || (p.name || "?").trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2)}
+                <div style={{ marginBottom: 10 }}>
+                  <PlayerAvatar player={p} size={46} />
                 </div>
                 <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{p.name}</p>
                 <p className="text-muted" style={{ fontSize: 11 }}>{st.played} matches</p>
@@ -568,6 +641,21 @@ function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectP
         }}>
           <div className="card" style={{ width: "100%", maxWidth: 380, margin: 0 }}>
             <p style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Edit Player</p>
+            <div style={{ marginBottom: 12 }}>
+              <p className="section-label">Profile Photo</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {editImage ? (
+                  <div style={{ position: "relative" }}>
+                    <img src={editImage} alt="preview" style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--border)" }} />
+                    <button type="button" onClick={() => setEditImage(null)}
+                      style={{ position: "absolute", top: -4, right: -4, width: 20, height: 20, borderRadius: "50%", background: "#dc2626", color: "white", border: "none", cursor: "pointer", fontSize: 12, padding: 0 }}>×</button>
+                  </div>
+                ) : (
+                  <button type="button" className="btn" onClick={() => editFileRef.current?.click()} style={{ fontSize: 12 }}>📷 Upload Photo</button>
+                )}
+                <input ref={editFileRef} type="file" accept="image/*" onChange={handleEditImage} style={{ display: "none" }} />
+              </div>
+            </div>
             <div style={{ marginBottom: 12 }}>
               <p className="section-label">Choose an icon</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -697,13 +785,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
     return (
       <div>
         <div className="card" style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: "50%", background: c + "20",
-            border: `2px solid ${c}50`, display: "flex", alignItems: "center",
-            justifyContent: "center", fontSize: p.icon ? 28 : 20, fontWeight: 700, color: c, flexShrink: 0,
-          }}>
-            {p.icon || (p.name || "?").trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2)}
-          </div>
+          <PlayerAvatar player={p} size={56} />
           <div>
             <p style={{ fontSize: 17, fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>{p.name}</p>
             <p className="text-muted" style={{ fontSize: 12 }}>
@@ -1455,15 +1537,19 @@ export default function CarromTracker() {
     setAuthState("login");
   }
 
-  async function addPlayer(name, icon) {
-    await addDoc(collection(db, "players"), { name, icon, createdAt: serverTimestamp() });
+  async function addPlayer(name, icon, imageUrl = null) {
+    const data = { name, icon, createdAt: serverTimestamp() };
+    if (imageUrl) data.imageUrl = imageUrl;
+    await addDoc(collection(db, "players"), data);
   }
   async function removePlayer(id) {
     if (!confirm("Remove this player?")) return;
     await deleteDoc(doc(db, "players", id));
   }
-  async function editPlayer(id, name, icon) {
-    await updateDoc(doc(db, "players", id), { name, icon });
+  async function editPlayer(id, name, icon, imageUrl = null) {
+    const data = { name, icon };
+    data.imageUrl = imageUrl ? imageUrl : deleteField();
+    await updateDoc(doc(db, "players", id), data);
   }
   async function saveMatch(data) {
     await addDoc(collection(db, "matches"), { ...data, createdAt: serverTimestamp() });
