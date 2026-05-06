@@ -1396,7 +1396,7 @@ export default function CarromTracker() {
               borderRadius: "var(--radius-sm)", padding: "5px 10px", textDecoration: "none",
             }}>
             <span style={{ fontSize: 9, color: "rgba(255,255,255,0.7)", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>App by</span>
-            <span style={{ fontSize: 12, color: "#ffffff", fontFamily: "'Sora', sans-serif", fontWeight: 800, lineHeight: 1.2 }}>FNF School</span>
+            <span style={{ fontSize: 12, color: "#ffffff", fontFamily: "'Sora', sans-serif", fontWeight: 800, lineHeight: 1.2 }}>Zahidul</span>
           </a>
           <button
             onClick={() => setShowSpin(true)}
@@ -1465,7 +1465,7 @@ export default function CarromTracker() {
         rel="noopener noreferrer"
         style={{
           display: "block",
-          margin: "32px 16px 16px",
+          margin: "32px 16px 24px",
           background: "linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)",
           borderRadius: 16,
           padding: "20px 24px",
@@ -1538,8 +1538,8 @@ export default function CarromTracker() {
 
       {/* Footer */}
       <footer style={{
-        margin: "16px 16px 24px",
-        padding: "20px 16px",
+        margin: "48px 16px 32px",
+        padding: "32px 16px 16px",
         borderTop: "1px solid var(--border, rgba(0,0,0,0.1))",
         textAlign: "center",
         fontSize: 13,
