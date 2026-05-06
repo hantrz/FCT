@@ -872,7 +872,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
           <thead>
             <tr>
               <th style={{ width: 36 }}>#</th>
-              <th>Duo</th>
+              <th>Partnership</th>
               <th style={{ width: 44, textAlign: "center" }}>P</th>
               <th style={{ width: 44, textAlign: "center" }}>W</th>
               <th style={{ width: 88, textAlign: "right" }}>Win%</th>
@@ -922,7 +922,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
   return (
     <div>
       <div className="stats-mode-btns" style={{ display: "flex", gap: 8, marginBottom: "1.25rem", flexWrap: "wrap" }}>
-        {[{ k: "player", l: "By Player" }, { k: "date", l: "By Date" }, { k: "duo", l: "Best Duo" }].map(({ k, l }) => (
+        {[{ k: "player", l: "By Player" }, { k: "date", l: "By Date" }, { k: "duo", l: "Best Partner" }].map(({ k, l }) => (
           <button key={k} className={`btn btn-format ${mode === k ? "active" : ""}`} onClick={() => setMode(k)}>{l}</button>
         ))}
       </div>
