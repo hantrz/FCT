@@ -1345,6 +1345,29 @@ export default function CarromTracker() {
 
   return (
     <div className="app">
+      <style>{`
+  .nav-btn-hover {
+    transition: transform 0.2s ease, box-shadow 0.3s ease, filter 0.2s ease;
+  }
+  .nav-btn-hover:hover {
+    transform: translateY(-2px) scale(1.04);
+  }
+  .nav-btn-fnf:hover {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5), 0 4px 12px rgba(255, 255, 255, 0.3);
+    filter: brightness(1.15);
+  }
+  .nav-btn-spin:hover {
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.7), 0 4px 14px rgba(245, 158, 11, 0.5);
+    filter: brightness(1.1);
+  }
+  .nav-btn-login:hover {
+    box-shadow: 0 0 18px rgba(255, 255, 255, 0.4), 0 4px 10px rgba(255, 255, 255, 0.25);
+    background: rgba(255,255,255,0.25) !important;
+  }
+  .nav-btn-hover:active {
+    transform: translateY(0) scale(0.98);
+  }
+`}</style>
       <div className="app-header">
         <div className="header-top" style={{ alignItems: "center" }}>
           <div className="header-logo">
@@ -1361,6 +1384,7 @@ export default function CarromTracker() {
           </div>
           <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "stretch", justifyContent: "center", gap: 6, flexShrink: 0 }}>
             <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
+              className="nav-btn-hover nav-btn-fnf"
               style={{
                 display: "flex", flexDirection: "column", alignItems: "center",
                 background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
@@ -1371,6 +1395,7 @@ export default function CarromTracker() {
             </a>
             <button
               onClick={() => setShowSpin(true)}
+              className="nav-btn-hover nav-btn-spin"
               style={{
                 display: "flex", flexDirection: "column", alignItems: "center",
                 background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)",
@@ -1404,14 +1429,14 @@ export default function CarromTracker() {
           ))}
         </div>
         {isAdmin ? (
-          <button onClick={handleLogout} style={{
+          <button onClick={handleLogout} className="nav-btn-hover nav-btn-login" style={{
             background: "transparent", border: "1px solid rgba(255,255,255,0.5)",
             borderRadius: 6, padding: "4px 14px", color: "rgba(255,255,255,0.9)",
             fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
             marginRight: 4, flexShrink: 0,
           }}>Logout</button>
         ) : (
-          <button onClick={() => setAuthState("login")} style={{
+          <button onClick={() => setAuthState("login")} className="nav-btn-hover nav-btn-login" style={{
             background: "transparent", border: "1px solid rgba(255,255,255,0.5)",
             borderRadius: 6, padding: "4px 14px", color: "rgba(255,255,255,0.9)",
             fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
