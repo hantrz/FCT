@@ -530,11 +530,11 @@ function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectP
               <div key={p.id} className="player-card" onClick={() => { if (onSelectPlayer && onNavigateToStats) { onSelectPlayer(p.id); onNavigateToStats(); } }} style={{ cursor: onSelectPlayer ? "pointer" : "default" }}>
                 {isAdmin && (
                   <div style={{ position: "absolute", top: 6, right: 6, display: "flex", gap: 2 }}>
-                    <button onClick={() => startEdit(p)} style={{
+                    <button onClick={(e) => { e.stopPropagation(); startEdit(p); }} style={{
                       background: "none", border: "none", cursor: "pointer", fontSize: 14,
                       lineHeight: 1, padding: "3px 5px", fontFamily: "inherit", touchAction: "manipulation",
                     }}>✏️</button>
-                    <button onClick={() => onRemove(p.id)} style={{
+                    <button onClick={(e) => { e.stopPropagation(); onRemove(p.id); }} style={{
                       background: "none", border: "none", cursor: "pointer", fontSize: 17,
                       color: "var(--text-muted)", lineHeight: 1, padding: "3px 5px",
                       fontFamily: "inherit", touchAction: "manipulation",
