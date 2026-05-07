@@ -401,8 +401,6 @@ function NewMatch({ players, onSave }) {
   const t1ok = t1.every(Boolean), t2ok = t2.every(Boolean);
   const canSave = t1ok && t2ok && winner;
   const getName = id => players.find(p => p.id === id)?.name || "?";
-  const getIcon = id => players.find(p => p.id === id)?.icon || "";
-
   async function handleSave() {
     if (!canSave || saving) return;
     setSaving(true);
@@ -454,9 +452,9 @@ function NewMatch({ players, onSave }) {
           <p className="section-label">Who won?</p>
           <div className="win-btns-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {[
-              { key: "team1", label: t1.map(id => `${getIcon(id)} ${getName(id)}`).join(" & "), color: "#14a800" },
-              { key: "team2", label: t2.map(id => `${getIcon(id)} ${getName(id)}`).join(" & "), color: "#D4A017" },
-            ].map(({ key, label, color }) => (
+              { key: "team1", ids: t1, color: "#14a800" },
+              { key: "team2", ids: t2, color: "#D4A017" },
+            ].map(({ key, ids, color }) => (
               <button key={key} onClick={() => setWinner(key)}
                 style={{
                   padding: "12px 8px", fontSize: 13, fontWeight: winner === key ? 700 : 500,
@@ -465,7 +463,19 @@ function NewMatch({ players, onSave }) {
                   color: winner === key ? color : "var(--text)",
                   border: `1.5px solid ${winner === key ? color : "var(--border-strong)"}`,
                   transition: "all 0.15s", touchAction: "manipulation",
-                }}>{winner === key ? "★ " : ""}{label}</button>
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                }}>
+                {winner === key && <span>★</span>}
+                <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+                  {ids.map((id, i) => (
+                    <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                      {i > 0 && <span style={{ opacity: 0.5 }}>&</span>}
+                      <PlayerAvatar player={players.find(p => p.id === id)} size={20} />
+                      <span>{getName(id)}</span>
+                    </span>
+                  ))}
+                </span>
+              </button>
             ))}
           </div>
         </div>
@@ -476,16 +486,30 @@ function NewMatch({ players, onSave }) {
           <p className="section-label">Score (optional)</p>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
-                {(winner === "team1" ? t1 : t2).map(id => `${getIcon(id)} ${getName(id)}`).join(" & ")} score
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+                {(winner === "team1" ? t1 : t2).map((id, i) => (
+                  <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                    {i > 0 && <span style={{ opacity: 0.5 }}>&</span>}
+                    <PlayerAvatar player={players.find(p => p.id === id)} size={16} />
+                    <span>{getName(id)}</span>
+                  </span>
+                ))}
+                <span>score</span>
               </div>
               <input type="number" min="0" value={winnerScore} onChange={e => setWinnerScore(e.target.value)}
                 placeholder="e.g. 24" style={{ width: "100%", boxSizing: "border-box" }} />
             </div>
             <div style={{ fontSize: 16, color: "var(--text-muted)", paddingTop: 20 }}>vs</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>
-                {(winner === "team1" ? t2 : t1).map(id => `${getIcon(id)} ${getName(id)}`).join(" & ")} score
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+                {(winner === "team1" ? t2 : t1).map((id, i) => (
+                  <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                    {i > 0 && <span style={{ opacity: 0.5 }}>&</span>}
+                    <PlayerAvatar player={players.find(p => p.id === id)} size={16} />
+                    <span>{getName(id)}</span>
+                  </span>
+                ))}
+                <span>score</span>
               </div>
               <input type="number" min="0" value={loserScore} onChange={e => setLoserScore(e.target.value)}
                 placeholder="e.g. 0" style={{ width: "100%", boxSizing: "border-box" }} />
@@ -696,30 +720,35 @@ function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectP
 // ── History ───────────────────────────────────────────────────────────────────
 function History({ players, matches, onDelete, isAdmin }) {
   const getName = id => players.find(p => p.id === id)?.name || "?";
-  const getIcon = id => players.find(p => p.id === id)?.icon || "";
 
   if (!matches.length) return <div className="empty"><p>No matches recorded yet.</p></div>;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {matches.map(m => {
-        const t1Names = m.team1.map(id => `${getIcon(id)} ${getName(id)}`).join(" & ");
-        const t2Names = m.team2.map(id => `${getIcon(id)} ${getName(id)}`).join(" & ");
         const w1 = m.winner === "team1";
         const date = m.createdAt
           ? m.createdAt.toDate().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
           : "—";
+        const renderTeam = (ids, won) => (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexWrap: "wrap", fontSize: 13, fontWeight: won ? 700 : 400, color: won ? "var(--green)" : "var(--text-muted)" }}>
+            {won && "★ "}
+            {ids.map((id, i) => (
+              <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                {i > 0 && <span style={{ margin: "0 2px", opacity: 0.5 }}>&</span>}
+                <PlayerAvatar player={players.find(p => p.id === id)} size={22} />
+                <span>{getName(id)}</span>
+              </span>
+            ))}
+          </span>
+        );
         return (
           <div key={m.id} className="match-item">
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 3 }}>
-                <span style={{ fontSize: 13, fontWeight: w1 ? 700 : 400, color: w1 ? "var(--green)" : "var(--text-muted)" }}>
-                  {w1 && "★ "}{t1Names}
-                </span>
+                {renderTeam(m.team1, w1)}
                 <span className="text-muted" style={{ fontSize: 10, padding: "1px 5px", background: "var(--bg-secondary)", borderRadius: 4 }}>vs</span>
-                <span style={{ fontSize: 13, fontWeight: !w1 ? 700 : 400, color: !w1 ? "var(--green)" : "var(--text-muted)" }}>
-                  {!w1 && "★ "}{t2Names}
-                </span>
+                {renderTeam(m.team2, !w1)}
               </div>
               <p className="text-muted" style={{ fontSize: 11 }}>{date} · {m.type}</p>
             </div>
@@ -748,7 +777,6 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
 
   const getName = id => players.find(p => p.id === id)?.name || "?";
-  const getIcon = id => players.find(p => p.id === id)?.icon || "";
 
   function filterByDate(ms) {
     const now = new Date();
