@@ -149,6 +149,126 @@ function PlayerAvatar({ player, size = 40 }) {
   );
 }
 
+// ── PlayerSelect ──────────────────────────────────────────────────────────────
+function PlayerSelect({ players, value, onChange, placeholder = "Select player", disabled = false, excludeIds = [] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const selectedPlayer = players.find(p => p.id === value);
+  const availablePlayers = players.filter(p => !excludeIds.includes(p.id) || p.id === value);
+
+  return (
+    <div ref={ref} style={{ position: "relative", width: "100%" }}>
+      <button
+        type="button"
+        onClick={() => !disabled && setOpen(!open)}
+        disabled={disabled}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 10px",
+          border: "0.5px solid var(--border)",
+          borderRadius: "var(--radius-sm)",
+          background: "var(--bg)",
+          color: "var(--text)",
+          fontFamily: "inherit",
+          fontSize: 14,
+          cursor: disabled ? "not-allowed" : "pointer",
+          textAlign: "left",
+          outline: open ? "2px solid var(--border-strong)" : "none",
+          minHeight: 40
+        }}
+      >
+        {selectedPlayer ? (
+          <>
+            <PlayerAvatar player={selectedPlayer} size={24} />
+            <span style={{ flex: 1, fontWeight: 500 }}>{selectedPlayer.name}</span>
+          </>
+        ) : (
+          <span style={{ flex: 1, color: "var(--text-muted)" }}>{placeholder}</span>
+        )}
+        <span style={{ fontSize: 10, color: "var(--text-muted)", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▼</span>
+      </button>
+
+      {open && !disabled && (
+        <div style={{
+          position: "absolute",
+          top: "calc(100% + 4px)",
+          left: 0,
+          right: 0,
+          background: "var(--bg)",
+          border: "0.5px solid var(--border)",
+          borderRadius: "var(--radius-sm)",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+          maxHeight: 280,
+          overflowY: "auto",
+          zIndex: 100
+        }}>
+          <button
+            type="button"
+            onClick={() => { onChange(""); setOpen(false); }}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 10px",
+              border: "none",
+              background: !value ? "var(--bg-secondary)" : "transparent",
+              color: "var(--text-muted)",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              fontSize: 14,
+              textAlign: "left",
+              borderBottom: "0.5px solid var(--border)"
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary)"}
+            onMouseLeave={e => e.currentTarget.style.background = !value ? "var(--bg-secondary)" : "transparent"}
+          >
+            {placeholder}
+          </button>
+          {availablePlayers.map(p => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => { onChange(p.id); setOpen(false); }}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 10px",
+                border: "none",
+                background: p.id === value ? "var(--bg-secondary)" : "transparent",
+                color: "var(--text)",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                fontSize: 14,
+                textAlign: "left"
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary)"}
+              onMouseLeave={e => e.currentTarget.style.background = p.id === value ? "var(--bg-secondary)" : "transparent"}
+            >
+              <PlayerAvatar player={p} size={24} />
+              <span style={{ flex: 1, fontWeight: p.id === value ? 600 : 400 }}>{p.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Leaderboard ───────────────────────────────────────────────────────────────
 function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [sortBy, setSortBy] = useState("points");
@@ -435,12 +555,15 @@ function NewMatch({ players, onSave }) {
             <div key={team}>
               <p className="section-label" style={{ color: teamColor }}>Team {team}</p>
               {slots.map((val, i) => (
-                <select key={i} value={val} onChange={e => setSlot(team, i, e.target.value)} style={{ marginBottom: 8 }}>
-                  <option value="">Select player</option>
-                  {availableFor(team, i).map(p => (
-                    <option key={p.id} value={p.id}>{p.icon || ""} {p.name}</option>
-                  ))}
-                </select>
+                <div key={i} style={{ marginBottom: 8 }}>
+                  <PlayerSelect
+                    players={players}
+                    value={val}
+                    onChange={id => setSlot(team, i, id)}
+                    placeholder="Select player"
+                    excludeIds={(team === 1 ? [...t1.filter((_, j) => j !== i), ...t2] : [...t2.filter((_, j) => j !== i), ...t1]).filter(Boolean)}
+                  />
+                </div>
               ))}
             </div>
           );
@@ -1052,10 +1175,12 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
       {mode === "player" && (
         <div style={{ marginBottom: "1.25rem" }}>
           <p className="section-label">Select Player</p>
-          <select value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)}>
-            <option value="">Choose a player...</option>
-            {players.map(p => <option key={p.id} value={p.id}>{p.icon || ""} {p.name}</option>)}
-          </select>
+          <PlayerSelect
+            players={players}
+            value={selectedPlayer}
+            onChange={setSelectedPlayer}
+            placeholder="Choose a player..."
+          />
         </div>
       )}
 
