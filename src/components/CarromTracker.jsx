@@ -582,18 +582,20 @@ function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectP
               <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Photo replaces the emoji icon</span>
             </div>
           </div>
-          <div style={{ marginBottom: 12 }}>
-            <p className="section-label">Choose an icon</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {AVATAR_ICONS.map(ic => (
-                <button key={ic} className={`emoji-btn ${ic === icon ? "selected" : ""}`}
-                  onClick={() => setIcon(ic)}
-                  style={{ border: `1.5px solid ${ic === icon ? "var(--green)" : "var(--border)"}` }}>
-                  {ic}
-                </button>
-              ))}
+          {!uploadedImage && (
+            <div style={{ marginBottom: 12 }}>
+              <p className="section-label">Choose an icon</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {AVATAR_ICONS.map(ic => (
+                  <button key={ic} className={`emoji-btn ${ic === icon ? "selected" : ""}`}
+                    onClick={() => setIcon(ic)}
+                    style={{ border: `1.5px solid ${ic === icon ? "var(--green)" : "var(--border)"}` }}>
+                    {ic}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           <div style={{ display: "flex", gap: 8 }}>
             <input value={name} onChange={e => setName(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleAdd()}
@@ -662,18 +664,20 @@ function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectP
                 <input ref={editFileRef} type="file" accept="image/*" onChange={handleEditImage} style={{ display: "none" }} />
               </div>
             </div>
-            <div style={{ marginBottom: 12 }}>
-              <p className="section-label">Choose an icon</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {AVATAR_ICONS.map(ic => (
-                  <button key={ic} className={`emoji-btn ${ic === editIcon ? "selected" : ""}`}
-                    onClick={() => setEditIcon(ic)}
-                    style={{ border: `1.5px solid ${ic === editIcon ? "var(--green)" : "var(--border)"}` }}>
-                    {ic}
-                  </button>
-                ))}
+            {!editImage && (
+              <div style={{ marginBottom: 12 }}>
+                <p className="section-label">Choose an icon</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {AVATAR_ICONS.map(ic => (
+                    <button key={ic} className={`emoji-btn ${ic === editIcon ? "selected" : ""}`}
+                      onClick={() => setEditIcon(ic)}
+                      style={{ border: `1.5px solid ${ic === editIcon ? "var(--green)" : "var(--border)"}` }}>
+                      {ic}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             <input value={editName} onChange={e => setEditName(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleEdit()}
               placeholder="Player name" style={{ marginBottom: 12 }} />
