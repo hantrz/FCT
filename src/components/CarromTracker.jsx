@@ -1691,6 +1691,14 @@ export default function CarromTracker() {
   const [showSpin, setShowSpin] = useState(false);
 
   useEffect(() => {
+    if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
+      navigator.serviceWorker.register("/sw.js").catch((err) => {
+        console.log("SW registration failed:", err);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
     const saved = sessionStorage.getItem(SESSION_KEY);
     setAuthState(saved ? "admin" : "guest");
   }, []);
