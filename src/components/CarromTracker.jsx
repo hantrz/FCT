@@ -79,6 +79,12 @@ function Avatar({ id, allPlayers, size = 30 }) {
   const idx = allPlayers.findIndex(p => p.id === id);
   const c = PALETTE[idx % PALETTE.length];
   if (!player) return null;
+  if (player.imageUrl) {
+    return (
+      <img src={player.imageUrl} alt={player.name}
+        style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", border: `1.5px solid ${c}40`, flexShrink: 0 }} />
+    );
+  }
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%",
@@ -969,12 +975,12 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
                 <td>
                   <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ width: 28, height: 28, borderRadius: "50%", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{getIcon(d.p1) || "👤"}</span>
+                      <PlayerAvatar player={players.find(p => p.id === d.p1)} size={28} />
                       <span style={{ fontSize: 12, fontWeight: 600 }}>{getName(d.p1)}</span>
                     </div>
                     <span className="text-muted" style={{ fontSize: 10, fontWeight: 700 }}>+</span>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ width: 28, height: 28, borderRadius: "50%", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{getIcon(d.p2) || "👤"}</span>
+                      <PlayerAvatar player={players.find(p => p.id === d.p2)} size={28} />
                       <span style={{ fontSize: 12, fontWeight: 600 }}>{getName(d.p2)}</span>
                     </div>
                     {i === 0 && <span className="badge badge-best">Best</span>}
@@ -1274,7 +1280,10 @@ function TeamSpin({ players, matches, onClose }) {
                   transition: "all 0.2s",
                 }}
               >
-                {p.icon || "👤"} {p.name}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <PlayerAvatar player={p} size={24} />
+                  <span>{p.name}</span>
+                </div>
               </button>
             );
           })}
@@ -1336,8 +1345,14 @@ function TeamSpin({ players, matches, onClose }) {
               }}>
                 <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>TEAM A</div>
                 <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.6 }}>
-                  {teams.teamA[0].icon || "👤"} {teams.teamA[0].name}<br />
-                  {teams.teamA[1].icon || "👤"} {teams.teamA[1].name}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 4 }}>
+                    <PlayerAvatar player={teams.teamA[0]} size={28} />
+                    <span>{teams.teamA[0].name}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <PlayerAvatar player={teams.teamA[1]} size={28} />
+                    <span>{teams.teamA[1].name}</span>
+                  </div>
                 </div>
               </div>
               <div style={{
@@ -1348,8 +1363,14 @@ function TeamSpin({ players, matches, onClose }) {
               }}>
                 <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>TEAM B</div>
                 <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.6 }}>
-                  {teams.teamB[0].icon || "👤"} {teams.teamB[0].name}<br />
-                  {teams.teamB[1].icon || "👤"} {teams.teamB[1].name}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 4 }}>
+                    <PlayerAvatar player={teams.teamB[0]} size={28} />
+                    <span>{teams.teamB[0].name}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                    <PlayerAvatar player={teams.teamB[1]} size={28} />
+                    <span>{teams.teamB[1].name}</span>
+                  </div>
                 </div>
               </div>
             </div>
