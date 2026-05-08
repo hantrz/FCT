@@ -278,6 +278,26 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 600);
   const [tooltip, setTooltip] = useState(null);
   const [guideTab, setGuideTab] = useState("points"); // "badges" | "points" | "spin"
+  const isDark = typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const guideColors = isDark ? {
+    cardBg:      "#0f1f17",
+    cardBorder:  "#1f3a2c",
+    headerBg:    "#1a2e23",
+    headerBorder:"#2a4435",
+    separator:   "#1f3a2c",
+    labelText:   "#d1d5db",
+    noteText:    "#9ca3af",
+    inactiveTab: "#9ca3af"
+  } : {
+    cardBg:      "#f0f7ee",
+    cardBorder:  "#dfeeda",
+    headerBg:    "#dfeeda",
+    headerBorder:"#c8debf",
+    separator:   "#d8e6cf",
+    labelText:   "#374151",
+    noteText:    "#6b7280",
+    inactiveTab: "#6b7280"
+  };
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth <= 600);
@@ -512,18 +532,18 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
           )}
           <div style={{
             marginTop: 16,
-            background: "#f0f7ee",
+            background: guideColors.cardBg,
             borderRadius: 12,
             overflow: "hidden",
-            border: "1px solid #dfeeda"
+            border: `1px solid ${guideColors.cardBorder}`
           }}>
             {/* TAB HEADER — deeper bg */}
             <div style={{
               display: "flex",
               gap: 20,
               padding: "10px 14px",
-              background: "#dfeeda",
-              borderBottom: "1px solid #c8debf",
+              background: guideColors.headerBg,
+              borderBottom: `1px solid ${guideColors.headerBorder}`,
               overflowX: "auto"
             }}>
               {[
@@ -541,7 +561,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     padding: "4px 0",
                     border: "none",
                     background: "transparent",
-                    color: guideTab === t.k ? "#16a34a" : "#6b7280",
+                    color: guideTab === t.k ? "#16a34a" : guideColors.inactiveTab,
                     borderBottom: guideTab === t.k ? "2px solid #16a34a" : "2px solid transparent",
                     cursor: "pointer",
                     transition: "color 0.15s ease, border-color 0.15s ease",
@@ -568,7 +588,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                       display: "flex", alignItems: "center", gap: 10,
                       paddingTop: i === 0 ? 0 : 8,
                       paddingBottom: i === arr.length - 1 ? 0 : 8,
-                      borderBottom: i === arr.length - 1 ? "none" : "0.5px solid #d8e6cf"
+                      borderBottom: i === arr.length - 1 ? "none" : `0.5px solid ${guideColors.separator}`
                     }}>
                       <span style={{
                         display: "inline-flex", alignItems: "center", gap: 3,
@@ -576,7 +596,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                         background: item.badge.bg, color: item.badge.color, border: item.badge.border,
                         flexShrink: 0
                       }}>1 {item.icon}</span>
-                      <span style={{ fontSize: 12, color: "#374151" }}>{item.label}</span>
+                      <span style={{ fontSize: 12, color: guideColors.labelText }}>{item.label}</span>
                     </div>
                   ))}
                 </div>
@@ -598,7 +618,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                       display: "flex", alignItems: "center", gap: 10,
                       paddingTop: i === 0 ? 0 : 8,
                       paddingBottom: i === arr.length - 1 ? 0 : 8,
-                      borderBottom: i === arr.length - 1 ? "none" : "0.5px solid #d8e6cf"
+                      borderBottom: i === arr.length - 1 ? "none" : `0.5px solid ${guideColors.separator}`
                     }}>
                       <span style={{
                         display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -606,7 +626,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                         background: item.color.bg, color: item.color.fg, border: `0.5px solid ${item.color.bd}`,
                         flexShrink: 0, minWidth: 36
                       }}>{item.pts}</span>
-                      <span style={{ fontSize: 12, color: "#374151" }}>{item.label}</span>
+                      <span style={{ fontSize: 12, color: guideColors.labelText }}>{item.label}</span>
                     </div>
                   ))}
                 </div>
@@ -626,7 +646,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                       display: "flex", alignItems: "center", gap: 10,
                       paddingTop: i === 0 ? 0 : 8,
                       paddingBottom: i === arr.length - 1 ? 0 : 8,
-                      borderBottom: i === arr.length - 1 ? "none" : "0.5px solid #d8e6cf"
+                      borderBottom: i === arr.length - 1 ? "none" : `0.5px solid ${guideColors.separator}`
                     }}>
                       <span style={{
                         display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -634,13 +654,13 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                         background: item.color.bg, color: item.color.fg, border: `0.5px solid ${item.color.bd}`,
                         flexShrink: 0, minWidth: 32
                       }}>{item.icon}</span>
-                      <span style={{ fontSize: 12, color: "#374151" }}>{item.label}</span>
+                      <span style={{ fontSize: 12, color: guideColors.labelText }}>{item.label}</span>
                     </div>
                   ))}
                   <div style={{
                     marginTop: 10, paddingTop: 10,
-                    borderTop: "0.5px solid #d8e6cf",
-                    fontSize: 11, color: "#6b7280",
+                    borderTop: `0.5px solid ${guideColors.separator}`,
+                    fontSize: 11, color: guideColors.noteText,
                     fontStyle: "italic", textAlign: "center"
                   }}>
                     Each spin randomly applies 1-3 soft conditions for variety
