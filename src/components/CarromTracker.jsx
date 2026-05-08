@@ -370,7 +370,9 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     display: "flex", alignItems: "center", gap: 10,
                     cursor: onSelectPlayer ? "pointer" : "default",
                   }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, width: 18, textAlign: "center", color: rankColor, flexShrink: 0 }}>{i + 1}</div>
+                    <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", width: 24 }}>
+                      <span style={{ fontWeight: (sortBy !== "losses" && (i + 1) <= 3) ? 900 : 700, fontSize: (sortBy !== "losses" && (i + 1) <= 3) ? 18 : 14, color: "var(--color-text-primary)", lineHeight: 1 }}>{i + 1}</span>
+                    </div>
                     <PlayerAvatar player={p} size={38} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -443,7 +445,9 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     const badges = calcBadges(p.id, matches);
                     return (
                     <tr key={p.id} onClick={() => goToPlayer(p.id)} style={{ cursor: "pointer" }}>
-                      <td style={{ textAlign: "center" }}><span className={rankClass(i)} style={{ fontSize: 13, fontFamily: "'Sora', sans-serif" }}>{i + 1}</span></td>
+                      <td style={{ textAlign: "center" }}>
+                        <span style={{ fontWeight: (sortBy !== "losses" && (i + 1) <= 3) ? 900 : 700, fontSize: (sortBy !== "losses" && (i + 1) <= 3) ? 18 : 14, color: "var(--color-text-primary)", lineHeight: 1 }}>{i + 1}</span>
+                      </td>
                       <td style={{ maxWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <Avatar id={p.id} allPlayers={players} size={28} />
@@ -554,7 +558,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                         background: item.badge.bg, color: item.badge.color, border: item.badge.border,
                         flexShrink: 0
                       }}>1 {item.icon}</span>
-                      <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{item.label}</span>
+                      <span style={{ fontSize: 12, color: "#374151" }}>{item.label}</span>
                     </div>
                   ))}
                 </div>
@@ -584,7 +588,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                         background: item.color.bg, color: item.color.fg, border: `0.5px solid ${item.color.bd}`,
                         flexShrink: 0, minWidth: 36
                       }}>{item.pts}</span>
-                      <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{item.label}</span>
+                      <span style={{ fontSize: 12, color: "#374151" }}>{item.label}</span>
                     </div>
                   ))}
                 </div>
@@ -612,13 +616,13 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                         background: item.color.bg, color: item.color.fg, border: `0.5px solid ${item.color.bd}`,
                         flexShrink: 0, minWidth: 32
                       }}>{item.icon}</span>
-                      <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{item.label}</span>
+                      <span style={{ fontSize: 12, color: "#374151" }}>{item.label}</span>
                     </div>
                   ))}
                   <div style={{
                     marginTop: 10, paddingTop: 10,
                     borderTop: "0.5px solid #d8e6cf",
-                    fontSize: 11, color: "var(--color-text-secondary)",
+                    fontSize: 11, color: "#6b7280",
                     fontStyle: "italic", textAlign: "center"
                   }}>
                     Each spin randomly applies 1-3 soft conditions for variety
