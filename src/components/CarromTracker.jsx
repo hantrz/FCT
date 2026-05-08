@@ -277,7 +277,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [sortBy, setSortBy] = useState("points");
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 600);
   const [tooltip, setTooltip] = useState(null);
-  const [guideTab, setGuideTab] = useState("badges"); // "badges" | "points" | "spin"
+  const [guideTab, setGuideTab] = useState("points"); // "badges" | "points" | "spin"
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth <= 600);
@@ -489,26 +489,34 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
           }}>
             {/* TAB BUTTONS */}
             <div style={{
-              display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap"
+              display: "flex",
+              gap: 20,
+              marginBottom: 14,
+              borderBottom: "1px solid var(--color-border, #e5e7eb)",
+              overflowX: "auto"
             }}>
               {[
-                { k: "badges", l: "BADGE GUIDE" },
                 { k: "points", l: "POINTS RULES" },
-                { k: "spin",   l: "SPIN LOGIC" }
+                { k: "spin",   l: "SPIN LOGIC" },
+                { k: "badges", l: "BADGE GUIDE" }
               ].map(t => (
                 <button
                   key={t.k}
                   onClick={() => setGuideTab(t.k)}
                   style={{
-                    flex: "1 1 auto",
-                    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-                    padding: "6px 10px", borderRadius: 8,
-                    border: guideTab === t.k ? "1px solid #16a34a" : "1px solid var(--color-border, #e5e7eb)",
-                    background: guideTab === t.k ? "#16a34a" : "transparent",
-                    color: guideTab === t.k ? "#fff" : "var(--color-text-secondary)",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: "0.08em",
+                    padding: "6px 0",
+                    marginBottom: -1,
+                    border: "none",
+                    background: "transparent",
+                    color: guideTab === t.k ? "#16a34a" : "var(--color-text-secondary)",
+                    borderBottom: guideTab === t.k ? "2px solid #16a34a" : "2px solid transparent",
                     cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    whiteSpace: "nowrap"
+                    transition: "color 0.15s ease, border-color 0.15s ease",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0
                   }}
                 >
                   {t.l}
@@ -520,9 +528,9 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
             {guideTab === "badges" && (
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {[
-                  { badge: { bg:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }, icon:"🔥", label:"Hat-trick — Every 3 consecutive wins" },
-                  { badge: { bg:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }, icon:"💎", label:"Clean Win — Opponent scored 0 points" },
-                  { badge: { bg:"#fee2e2", color:"#dc2626", border:"0.5px solid #fca5a5" }, icon:"💎", label:"Clean Loss — You scored 0 points" },
+                  { badge: { bg:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }, icon:"🔥", label:"Hat-trick: Every 3 consecutive wins" },
+                  { badge: { bg:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }, icon:"💎", label:"Clean Win: Opponent scored 0 points" },
+                  { badge: { bg:"#fee2e2", color:"#dc2626", border:"0.5px solid #fca5a5" }, icon:"💎", label:"Clean Loss: You scored 0 points" },
                 ].map((item, i, arr) => (
                   <div key={i} style={{
                     display: "flex", alignItems: "center", gap: 10,
@@ -546,13 +554,13 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
             {guideTab === "points" && (
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {[
-                  { pts: "10",  color: { bg:"#f3f4f6", fg:"#374151", bd:"#d1d5db" }, label: "Base — Starting points for every player" },
-                  { pts: "+3",  color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Win — Every match you win" },
-                  { pts: "-2",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Loss — Every match you lose" },
-                  { pts: "+5",  color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Clean Win — When opponent scores 0" },
-                  { pts: "-5",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Clean Loss — When you score 0" },
-                  { pts: "+3",  color: { bg:"#fff7ed", fg:"#c2410c", bd:"#fed7aa" }, label: "Hat-trick Bonus — Every 3 consecutive wins" },
-                  { pts: "-3",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Loss-trick Penalty — Every 3 consecutive losses" },
+                  { pts: "10",  color: { bg:"#f3f4f6", fg:"#374151", bd:"#d1d5db" }, label: "Base: Starting points for every player" },
+                  { pts: "+3",  color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Win: For every match you win" },
+                  { pts: "-2",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Loss: For every match you lose" },
+                  { pts: "+5",  color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Clean Win: When opponent scores 0" },
+                  { pts: "-5",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Clean Loss: When you score 0" },
+                  { pts: "+3",  color: { bg:"#fff7ed", fg:"#c2410c", bd:"#fed7aa" }, label: "Hat-trick Bonus: Every 3 consecutive wins" },
+                  { pts: "-3",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Loss-trick Penalty: Every 3 consecutive losses" },
                 ].map((item, i, arr) => (
                   <div key={i} style={{
                     display: "flex", alignItems: "center", gap: 10,
@@ -576,12 +584,11 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
             {guideTab === "spin" && (
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {[
-                  { icon: "🔒", color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Hard Rule — Mr Zed & Firoz Mall never on the same team (always applied)" },
-                  { icon: "⚖️", color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Win Rate Balance — Both teams' combined win rates kept similar" },
-                  { icon: "📈", color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Recent Form — Balance based on last 5 matches" },
-                  { icon: "🔀", color: { bg:"#fef3c7", fg:"#a16207", bd:"#fde68a" }, label: "Partner Split — Frequent partners get separated" },
-                  { icon: "🔥", color: { bg:"#fff7ed", fg:"#c2410c", bd:"#fed7aa" }, label: "Loser Split — Last match's losers placed on opposite teams" },
-                  { icon: "🎯", color: { bg:"#f3e8ff", fg:"#7e22ce", bd:"#d8b4fe" }, label: "Top + Bottom — Strongest paired with weakest for balance" },
+                  { icon: "⚖️", color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Win Rate Balance: Both teams' combined win rates kept similar" },
+                  { icon: "📈", color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Recent Form: Balance based on last 5 matches" },
+                  { icon: "🔀", color: { bg:"#fef3c7", fg:"#a16207", bd:"#fde68a" }, label: "Partner Split: Frequent partners get separated" },
+                  { icon: "🔥", color: { bg:"#fff7ed", fg:"#c2410c", bd:"#fed7aa" }, label: "Loser Split: Last match's losers placed on opposite teams" },
+                  { icon: "🎯", color: { bg:"#f3e8ff", fg:"#7e22ce", bd:"#d8b4fe" }, label: "Top + Bottom: Strongest paired with weakest for balance" },
                 ].map((item, i, arr) => (
                   <div key={i} style={{
                     display: "flex", alignItems: "center", gap: 10,
