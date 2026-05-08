@@ -102,20 +102,23 @@ function calcBadges(playerId, matches) {
   const pm = [...matches]
     .filter(m => (m.team1 || []).includes(playerId) || (m.team2 || []).includes(playerId))
     .sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
-  let hatTricks = 0, currentStreak = 0, cleanWins = 0, cleanLosses = 0;
+  let hatTricks = 0, lossTricks = 0, winStreak = 0, lossStreak = 0, cleanWins = 0, cleanLosses = 0;
   for (const m of pm) {
     const inT1 = (m.team1 || []).includes(playerId);
     const isWinner = (inT1 && m.winner === "team1") || (!inT1 && m.winner === "team2");
     if (isWinner) {
-      currentStreak++;
-      if (currentStreak === 3) { hatTricks++; currentStreak = 0; }
+      winStreak++;
+      lossStreak = 0;
+      if (winStreak === 3) { hatTricks++; winStreak = 0; }
       if (m.loserScore === 0) cleanWins++;
     } else {
-      currentStreak = 0;
+      lossStreak++;
+      winStreak = 0;
+      if (lossStreak === 3) { lossTricks++; lossStreak = 0; }
       if (m.loserScore === 0) cleanLosses++;
     }
   }
-  return { hatTricks, cleanWins, cleanLosses };
+  return { hatTricks, lossTricks, cleanWins, cleanLosses };
 }
 
 function generatePlayerDescription(played, wins, losses, winRate, hatTricks, cleanWins, cleanLosses, streak, streakType) {
@@ -282,7 +285,11 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   }, []);
 
   const raw = computeStats(players, matches);
-  const stats = raw.map(p => ({ ...p, points: 10 + p.won * 3 + p.lost * -2 }));
+  const stats = raw.map(p => {
+    const badges = calcBadges(p.id, matches);
+    const points = 10 + (p.won * 3) + (p.lost * -2) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
+    return { ...p, points };
+  });
   const sorted = [...stats].sort((a, b) => {
     if (sortBy === "points")   return b.points - a.points;
     if (sortBy === "winrate")  return b.winPct - a.winPct;
