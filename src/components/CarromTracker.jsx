@@ -483,16 +483,19 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
             </div>
           )}
           <div style={{
-            marginTop: 16, padding: "12px 14px",
-            background: "var(--color-background-secondary)",
-            borderRadius: 12
+            marginTop: 16,
+            background: "#f0f7ee",
+            borderRadius: 12,
+            overflow: "hidden",
+            border: "1px solid #dfeeda"
           }}>
-            {/* TAB BUTTONS */}
+            {/* TAB HEADER — deeper bg */}
             <div style={{
               display: "flex",
               gap: 20,
-              marginBottom: 14,
-              borderBottom: "1px solid var(--color-border, #e5e7eb)",
+              padding: "10px 14px",
+              background: "#dfeeda",
+              borderBottom: "1px solid #c8debf",
               overflowX: "auto"
             }}>
               {[
@@ -507,11 +510,10 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     fontSize: 11,
                     fontWeight: 700,
                     letterSpacing: "0.08em",
-                    padding: "6px 0",
-                    marginBottom: -1,
+                    padding: "4px 0",
                     border: "none",
                     background: "transparent",
-                    color: guideTab === t.k ? "#16a34a" : "var(--color-text-secondary)",
+                    color: guideTab === t.k ? "#16a34a" : "#6b7280",
                     borderBottom: guideTab === t.k ? "2px solid #16a34a" : "2px solid transparent",
                     cursor: "pointer",
                     transition: "color 0.15s ease, border-color 0.15s ease",
@@ -524,97 +526,100 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
               ))}
             </div>
 
-            {/* BADGE GUIDE CONTENT */}
-            {guideTab === "badges" && (
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                {[
-                  { badge: { bg:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }, icon:"🔥", label:"Hat-trick: Every 3 consecutive wins" },
-                  { badge: { bg:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }, icon:"💎", label:"Clean Win: Opponent scored 0 points" },
-                  { badge: { bg:"#fee2e2", color:"#dc2626", border:"0.5px solid #fca5a5" }, icon:"💎", label:"Clean Loss: You scored 0 points" },
-                ].map((item, i, arr) => (
-                  <div key={i} style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    paddingTop: i === 0 ? 0 : 8,
-                    paddingBottom: i === arr.length - 1 ? 0 : 8,
-                    borderBottom: i === arr.length - 1 ? "none" : "0.5px solid var(--color-border, #e5e7eb)"
-                  }}>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: 3,
-                      fontSize: 11, borderRadius: 20, padding: "2px 8px", fontWeight: 600,
-                      background: item.badge.bg, color: item.badge.color, border: item.badge.border,
-                      flexShrink: 0
-                    }}>1 {item.icon}</span>
-                    <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* POINTS RULES CONTENT */}
-            {guideTab === "points" && (
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                {[
-                  { pts: "10",  color: { bg:"#f3f4f6", fg:"#374151", bd:"#d1d5db" }, label: "Base: Starting points for every player" },
-                  { pts: "+3",  color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Win: For every match you win" },
-                  { pts: "-2",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Loss: For every match you lose" },
-                  { pts: "+5",  color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Clean Win: When opponent scores 0" },
-                  { pts: "-5",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Clean Loss: When you score 0" },
-                  { pts: "+3",  color: { bg:"#fff7ed", fg:"#c2410c", bd:"#fed7aa" }, label: "Hat-trick Bonus: Every 3 consecutive wins" },
-                  { pts: "-3",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Loss-trick Penalty: Every 3 consecutive losses" },
-                ].map((item, i, arr) => (
-                  <div key={i} style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    paddingTop: i === 0 ? 0 : 8,
-                    paddingBottom: i === arr.length - 1 ? 0 : 8,
-                    borderBottom: i === arr.length - 1 ? "none" : "0.5px solid var(--color-border, #e5e7eb)"
-                  }}>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 11, borderRadius: 20, padding: "2px 8px", fontWeight: 700,
-                      background: item.color.bg, color: item.color.fg, border: `0.5px solid ${item.color.bd}`,
-                      flexShrink: 0, minWidth: 36
-                    }}>{item.pts}</span>
-                    <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* SPIN LOGIC CONTENT */}
-            {guideTab === "spin" && (
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                {[
-                  { icon: "⚖️", color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Win Rate Balance: Both teams' combined win rates kept similar" },
-                  { icon: "📈", color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Recent Form: Balance based on last 5 matches" },
-                  { icon: "🔀", color: { bg:"#fef3c7", fg:"#a16207", bd:"#fde68a" }, label: "Partner Split: Frequent partners get separated" },
-                  { icon: "🔥", color: { bg:"#fff7ed", fg:"#c2410c", bd:"#fed7aa" }, label: "Loser Split: Last match's losers placed on opposite teams" },
-                  { icon: "🎯", color: { bg:"#f3e8ff", fg:"#7e22ce", bd:"#d8b4fe" }, label: "Top + Bottom: Strongest paired with weakest for balance" },
-                ].map((item, i, arr) => (
-                  <div key={i} style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    paddingTop: i === 0 ? 0 : 8,
-                    paddingBottom: i === arr.length - 1 ? 0 : 8,
-                    borderBottom: i === arr.length - 1 ? "none" : "0.5px solid var(--color-border, #e5e7eb)"
-                  }}>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 13, borderRadius: 20, padding: "2px 8px", fontWeight: 600,
-                      background: item.color.bg, color: item.color.fg, border: `0.5px solid ${item.color.bd}`,
-                      flexShrink: 0, minWidth: 32
-                    }}>{item.icon}</span>
-                    <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{item.label}</span>
-                  </div>
-                ))}
-                <div style={{
-                  marginTop: 10, paddingTop: 10,
-                  borderTop: "0.5px solid var(--color-border, #e5e7eb)",
-                  fontSize: 11, color: "var(--color-text-secondary)",
-                  fontStyle: "italic", textAlign: "center"
-                }}>
-                  Each spin randomly applies 1-3 soft conditions for variety
+            {/* CONTENT AREA — lighter bg */}
+            <div style={{ padding: "12px 14px" }}>
+              {/* BADGE GUIDE CONTENT */}
+              {guideTab === "badges" && (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {[
+                    { badge: { bg:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }, icon:"🔥", label:"Hat-trick: Every 3 consecutive wins" },
+                    { badge: { bg:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }, icon:"💎", label:"Clean Win: Opponent scored 0 points" },
+                    { badge: { bg:"#fee2e2", color:"#dc2626", border:"0.5px solid #fca5a5" }, icon:"💎", label:"Clean Loss: You scored 0 points" },
+                  ].map((item, i, arr) => (
+                    <div key={i} style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      paddingTop: i === 0 ? 0 : 8,
+                      paddingBottom: i === arr.length - 1 ? 0 : 8,
+                      borderBottom: i === arr.length - 1 ? "none" : "0.5px solid #d8e6cf"
+                    }}>
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", gap: 3,
+                        fontSize: 11, borderRadius: 20, padding: "2px 8px", fontWeight: 600,
+                        background: item.badge.bg, color: item.badge.color, border: item.badge.border,
+                        flexShrink: 0
+                      }}>1 {item.icon}</span>
+                      <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{item.label}</span>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* POINTS RULES CONTENT */}
+              {guideTab === "points" && (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {[
+                    { pts: "10",  color: { bg:"#f3f4f6", fg:"#374151", bd:"#d1d5db" }, label: "Base: Starting points for every player" },
+                    { pts: "+3",  color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Win: For every match you win" },
+                    { pts: "-2",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Loss: For every match you lose" },
+                    { pts: "+5",  color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Clean Win: When opponent scores 0" },
+                    { pts: "-5",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Clean Loss: When you score 0" },
+                    { pts: "+3",  color: { bg:"#fff7ed", fg:"#c2410c", bd:"#fed7aa" }, label: "Hat-trick Bonus: Every 3 consecutive wins" },
+                    { pts: "-3",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Loss-trick Penalty: Every 3 consecutive losses" },
+                  ].map((item, i, arr) => (
+                    <div key={i} style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      paddingTop: i === 0 ? 0 : 8,
+                      paddingBottom: i === arr.length - 1 ? 0 : 8,
+                      borderBottom: i === arr.length - 1 ? "none" : "0.5px solid #d8e6cf"
+                    }}>
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 11, borderRadius: 20, padding: "2px 8px", fontWeight: 700,
+                        background: item.color.bg, color: item.color.fg, border: `0.5px solid ${item.color.bd}`,
+                        flexShrink: 0, minWidth: 36
+                      }}>{item.pts}</span>
+                      <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* SPIN LOGIC CONTENT */}
+              {guideTab === "spin" && (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {[
+                    { icon: "⚖️", color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Win Rate Balance: Both teams' combined win rates kept similar" },
+                    { icon: "📈", color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Recent Form: Balance based on last 5 matches" },
+                    { icon: "🔀", color: { bg:"#fef3c7", fg:"#a16207", bd:"#fde68a" }, label: "Partner Split: Frequent partners get separated" },
+                    { icon: "🔥", color: { bg:"#fff7ed", fg:"#c2410c", bd:"#fed7aa" }, label: "Loser Split: Last match's losers placed on opposite teams" },
+                    { icon: "🎯", color: { bg:"#f3e8ff", fg:"#7e22ce", bd:"#d8b4fe" }, label: "Top + Bottom: Strongest paired with weakest for balance" },
+                  ].map((item, i, arr) => (
+                    <div key={i} style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      paddingTop: i === 0 ? 0 : 8,
+                      paddingBottom: i === arr.length - 1 ? 0 : 8,
+                      borderBottom: i === arr.length - 1 ? "none" : "0.5px solid #d8e6cf"
+                    }}>
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 13, borderRadius: 20, padding: "2px 8px", fontWeight: 600,
+                        background: item.color.bg, color: item.color.fg, border: `0.5px solid ${item.color.bd}`,
+                        flexShrink: 0, minWidth: 32
+                      }}>{item.icon}</span>
+                      <span style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{item.label}</span>
+                    </div>
+                  ))}
+                  <div style={{
+                    marginTop: 10, paddingTop: 10,
+                    borderTop: "0.5px solid #d8e6cf",
+                    fontSize: 11, color: "var(--color-text-secondary)",
+                    fontStyle: "italic", textAlign: "center"
+                  }}>
+                    Each spin randomly applies 1-3 soft conditions for variety
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}
