@@ -287,7 +287,13 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const raw = computeStats(players, matches);
   const stats = raw.map(p => {
     const badges = calcBadges(p.id, matches);
-    const points = 10 + (p.won * 3) + (p.lost * -2) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
+    const points = 10
+      + (p.won * 3)
+      + (p.lost * -2)
+      + (badges.cleanWins * 2)
+      + (badges.cleanLosses * -3)
+      + (badges.hatTricks * 3)
+      + (badges.lossTricks * -3);
     return { ...p, points };
   });
   const sorted = [...stats].sort((a, b) => {
