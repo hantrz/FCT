@@ -282,7 +282,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   }, []);
 
   const raw = computeStats(players, matches);
-  const stats = raw.map(p => ({ ...p, points: 10 + p.won * 3 + p.lost * -1 }));
+  const stats = raw.map(p => ({ ...p, points: 10 + p.won * 3 + p.lost * -2 }));
   const sorted = [...stats].sort((a, b) => {
     if (sortBy === "points")   return b.points - a.points;
     if (sortBy === "winrate")  return b.winPct - a.winPct;
