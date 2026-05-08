@@ -375,7 +375,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {p.name}{i === 0 && p.played > 0 && " 🏆"}
+                          {p.name}{i === 0 && p.played > 0 && (sortBy === "losses" ? " 💩" : " 🏆")}
                         </span>
                         {badges.hatTricks > 0 && (
                           <span style={{ position:"relative", display:"inline-flex" }} onMouseEnter={() => setTooltip(`${p.id}-fire`)} onMouseLeave={() => setTooltip(null)}>
@@ -448,7 +448,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <Avatar id={p.id} allPlayers={players} size={28} />
                           <span style={{ fontWeight: i < 3 ? 700 : 500, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1, minWidth: 0 }}>{p.name}</span>
-                          {i === 0 && p.played > 0 && <span className="badge badge-top" style={{ flexShrink: 0 }}>🏆</span>}
+                          {i === 0 && p.played > 0 && <span className="badge badge-top" style={{ flexShrink: 0 }}>{sortBy === "losses" ? "💩" : "🏆"}</span>}
                           {badges.hatTricks > 0 && (
                             <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-fire`)} onMouseLeave={() => setTooltip(null)}>
                               <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }}>{badges.hatTricks} 🔥</span>
