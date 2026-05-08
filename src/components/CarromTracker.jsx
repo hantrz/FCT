@@ -277,7 +277,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [sortBy, setSortBy] = useState("points");
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 600);
   const [tooltip, setTooltip] = useState(null);
-  const [guideTab, setGuideTab] = React.useState("badges"); // "badges" | "points" | "spin"
+  const [guideTab, setGuideTab] = useState("badges"); // "badges" | "points" | "spin"
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth <= 600);
