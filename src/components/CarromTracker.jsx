@@ -302,7 +302,13 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     if (sortBy === "winrate")  return b.winPct - a.winPct;
     if (sortBy === "matches")  return b.played - a.played;
     if (sortBy === "wins")     return b.won - a.won;
-    if (sortBy === "losses")   return b.lost - a.lost;
+    if (sortBy === "losses") {
+      const lossDiff = b.lost - a.lost;
+      if (lossDiff !== 0) return lossDiff;
+      const aRate = a.played > 0 ? a.lost / a.played : 0;
+      const bRate = b.played > 0 ? b.lost / b.played : 0;
+      return bRate - aRate;
+    }
     return 0;
   });
 
