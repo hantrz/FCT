@@ -371,7 +371,16 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     cursor: onSelectPlayer ? "pointer" : "default",
                   }}>
                     <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", width: 24 }}>
-                      <span style={{ fontWeight: (sortBy !== "losses" && (i + 1) <= 3) ? 900 : 700, fontSize: (sortBy !== "losses" && (i + 1) <= 3) ? 18 : 14, color: "var(--color-text-primary)", lineHeight: 1 }}>{i + 1}</span>
+                      {(() => {
+                        const rank = i + 1;
+                        const isTop3 = sortBy !== "losses" && rank <= 3;
+                        const rankColors = { 1: "#d97706", 2: "#64748b", 3: "#b45309" };
+                        return (
+                          <span style={{ fontWeight: isTop3 ? 900 : 700, fontSize: isTop3 ? 18 : 14, color: isTop3 ? rankColors[rank] : "var(--color-text-primary)", lineHeight: 1 }}>
+                            {rank}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <PlayerAvatar player={p} size={38} />
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -446,7 +455,16 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     return (
                     <tr key={p.id} onClick={() => goToPlayer(p.id)} style={{ cursor: "pointer" }}>
                       <td style={{ textAlign: "center" }}>
-                        <span style={{ fontWeight: (sortBy !== "losses" && (i + 1) <= 3) ? 900 : 700, fontSize: (sortBy !== "losses" && (i + 1) <= 3) ? 18 : 14, color: "var(--color-text-primary)", lineHeight: 1 }}>{i + 1}</span>
+                        {(() => {
+                        const rank = i + 1;
+                        const isTop3 = sortBy !== "losses" && rank <= 3;
+                        const rankColors = { 1: "#d97706", 2: "#64748b", 3: "#b45309" };
+                        return (
+                          <span style={{ fontWeight: isTop3 ? 900 : 700, fontSize: isTop3 ? 18 : 14, color: isTop3 ? rankColors[rank] : "var(--color-text-primary)", lineHeight: 1 }}>
+                            {rank}
+                          </span>
+                        );
+                      })()}
                       </td>
                       <td style={{ maxWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
