@@ -1750,6 +1750,7 @@ function TeamSpin({ players, matches, onClose }) {
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 const PASSCODE = process.env.NEXT_PUBLIC_APP_PASSCODE || "fnf2024";
+const MEMBER_PASSCODE = "match123";
 const SESSION_KEY = "ct_auth";
 
 function LoginScreen({ onLogin }) {
@@ -1759,8 +1760,11 @@ function LoginScreen({ onLogin }) {
 
   function handleLogin() {
     if (code === PASSCODE) {
-      sessionStorage.setItem(SESSION_KEY, "1");
-      onLogin();
+      sessionStorage.setItem(SESSION_KEY, "admin");
+      onLogin("admin");
+    } else if (code === MEMBER_PASSCODE) {
+      sessionStorage.setItem(SESSION_KEY, "member");
+      onLogin("member");
     } else {
       setError(true);
       setShake(true);
@@ -1834,7 +1838,7 @@ function LoginScreen({ onLogin }) {
         </button>
 
         <p style={{ textAlign: "center", fontSize: 11, color: "#5a7055", marginTop: "1.25rem" }}>
-          You can also <button onClick={() => onLogin(true)} style={{
+          You can also <button onClick={() => onLogin("guest")} style={{
             background: "none", border: "none", color: "#14a800", fontSize: 11,
             fontWeight: 600, cursor: "pointer", padding: 0, fontFamily: "inherit",
           }}>view only</button> without passcode
@@ -1864,7 +1868,7 @@ export default function CarromTracker() {
   const [players, setPlayers] = useState([]);
   const [matches, setMatches] = useState([]);
   const [synced, setSynced] = useState(false);
-  const [authState, setAuthState] = useState("loading"); // loading | guest | admin
+  const [authState, setAuthState] = useState("loading"); // loading | guest | member | admin | login
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const [showSpin, setShowSpin] = useState(false);
 
@@ -1878,7 +1882,7 @@ export default function CarromTracker() {
 
   useEffect(() => {
     const saved = sessionStorage.getItem(SESSION_KEY);
-    setAuthState(saved ? "admin" : "guest");
+    setAuthState(saved || "guest");
   }, []);
 
   useEffect(() => {
@@ -1892,8 +1896,8 @@ export default function CarromTracker() {
     return () => { unsubP(); unsubM(); };
   }, []);
 
-  function handleLogin(guestOnly = false) {
-    setAuthState(guestOnly ? "guest" : "admin");
+  function handleLogin(role = "admin") {
+    setAuthState(role);
   }
 
   function handleLogout() {
@@ -1928,16 +1932,18 @@ export default function CarromTracker() {
   if (authState === "login") return <LoginScreen onLogin={handleLogin} />;
 
   const isAdmin = authState === "admin";
+  const isMember = authState === "member";
 
   const TABS = [
     { k: "board", l: "Leaderboard" },
-    ...(isAdmin ? [{ k: "match", l: "New Match" }] : []),
-    { k: "players", l: "Players" },
+    ...((isAdmin || isMember) ? [{ k: "match", l: "New Match" }] : []),
+    ...(!isMember ? [{ k: "players", l: "Players" }] : []),
     { k: "stats", l: "Stats" },
     { k: "history", l: "History" },
   ];
 
-  if (tab === "match" && !isAdmin) setTab("board");
+  if (tab === "match" && !isAdmin && !isMember) setTab("board");
+  if (tab === "players" && isMember) setTab("board");
 
   return (
     <div className="app">
@@ -2018,7 +2024,7 @@ export default function CarromTracker() {
         <div className="status-bar">
           <span className={`sync-dot ${synced ? "live" : "loading"}`} />
           {synced ? "Live sync active" : "Connecting..."}
-          {isAdmin && <span style={{ marginLeft: 8, background: "rgba(212,160,23,0.3)", color: "#fef3c7", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10 }}>Admin</span>}
+          {(isAdmin || isMember) && <span style={{ marginLeft: 8, background: isAdmin ? "rgba(212,160,23,0.3)" : "rgba(37,99,235,0.3)", color: isAdmin ? "#fef3c7" : "#dbeafe", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10 }}>{isAdmin ? "Admin" : "Member"}</span>}
         </div>
       </div>
 
@@ -2028,7 +2034,7 @@ export default function CarromTracker() {
             <button key={k} className={`tab-btn ${tab === k ? "active" : ""}`} onClick={() => setTab(k)}>{l}</button>
           ))}
         </div>
-        {isAdmin ? (
+        {(isAdmin || isMember) ? (
           <button onClick={handleLogout} className="nav-btn-hover nav-btn-login" style={{
             background: "transparent", border: "1px solid rgba(255,255,255,0.5)",
             borderRadius: 6, padding: "4px 14px", color: "rgba(255,255,255,0.9)",
@@ -2047,7 +2053,7 @@ export default function CarromTracker() {
 
       <div className="content">
         {tab === "board" && <Leaderboard players={players} matches={matches} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
-        {tab === "match" && isAdmin && <NewMatch players={players} onSave={saveMatch} />}
+        {tab === "match" && (isAdmin || isMember) && <NewMatch players={players} onSave={saveMatch} />}
         {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
