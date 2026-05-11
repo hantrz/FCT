@@ -1441,8 +1441,6 @@ function TeamSpin({ players, matches, onClose }) {
   const [shuffleNames, setShuffleNames] = useState([]);
   const [appliedConditions, setAppliedConditions] = useState([]);
 
-  const AVOID_PAIRS = [["Mr. Zed", "Firoz Hassan"]];
-
   const SOFT_CONDITIONS = [
     { id: "winRate", label: "⚖️ Win rate balanced" },
     { id: "recentForm", label: "🔥 Recent form balanced" },
@@ -1476,15 +1474,6 @@ function TeamSpin({ players, matches, onClose }) {
       { teamA: [p1, p3], teamB: [p2, p4] },
       { teamA: [p1, p4], teamB: [p2, p3] },
     ];
-
-    const filtered = configs.filter(c => {
-      return !AVOID_PAIRS.some(([n1, n2]) => {
-        const aBoth = c.teamA.some(p => p.name === n1) && c.teamA.some(p => p.name === n2);
-        const bBoth = c.teamB.some(p => p.name === n1) && c.teamB.some(p => p.name === n2);
-        return aBoth || bBoth;
-      });
-    });
-    if (filtered.length > 0) configs = filtered;
 
     const numConds = 1 + Math.floor(Math.random() * 3);
     const shuffledConds = [...SOFT_CONDITIONS].sort(() => Math.random() - 0.5);
