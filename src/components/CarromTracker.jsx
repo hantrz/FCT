@@ -2289,10 +2289,10 @@ function MyProfile({ currentUser, players, matches, onNameUpdate }) {
 }
 
 // ── Main App ──────────────────────────────────────────────────────────────────
-const PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "FNF@2026";
-const SESSION_KEY = "ct_auth";
+const MR_ZED_MOBILE = "01719130859";
+const MR_ZED_UID    = "EKEFCMgARIhUWUn3Eu1GbVAUAD62";
 
-function LoginScreen({ onAdminLogin }) {
+function LoginScreen() {
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -2314,22 +2314,9 @@ function LoginScreen({ onAdminLogin }) {
     setLoading(true);
     setError("");
 
-    // Admin special case: not in Firebase Auth
-    if (mobile.trim() === "00000000000") {
-      if (password === PASSCODE) {
-        sessionStorage.setItem(SESSION_KEY, "admin");
-        onAdminLogin();
-      } else {
-        setError("Wrong admin passcode.");
-        triggerShake();
-        setLoading(false);
-      }
-      return;
-    }
-
     try {
       await signInWithEmailAndPassword(auth, `${mobile.trim()}@fnf.app`, password);
-      // onAuthStateChanged in CarromTracker will handle the state update
+      // onAuthStateChanged in CarromTracker handles state update
     } catch (err) {
       const msg = err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password"
         ? "Wrong mobile number or password."
@@ -2567,6 +2554,11 @@ export default function CarromTracker() {
         const snap = await getDoc(doc(db, "users", firebaseUser.uid));
         if (snap.exists()) {
           const profile = snap.data();
+          // Mr. Zed always gets admin role regardless of what's stored
+          if (firebaseUser.uid === MR_ZED_UID && profile.role !== "admin") {
+            await updateDoc(doc(db, "users", MR_ZED_UID), { role: "admin" });
+            profile.role = "admin";
+          }
           setCurrentUser(profile);
           setShowForcePasswordChange(!!profile.mustChangePassword);
           setAuthState(profile.role);
@@ -2578,8 +2570,7 @@ export default function CarromTracker() {
       } else {
         setCurrentUser(null);
         setShowForcePasswordChange(false);
-        const saved = sessionStorage.getItem(SESSION_KEY);
-        setAuthState(saved === "admin" ? "admin" : "guest");
+        setAuthState("guest");
       }
     });
     return () => unsub();
@@ -2596,18 +2587,9 @@ export default function CarromTracker() {
     return () => { unsubP(); unsubM(); };
   }, []);
 
-  function handleAdminLogin() {
-    setAuthState("admin");
-  }
-
   async function handleLogout() {
-    if (authState === "admin") {
-      sessionStorage.removeItem(SESSION_KEY);
-      setAuthState("guest");
-    } else {
-      await signOut(auth);
-      // onAuthStateChanged will clear currentUser and set authState to "guest"
-    }
+    await signOut(auth);
+    // onAuthStateChanged clears currentUser and sets authState to "guest"
   }
 
   function showToast(message) {
@@ -2657,24 +2639,26 @@ export default function CarromTracker() {
   }
 
   if (authState === "loading") return null;
-  if (authState === "login") return <LoginScreen onAdminLogin={handleAdminLogin} />;
+  if (authState === "login") return <LoginScreen />;
 
   const isAdmin = authState === "admin";
   const isMember = authState === "member";
+  // Firebase-auth users (Mr. Zed = admin, others = member) get chat + profile tabs
+  const isFirebaseUser = !!currentUser;
 
   const TABS = [
     { k: "board", l: "Leaderboard" },
     ...((isAdmin || isMember) ? [{ k: "match", l: "New Match" }] : []),
-    ...(!isMember ? [{ k: "players", l: "Players" }] : []),
+    ...(isAdmin ? [{ k: "players", l: "Players" }] : []),
     { k: "stats", l: "Stats" },
     { k: "history", l: "History" },
-    ...(isMember ? [{ k: "chat", l: "Chat" }, { k: "profile", l: "👤 Me" }] : []),
+    ...(isFirebaseUser ? [{ k: "chat", l: "Chat" }, { k: "profile", l: "👤 Me" }] : []),
   ];
 
   if (tab === "match" && !isAdmin && !isMember) setTab("board");
-  if (tab === "players" && isMember) setTab("board");
-  if (tab === "profile" && !isMember) setTab("board");
-  if (tab === "chat" && !isMember) setTab("board");
+  if (tab === "players" && !isAdmin) setTab("board");
+  if (tab === "profile" && !isFirebaseUser) setTab("board");
+  if (tab === "chat" && !isFirebaseUser) setTab("board");
 
   return (
     <div className="app">
@@ -2793,10 +2777,10 @@ export default function CarromTracker() {
         {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
-        {tab === "chat" && isMember && currentUser && (
+        {tab === "chat" && isFirebaseUser && currentUser && (
           <Chat currentUser={currentUser} onUnreadChange={setChatUnread} />
         )}
-        {tab === "profile" && isMember && currentUser && (
+        {tab === "profile" && isFirebaseUser && currentUser && (
           <MyProfile
             currentUser={currentUser}
             players={players}
