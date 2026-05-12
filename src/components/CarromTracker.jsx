@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
-  collection, addDoc, deleteDoc, doc, getDoc, updateDoc,
-  onSnapshot, query, orderBy, serverTimestamp, deleteField,
+  collection, addDoc, deleteDoc, doc, getDoc, getDocs, updateDoc, setDoc,
+  onSnapshot, query, orderBy, serverTimestamp, deleteField, limit,
 } from "firebase/firestore";
 import {
   signInWithEmailAndPassword, signOut, updatePassword, onAuthStateChanged,
@@ -1757,6 +1757,304 @@ function TeamSpin({ players, matches, onClose }) {
   );
 }
 
+// ── Chat ──────────────────────────────────────────────────────────────────────
+function Chat({ currentUser, onUnreadChange }) {
+  const [mode, setMode] = useState("group");
+  const [groupMessages, setGroupMessages] = useState([]);
+  const [groupInput, setGroupInput] = useState("");
+  const [groupUnread, setGroupUnread] = useState(0);
+  const [members, setMembers] = useState([]);
+  const [memberUnreads, setMemberUnreads] = useState({});
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [activeMember, setActiveMember] = useState(null);
+  const [privateMessages, setPrivateMessages] = useState([]);
+  const [privateInput, setPrivateInput] = useState("");
+  const [readStatus, setReadStatus] = useState({});
+  const [sending, setSending] = useState(false);
+  const groupEndRef = useRef(null);
+  const privateEndRef = useRef(null);
+
+  // Read status from Firestore (tracks last-read timestamps)
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "chatReads", currentUser.uid), snap => {
+      setReadStatus(snap.exists() ? snap.data() : {});
+    });
+    return () => unsub();
+  }, [currentUser.uid]);
+
+  // Group messages (last 50)
+  useEffect(() => {
+    const q = query(collection(db, "groupChat"), orderBy("timestamp", "asc"), limit(50));
+    const unsub = onSnapshot(q, snap => {
+      setGroupMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsub();
+  }, []);
+
+  // Members list (all users except self)
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "users"), snap => {
+      setMembers(snap.docs.map(d => d.data()).filter(u => u.uid !== currentUser.uid));
+    });
+    return () => unsub();
+  }, [currentUser.uid]);
+
+  // Mark group as read whenever viewing group mode
+  useEffect(() => {
+    if (mode !== "group") return;
+    setDoc(doc(db, "chatReads", currentUser.uid), { groupLastRead: serverTimestamp() }, { merge: true }).catch(() => {});
+  }, [mode, groupMessages.length, currentUser.uid]);
+
+  // Compute group unread count
+  useEffect(() => {
+    const lastReadTs = readStatus.groupLastRead?.toMillis?.() ?? 0;
+    setGroupUnread(
+      groupMessages.filter(m => m.uid !== currentUser.uid && (m.timestamp?.toMillis?.() ?? 0) > lastReadTs).length
+    );
+  }, [groupMessages, readStatus, currentUser.uid]);
+
+  // Compute per-member unread counts (one-time fetch per readStatus update)
+  useEffect(() => {
+    if (!members.length) return;
+    const go = async () => {
+      const counts = {};
+      for (const member of members) {
+        const chatId = [currentUser.uid, member.uid].sort().join("_");
+        const lastReadTs = readStatus[chatId]?.toMillis?.() ?? 0;
+        try {
+          const snap = await getDocs(
+            query(collection(db, "privateChats", chatId, "messages"), orderBy("timestamp", "asc"), limit(50))
+          );
+          counts[chatId] = snap.docs.filter(d => {
+            const data = d.data();
+            return data.uid !== currentUser.uid && (data.timestamp?.toMillis?.() ?? 0) > lastReadTs;
+          }).length;
+        } catch { counts[chatId] = 0; }
+      }
+      setMemberUnreads(counts);
+    };
+    go();
+  }, [members, readStatus, currentUser.uid]);
+
+  // Private conversation messages
+  useEffect(() => {
+    if (!activeChatId) { setPrivateMessages([]); return; }
+    const q = query(collection(db, "privateChats", activeChatId, "messages"), orderBy("timestamp", "asc"), limit(50));
+    const unsub = onSnapshot(q, snap => {
+      setPrivateMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    setDoc(doc(db, "chatReads", currentUser.uid), { [activeChatId]: serverTimestamp() }, { merge: true }).catch(() => {});
+    return () => unsub();
+  }, [activeChatId, currentUser.uid]);
+
+  // Auto-scroll to latest message
+  useEffect(() => { groupEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [groupMessages]);
+  useEffect(() => { privateEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [privateMessages]);
+
+  // Notify parent tab of any unread
+  useEffect(() => {
+    const hasPrivate = Object.values(memberUnreads).some(c => c > 0);
+    onUnreadChange(groupUnread > 0 || hasPrivate);
+  }, [groupUnread, memberUnreads]); // onUnreadChange (setChatUnread) is stable
+
+  async function sendGroup() {
+    const text = groupInput.trim();
+    if (!text || sending) return;
+    setSending(true); setGroupInput("");
+    try {
+      await addDoc(collection(db, "groupChat"), {
+        uid: currentUser.uid, senderName: currentUser.displayName,
+        text, timestamp: serverTimestamp(),
+      });
+    } finally { setSending(false); }
+  }
+
+  async function sendPrivate() {
+    const text = privateInput.trim();
+    if (!text || sending || !activeChatId) return;
+    setSending(true); setPrivateInput("");
+    try {
+      await addDoc(collection(db, "privateChats", activeChatId, "messages"), {
+        uid: currentUser.uid, senderName: currentUser.displayName,
+        text, timestamp: serverTimestamp(),
+      });
+    } finally { setSending(false); }
+  }
+
+  function formatTime(ts) {
+    if (!ts?.toDate) return "";
+    return ts.toDate().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function initials(name) {
+    return (name || "?").trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  }
+
+  function SendBtn({ onClick, val }) {
+    return (
+      <button onClick={onClick} disabled={!val.trim() || sending}
+        style={{
+          width: 38, height: 38, borderRadius: "50%", background: "var(--green)", border: "none",
+          cursor: val.trim() && !sending ? "pointer" : "default",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          opacity: val.trim() ? 1 : 0.4, flexShrink: 0, transition: "opacity 0.15s",
+        }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+    );
+  }
+
+  function Bubbles({ messages, endRef }) {
+    return (
+      <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+        {messages.length === 0 && (
+          <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 13, marginTop: 28 }}>
+            No messages yet — say something! 👋
+          </p>
+        )}
+        {messages.map(m => {
+          const isOwn = m.uid === currentUser.uid;
+          return (
+            <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: isOwn ? "flex-end" : "flex-start" }}>
+              {!isOwn && (
+                <span style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 2, paddingLeft: 2 }}>
+                  {m.senderName}
+                </span>
+              )}
+              <div style={{
+                maxWidth: "75%", padding: "8px 13px",
+                borderRadius: isOwn ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                background: isOwn ? "#2563eb" : "var(--bg-secondary)",
+                color: isOwn ? "#fff" : "var(--text)",
+                fontSize: 14, lineHeight: 1.45, wordBreak: "break-word",
+              }}>
+                {m.text}
+              </div>
+              <span style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, paddingInline: 2 }}>
+                {formatTime(m.timestamp)}
+              </span>
+            </div>
+          );
+        })}
+        <div ref={endRef} />
+      </div>
+    );
+  }
+
+  function InputRow({ val, setVal, onSend, placeholder }) {
+    return (
+      <div style={{ display: "flex", gap: 8, padding: "10px 16px", borderTop: "1px solid var(--border)", background: "var(--bg-card)", flexShrink: 0 }}>
+        <input
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && !e.shiftKey && onSend()}
+          placeholder={placeholder}
+          style={{
+            flex: 1, fontSize: 14, padding: "9px 14px", borderRadius: 22,
+            border: "1px solid var(--border)", background: "var(--bg)",
+            color: "var(--text)", outline: "none", fontFamily: "inherit",
+          }}
+        />
+        <SendBtn onClick={onSend} val={val} />
+      </div>
+    );
+  }
+
+  const privateUnreadTotal = Object.values(memberUnreads).reduce((s, c) => s + c, 0);
+
+  function DotBadge() {
+    return <span style={{ display: "inline-block", width: 7, height: 7, background: "#dc2626", borderRadius: "50%", marginLeft: 6, verticalAlign: "middle" }} />;
+  }
+
+  return (
+    <div style={{ margin: "-1.25rem", display: "flex", flexDirection: "column", height: "calc(100dvh - 140px)" }}>
+      {/* Mode toggles */}
+      <div style={{ display: "flex", gap: 8, padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-card)", flexShrink: 0 }}>
+        {[
+          { id: "group", label: "💬 Group Chat", badge: mode !== "group" && groupUnread > 0 },
+          { id: "private", label: "🔒 Private", badge: mode !== "private" && privateUnreadTotal > 0 },
+        ].map(btn => (
+          <button key={btn.id}
+            onClick={() => { setMode(btn.id); setActiveChatId(null); setActiveMember(null); }}
+            style={{
+              flex: 1, padding: "8px 0", fontSize: 13, fontWeight: 600,
+              background: mode === btn.id ? "var(--green)" : "var(--bg-secondary)",
+              color: mode === btn.id ? "#fff" : "var(--text-muted)",
+              border: "1px solid var(--border)", borderRadius: 8,
+              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+            }}>
+            {btn.label}{btn.badge && <DotBadge />}
+          </button>
+        ))}
+      </div>
+
+      {mode === "group" ? (
+        <>
+          <Bubbles messages={groupMessages} endRef={groupEndRef} />
+          <InputRow val={groupInput} setVal={setGroupInput} onSend={sendGroup} placeholder="Message the group…" />
+        </>
+      ) : activeChatId ? (
+        <>
+          {/* Private chat header */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-card)", flexShrink: 0 }}>
+            <button onClick={() => { setActiveChatId(null); setActiveMember(null); }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "var(--text)", lineHeight: 1, padding: "2px 6px" }}>
+              ←
+            </button>
+            <div style={{ width: 34, height: 34, borderRadius: "50%", background: PALETTE[2] + "20", color: PALETTE[2], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+              {initials(activeMember.displayName)}
+            </div>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>{activeMember.displayName}</span>
+          </div>
+          <Bubbles messages={privateMessages} endRef={privateEndRef} />
+          <InputRow val={privateInput} setVal={setPrivateInput} onSend={sendPrivate} placeholder={`Message ${activeMember.displayName}…`} />
+        </>
+      ) : (
+        /* Members list */
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {members.length === 0 ? (
+            <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 13, padding: "24px 16px" }}>No other members found.</p>
+          ) : members.map(member => {
+            const chatId = [currentUser.uid, member.uid].sort().join("_");
+            const unread = memberUnreads[chatId] || 0;
+            return (
+              <button key={member.uid} onClick={() => { setActiveChatId(chatId); setActiveMember(member); }}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 12,
+                  padding: "13px 16px", background: "none", border: "none",
+                  borderBottom: "1px solid var(--border)", cursor: "pointer",
+                  fontFamily: "inherit", textAlign: "left", transition: "background 0.1s",
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary)"}
+                onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                <div style={{ position: "relative", flexShrink: 0 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: "50%", background: PALETTE[2] + "20", color: PALETTE[2], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700 }}>
+                    {initials(member.displayName)}
+                  </div>
+                  {unread > 0 && (
+                    <span style={{ position: "absolute", top: -2, right: -2, minWidth: 17, height: 17, background: "#dc2626", borderRadius: 10, color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
+                      {unread}
+                    </span>
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, margin: "0 0 2px", color: "var(--text)" }}>{member.displayName}</p>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>Tap to chat</p>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.35, flexShrink: 0 }}>
+                  <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── My Profile ────────────────────────────────────────────────────────────────
 function ProfileAvatar({ displayName, matchedPlayer, size = 72 }) {
   if (matchedPlayer?.imageUrl) {
@@ -2253,6 +2551,7 @@ export default function CarromTracker() {
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const [showSpin, setShowSpin] = useState(false);
   const [toast, setToast] = useState(null);
+  const [chatUnread, setChatUnread] = useState(false);
 
   useEffect(() => {
     if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
@@ -2369,12 +2668,13 @@ export default function CarromTracker() {
     ...(!isMember ? [{ k: "players", l: "Players" }] : []),
     { k: "stats", l: "Stats" },
     { k: "history", l: "History" },
-    ...(isMember ? [{ k: "profile", l: "👤 Me" }] : []),
+    ...(isMember ? [{ k: "chat", l: "Chat" }, { k: "profile", l: "👤 Me" }] : []),
   ];
 
   if (tab === "match" && !isAdmin && !isMember) setTab("board");
   if (tab === "players" && isMember) setTab("board");
   if (tab === "profile" && !isMember) setTab("board");
+  if (tab === "chat" && !isMember) setTab("board");
 
   return (
     <div className="app">
@@ -2462,7 +2762,12 @@ export default function CarromTracker() {
       <div className="tabs-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div className="tabs">
           {TABS.map(({ k, l }) => (
-            <button key={k} className={`tab-btn ${tab === k ? "active" : ""}`} onClick={() => setTab(k)}>{l}</button>
+            <button key={k} className={`tab-btn ${tab === k ? "active" : ""}`} onClick={() => setTab(k)}>
+              {l}
+              {k === "chat" && chatUnread && tab !== "chat" && (
+                <span style={{ display: "inline-block", width: 6, height: 6, background: "#dc2626", borderRadius: "50%", marginLeft: 4, verticalAlign: "middle", position: "relative", top: -2 }} />
+              )}
+            </button>
           ))}
         </div>
         {(isAdmin || isMember) ? (
@@ -2488,6 +2793,9 @@ export default function CarromTracker() {
         {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
+        {tab === "chat" && isMember && currentUser && (
+          <Chat currentUser={currentUser} onUnreadChange={setChatUnread} />
+        )}
         {tab === "profile" && isMember && currentUser && (
           <MyProfile
             currentUser={currentUser}
