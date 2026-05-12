@@ -2,10 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
-  collection, addDoc, deleteDoc, doc, updateDoc,
+  collection, addDoc, deleteDoc, doc, getDoc, updateDoc,
   onSnapshot, query, orderBy, serverTimestamp, deleteField,
 } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import {
+  signInWithEmailAndPassword, signOut, updatePassword, onAuthStateChanged,
+} from "firebase/auth";
+import { db, auth } from "../lib/firebase";
 
 async function fileToResizedBase64(file, maxSize = 200, quality = 0.8) {
   return new Promise((resolve, reject) => {
@@ -1739,25 +1742,55 @@ function TeamSpin({ players, matches, onClose }) {
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 const PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "FNF@2026";
-const MEMBER_PASSCODE = process.env.NEXT_PUBLIC_MEMBER_PASSWORD || "FCT@2026";
 const SESSION_KEY = "ct_auth";
 
-function LoginScreen({ onLogin }) {
-  const [code, setCode] = useState("");
-  const [error, setError] = useState(false);
+function LoginScreen({ onAdminLogin }) {
+  const [mobile, setMobile] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
 
-  function handleLogin() {
-    if (code === PASSCODE) {
-      sessionStorage.setItem(SESSION_KEY, "admin");
-      onLogin("admin");
-    } else if (code === MEMBER_PASSCODE) {
-      sessionStorage.setItem(SESSION_KEY, "member");
-      onLogin("member");
-    } else {
-      setError(true);
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
+  function triggerShake() {
+    setShake(true);
+    setTimeout(() => setShake(false), 400);
+  }
+
+  async function handleLogin() {
+    if (!mobile.trim() || !password) {
+      setError("Enter mobile number and password.");
+      triggerShake();
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    // Admin special case: not in Firebase Auth
+    if (mobile.trim() === "00000000000") {
+      if (password === PASSCODE) {
+        sessionStorage.setItem(SESSION_KEY, "admin");
+        onAdminLogin();
+      } else {
+        setError("Wrong admin passcode.");
+        triggerShake();
+        setLoading(false);
+      }
+      return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, `${mobile.trim()}@fnf.app`, password);
+      // onAuthStateChanged in CarromTracker will handle the state update
+    } catch (err) {
+      const msg = err.code === "auth/invalid-credential" || err.code === "auth/user-not-found" || err.code === "auth/wrong-password"
+        ? "Wrong mobile number or password."
+        : err.code === "auth/too-many-requests"
+        ? "Too many attempts. Try again later."
+        : "Login failed. Please try again.";
+      setError(msg);
+      triggerShake();
+      setLoading(false);
     }
   }
 
@@ -1793,45 +1826,52 @@ function LoginScreen({ onLogin }) {
           <h1 style={{ fontFamily: "'Sora', sans-serif", fontSize: 22, fontWeight: 800, color: "#0d1f0b", marginBottom: 4 }}>
             Carrom Tracker
           </h1>
-          <p style={{ fontSize: 13, color: "#5a7055" }}>Enter passcode to manage data</p>
+          <p style={{ fontSize: 13, color: "#5a7055" }}>Sign in to manage data</p>
         </div>
 
-        <div style={{ marginBottom: "1rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: "1rem" }}>
           <input
-            type="password"
-            value={code}
-            onChange={e => { setCode(e.target.value); setError(false); }}
+            type="tel"
+            value={mobile}
+            onChange={e => { setMobile(e.target.value); setError(""); }}
             onKeyDown={e => e.key === "Enter" && handleLogin()}
-            placeholder="Enter passcode"
+            placeholder="Mobile number (01XXXXXXXXX)"
             style={{
               width: "100%", padding: "12px 14px", fontSize: 15,
               border: `1.5px solid ${error ? "#dc2626" : "#d4e8cf"}`,
               borderRadius: 8, outline: "none", fontFamily: "inherit",
               background: error ? "#fef2f2" : "#f7faf7",
-              color: "#0d1f0b", letterSpacing: "0.1em",
-              transition: "border-color 0.15s",
+              color: "#0d1f0b", boxSizing: "border-box",
             }}
             autoFocus
           />
-          {error && <p style={{ fontSize: 12, color: "#dc2626", marginTop: 6 }}>Wrong passcode. Try again.</p>}
+          <input
+            type="password"
+            value={password}
+            onChange={e => { setPassword(e.target.value); setError(""); }}
+            onKeyDown={e => e.key === "Enter" && handleLogin()}
+            placeholder="Password"
+            style={{
+              width: "100%", padding: "12px 14px", fontSize: 15,
+              border: `1.5px solid ${error ? "#dc2626" : "#d4e8cf"}`,
+              borderRadius: 8, outline: "none", fontFamily: "inherit",
+              background: error ? "#fef2f2" : "#f7faf7",
+              color: "#0d1f0b", boxSizing: "border-box",
+            }}
+          />
+          {error && <p style={{ fontSize: 12, color: "#dc2626", margin: 0 }}>{error}</p>}
         </div>
 
-        <button onClick={handleLogin} style={{
+        <button onClick={handleLogin} disabled={loading} style={{
           width: "100%", padding: "13px", fontSize: 15, fontWeight: 700,
           background: "linear-gradient(135deg, #0e7a00, #14a800)",
-          color: "#fff", border: "none", borderRadius: 8, cursor: "pointer",
+          color: "#fff", border: "none", borderRadius: 8,
+          cursor: loading ? "not-allowed" : "pointer",
           fontFamily: "inherit", boxShadow: "0 4px 12px rgba(20,168,0,0.3)",
-          transition: "opacity 0.15s",
+          opacity: loading ? 0.7 : 1, transition: "opacity 0.15s",
         }}>
-          Login
+          {loading ? "Signing in…" : "Login"}
         </button>
-
-        <p style={{ textAlign: "center", fontSize: 11, color: "#5a7055", marginTop: "1.25rem" }}>
-          You can also <button onClick={() => onLogin("guest")} style={{
-            background: "none", border: "none", color: "#14a800", fontSize: 11,
-            fontWeight: 600, cursor: "pointer", padding: 0, fontFamily: "inherit",
-          }}>view only</button> without passcode
-        </p>
       </div>
 
       <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
@@ -1852,12 +1892,114 @@ function LoginScreen({ onLogin }) {
   );
 }
 
+function ForcePasswordChange({ currentUser, onComplete }) {
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit() {
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Passwords don't match.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      await updatePassword(auth.currentUser, newPassword);
+      await updateDoc(doc(db, "users", currentUser.uid), { mustChangePassword: false });
+      onComplete();
+    } catch (err) {
+      setError(err.code === "auth/requires-recent-login"
+        ? "Session expired. Please log out and log in again."
+        : "Failed to update password. Try again.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 1000,
+      background: "linear-gradient(135deg, #0e7a00 0%, #14a800 60%, #1dc400 100%)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: "1.5rem",
+    }}>
+      <div style={{
+        width: "100%", maxWidth: 360,
+        background: "#ffffff", borderRadius: 16,
+        padding: "2rem 1.75rem",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+      }}>
+        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+          <div style={{ fontSize: 36, marginBottom: 8 }}>🔐</div>
+          <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 20, fontWeight: 800, color: "#0d1f0b", margin: "0 0 6px" }}>
+            Set New Password
+          </h2>
+          <p style={{ fontSize: 13, color: "#5a7055", margin: 0 }}>
+            Welcome, {currentUser.displayName}! Please set a new password before continuing.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: "1rem" }}>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={e => { setNewPassword(e.target.value); setError(""); }}
+            onKeyDown={e => e.key === "Enter" && handleSubmit()}
+            placeholder="New password (min 6 chars)"
+            style={{
+              width: "100%", padding: "12px 14px", fontSize: 15,
+              border: `1.5px solid ${error ? "#dc2626" : "#d4e8cf"}`,
+              borderRadius: 8, outline: "none", fontFamily: "inherit",
+              background: error ? "#fef2f2" : "#f7faf7",
+              color: "#0d1f0b", boxSizing: "border-box",
+            }}
+            autoFocus
+          />
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={e => { setConfirmPassword(e.target.value); setError(""); }}
+            onKeyDown={e => e.key === "Enter" && handleSubmit()}
+            placeholder="Confirm new password"
+            style={{
+              width: "100%", padding: "12px 14px", fontSize: 15,
+              border: `1.5px solid ${error ? "#dc2626" : "#d4e8cf"}`,
+              borderRadius: 8, outline: "none", fontFamily: "inherit",
+              background: error ? "#fef2f2" : "#f7faf7",
+              color: "#0d1f0b", boxSizing: "border-box",
+            }}
+          />
+          {error && <p style={{ fontSize: 12, color: "#dc2626", margin: 0 }}>{error}</p>}
+        </div>
+
+        <button onClick={handleSubmit} disabled={loading} style={{
+          width: "100%", padding: "13px", fontSize: 15, fontWeight: 700,
+          background: "linear-gradient(135deg, #0e7a00, #14a800)",
+          color: "#fff", border: "none", borderRadius: 8,
+          cursor: loading ? "not-allowed" : "pointer",
+          fontFamily: "inherit", boxShadow: "0 4px 12px rgba(20,168,0,0.3)",
+          opacity: loading ? 0.7 : 1,
+        }}>
+          {loading ? "Saving…" : "Set Password & Continue"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function CarromTracker() {
   const [tab, setTab] = useState("board");
   const [players, setPlayers] = useState([]);
   const [matches, setMatches] = useState([]);
   const [synced, setSynced] = useState(false);
   const [authState, setAuthState] = useState("loading"); // loading | guest | member | admin | login
+  const [currentUser, setCurrentUser] = useState(null); // { uid, displayName, mobile, role, mustChangePassword }
+  const [showForcePasswordChange, setShowForcePasswordChange] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const [showSpin, setShowSpin] = useState(false);
 
@@ -1870,8 +2012,27 @@ export default function CarromTracker() {
   }, []);
 
   useEffect(() => {
-    const saved = sessionStorage.getItem(SESSION_KEY);
-    setAuthState(saved || "guest");
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const snap = await getDoc(doc(db, "users", firebaseUser.uid));
+        if (snap.exists()) {
+          const profile = snap.data();
+          setCurrentUser(profile);
+          setShowForcePasswordChange(!!profile.mustChangePassword);
+          setAuthState(profile.role);
+        } else {
+          await signOut(auth);
+          setCurrentUser(null);
+          setAuthState("guest");
+        }
+      } else {
+        setCurrentUser(null);
+        setShowForcePasswordChange(false);
+        const saved = sessionStorage.getItem(SESSION_KEY);
+        setAuthState(saved === "admin" ? "admin" : "guest");
+      }
+    });
+    return () => unsub();
   }, []);
 
   useEffect(() => {
@@ -1885,13 +2046,18 @@ export default function CarromTracker() {
     return () => { unsubP(); unsubM(); };
   }, []);
 
-  function handleLogin(role = "admin") {
-    setAuthState(role);
+  function handleAdminLogin() {
+    setAuthState("admin");
   }
 
-  function handleLogout() {
-    sessionStorage.removeItem(SESSION_KEY);
-    setAuthState("login");
+  async function handleLogout() {
+    if (authState === "admin") {
+      sessionStorage.removeItem(SESSION_KEY);
+      setAuthState("guest");
+    } else {
+      await signOut(auth);
+      // onAuthStateChanged will clear currentUser and set authState to "guest"
+    }
   }
 
   async function addPlayer(name, icon, imageUrl = null) {
@@ -1918,7 +2084,7 @@ export default function CarromTracker() {
   }
 
   if (authState === "loading") return null;
-  if (authState === "login") return <LoginScreen onLogin={handleLogin} />;
+  if (authState === "login") return <LoginScreen onAdminLogin={handleAdminLogin} />;
 
   const isAdmin = authState === "admin";
   const isMember = authState === "member";
@@ -2013,7 +2179,7 @@ export default function CarromTracker() {
         <div className="status-bar">
           <span className={`sync-dot ${synced ? "live" : "loading"}`} />
           {synced ? "Live sync active" : "Connecting..."}
-          {(isAdmin || isMember) && <span style={{ marginLeft: 8, background: isAdmin ? "rgba(212,160,23,0.3)" : "rgba(37,99,235,0.3)", color: isAdmin ? "#fef3c7" : "#dbeafe", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10 }}>{isAdmin ? "Admin" : "Member"}</span>}
+          {(isAdmin || isMember) && <span style={{ marginLeft: 8, background: isAdmin ? "rgba(212,160,23,0.3)" : "rgba(37,99,235,0.3)", color: isAdmin ? "#fef3c7" : "#dbeafe", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10 }}>{isAdmin ? "Admin" : (currentUser?.displayName || "Member")}</span>}
         </div>
       </div>
 
@@ -2048,6 +2214,15 @@ export default function CarromTracker() {
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
       </div>
       {showSpin && <TeamSpin players={players} matches={matches} onClose={() => setShowSpin(false)} />}
+      {showForcePasswordChange && currentUser && (
+        <ForcePasswordChange
+          currentUser={currentUser}
+          onComplete={() => {
+            setCurrentUser(prev => ({ ...prev, mustChangePassword: false }));
+            setShowForcePasswordChange(false);
+          }}
+        />
+      )}
 
       {/* Upwork Promotional Banner */}
       <a
