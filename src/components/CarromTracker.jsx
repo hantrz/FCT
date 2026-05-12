@@ -1739,7 +1739,7 @@ function TeamSpin({ players, matches, onClose }) {
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 const PASSCODE = process.env.NEXT_PUBLIC_APP_PASSCODE || "fnf2024";
-const MEMBER_PASSCODE = "match123";
+const MEMBER_PASSCODE = "FCT2026";
 const SESSION_KEY = "ct_auth";
 
 function LoginScreen({ onLogin }) {
