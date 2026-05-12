@@ -12,7 +12,10 @@
       "Bash(findstr /i \"anthropic\")",
       "PowerShell(New-Item *)",
       "Bash(Select-String -Path \"K:\\\\FCT\\\\carrom-tracker\\\\src\\\\components\\\\CarromTracker.jsx\" -Pattern \"ADMIN_PASSWORD|password|isLoggedIn|handleLogin|setUser|userRole|localStorage\" -Context 3)",
-      "Bash(Select-Object -First 100)"
+      "Bash(Select-Object -First 100)",
+      "Bash(npm install *)",
+      "Bash(node scripts/createUsers.js)",
+      "Bash(npx next *)"
     ]
   }
 }
