@@ -831,7 +831,7 @@ function NewMatch({ players, onSave }) {
 }
 
 // ── Players ───────────────────────────────────────────────────────────────────
-function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectPlayer, onNavigateToStats }) {
+function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, isAdmin, onSelectPlayer, onNavigateToStats }) {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [icon, setIcon] = useState(AVATAR_ICONS[0]);
@@ -973,6 +973,26 @@ function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectP
                 <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{p.name}</p>
                 <p className="text-muted" style={{ fontSize: 11 }}>{st.played} matches</p>
                 <p style={{ fontSize: 12, fontWeight: 600, color: "var(--green)", marginTop: 2 }}>{st.winPct}% win rate</p>
+                {isAdmin && onResetPassword && p.name.toLowerCase() !== "random man" && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm(`Reset ${p.name}'s password to default?`)) {
+                        onResetPassword(p.name);
+                      }
+                    }}
+                    style={{
+                      marginTop: 7, fontSize: 11, fontWeight: 500,
+                      padding: "3px 8px", borderRadius: 5,
+                      border: "1px solid var(--border-strong)",
+                      background: "var(--bg-secondary)",
+                      color: "var(--text-muted)", cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    🔑 Reset pwd
+                  </button>
+                )}
               </div>
             );
           })}
@@ -2638,6 +2658,33 @@ export default function CarromTracker() {
     await deleteDoc(doc(db, "matches", id));
   }
 
+  async function handleResetPassword(playerName) {
+    const usersSnap = await getDocs(collection(db, "users"));
+    const userDoc = usersSnap.docs.find(
+      d => d.data().displayName?.toLowerCase() === playerName.toLowerCase()
+    );
+    if (!userDoc) {
+      showToast(`No login account found for ${playerName}`);
+      return;
+    }
+    const uid = userDoc.data().uid;
+    try {
+      const res = await fetch("/api/resetPassword", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid }),
+      });
+      if (res.ok) {
+        showToast(`${playerName}'s password has been reset to fct@123`);
+      } else {
+        const err = await res.json();
+        showToast(`Reset failed: ${err.error || "unknown error"}`);
+      }
+    } catch {
+      showToast(`Reset failed: network error`);
+    }
+  }
+
   if (authState === "loading") return null;
   if (authState === "login") return <LoginScreen />;
 
@@ -2774,7 +2821,7 @@ export default function CarromTracker() {
       <div className="content">
         {tab === "board" && <Leaderboard players={players} matches={matches} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
         {tab === "match" && (isAdmin || isMember) && <NewMatch players={players} onSave={saveMatch} />}
-        {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
+        {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} onResetPassword={isAdmin ? handleResetPassword : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
         {tab === "chat" && isFirebaseUser && currentUser && (
