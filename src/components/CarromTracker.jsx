@@ -1065,6 +1065,13 @@ function History({ players, matches, onDelete, isAdmin }) {
                 {renderTeam(m.team2, !w1)}
               </div>
               <p className="text-muted" style={{ fontSize: 11 }}>{date} · {m.type}</p>
+              <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2, display: "flex", alignItems: "center", gap: 3 }}>
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.6 }}>
+                  <circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+                Added by {m.addedBy?.name ?? "Admin"}
+              </p>
             </div>
             {isAdmin && (
               <button onClick={() => onDelete(m.id)} style={{
@@ -2106,7 +2113,10 @@ export default function CarromTracker() {
     await updateDoc(doc(db, "players", id), data);
   }
   async function saveMatch(data) {
-    await addDoc(collection(db, "matches"), { ...data, createdAt: serverTimestamp() });
+    const addedBy = isAdmin
+      ? { uid: "admin", name: "Admin" }
+      : { uid: currentUser.uid, name: currentUser.displayName };
+    await addDoc(collection(db, "matches"), { ...data, addedBy, createdAt: serverTimestamp() });
     setTab("board");
   }
   async function deleteMatch(id) {
