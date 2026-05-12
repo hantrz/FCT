@@ -1777,6 +1777,90 @@ function TeamSpin({ players, matches, onClose }) {
   );
 }
 
+// ── Chat helpers (module-level so React never remounts them on re-render) ─────
+function formatChatTime(ts) {
+  if (!ts?.toDate) return "";
+  return ts.toDate().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+}
+
+function ChatDotBadge() {
+  return <span style={{ display: "inline-block", width: 7, height: 7, background: "#dc2626", borderRadius: "50%", marginLeft: 6, verticalAlign: "middle" }} />;
+}
+
+function ChatSendBtn({ onClick, val, sending }) {
+  return (
+    <button onClick={onClick} disabled={!val.trim() || sending}
+      style={{
+        width: 38, height: 38, borderRadius: "50%", background: "var(--green)", border: "none",
+        cursor: val.trim() && !sending ? "pointer" : "default",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        opacity: val.trim() ? 1 : 0.4, flexShrink: 0, transition: "opacity 0.15s",
+      }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
+function ChatBubbles({ messages, endRef, currentUid }) {
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+      {messages.length === 0 && (
+        <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 13, marginTop: 28 }}>
+          No messages yet — say something! 👋
+        </p>
+      )}
+      {messages.map(m => {
+        const isOwn = m.uid === currentUid;
+        return (
+          <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: isOwn ? "flex-end" : "flex-start" }}>
+            {!isOwn && (
+              <span style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 2, paddingLeft: 2 }}>
+                {m.senderName}
+              </span>
+            )}
+            <div style={{
+              maxWidth: "75%", padding: "8px 13px",
+              borderRadius: isOwn ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+              background: isOwn ? "#2563eb" : "var(--bg-secondary)",
+              color: isOwn ? "#fff" : "var(--text)",
+              fontSize: 14, lineHeight: 1.45, wordBreak: "break-word",
+            }}>
+              {m.text}
+            </div>
+            <span style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, paddingInline: 2 }}>
+              {formatChatTime(m.timestamp)}
+            </span>
+          </div>
+        );
+      })}
+      <div ref={endRef} />
+    </div>
+  );
+}
+
+function ChatInputRow({ val, setVal, onSend, placeholder, sending }) {
+  const inputRef = useRef(null);
+  return (
+    <div style={{ display: "flex", gap: 8, padding: "10px 16px", borderTop: "1px solid var(--border)", background: "var(--bg-card)", flexShrink: 0 }}>
+      <input
+        ref={inputRef}
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onKeyDown={e => e.key === "Enter" && !e.shiftKey && onSend()}
+        placeholder={placeholder}
+        style={{
+          flex: 1, fontSize: 14, padding: "9px 14px", borderRadius: 22,
+          border: "1px solid var(--border)", background: "var(--bg)",
+          color: "var(--text)", outline: "none", fontFamily: "inherit",
+        }}
+      />
+      <ChatSendBtn onClick={onSend} val={val} sending={sending} />
+    </div>
+  );
+}
+
 // ── Chat ──────────────────────────────────────────────────────────────────────
 function Chat({ currentUser, onUnreadChange }) {
   const [mode, setMode] = useState("group");
@@ -1901,92 +1985,11 @@ function Chat({ currentUser, onUnreadChange }) {
     } finally { setSending(false); }
   }
 
-  function formatTime(ts) {
-    if (!ts?.toDate) return "";
-    return ts.toDate().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-  }
-
   function initials(name) {
     return (name || "?").trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2);
   }
 
-  function SendBtn({ onClick, val }) {
-    return (
-      <button onClick={onClick} disabled={!val.trim() || sending}
-        style={{
-          width: 38, height: 38, borderRadius: "50%", background: "var(--green)", border: "none",
-          cursor: val.trim() && !sending ? "pointer" : "default",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          opacity: val.trim() ? 1 : 0.4, flexShrink: 0, transition: "opacity 0.15s",
-        }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-    );
-  }
-
-  function Bubbles({ messages, endRef }) {
-    return (
-      <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-        {messages.length === 0 && (
-          <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 13, marginTop: 28 }}>
-            No messages yet — say something! 👋
-          </p>
-        )}
-        {messages.map(m => {
-          const isOwn = m.uid === currentUser.uid;
-          return (
-            <div key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: isOwn ? "flex-end" : "flex-start" }}>
-              {!isOwn && (
-                <span style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 2, paddingLeft: 2 }}>
-                  {m.senderName}
-                </span>
-              )}
-              <div style={{
-                maxWidth: "75%", padding: "8px 13px",
-                borderRadius: isOwn ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                background: isOwn ? "#2563eb" : "var(--bg-secondary)",
-                color: isOwn ? "#fff" : "var(--text)",
-                fontSize: 14, lineHeight: 1.45, wordBreak: "break-word",
-              }}>
-                {m.text}
-              </div>
-              <span style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, paddingInline: 2 }}>
-                {formatTime(m.timestamp)}
-              </span>
-            </div>
-          );
-        })}
-        <div ref={endRef} />
-      </div>
-    );
-  }
-
-  function InputRow({ val, setVal, onSend, placeholder }) {
-    return (
-      <div style={{ display: "flex", gap: 8, padding: "10px 16px", borderTop: "1px solid var(--border)", background: "var(--bg-card)", flexShrink: 0 }}>
-        <input
-          value={val}
-          onChange={e => setVal(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && !e.shiftKey && onSend()}
-          placeholder={placeholder}
-          style={{
-            flex: 1, fontSize: 14, padding: "9px 14px", borderRadius: 22,
-            border: "1px solid var(--border)", background: "var(--bg)",
-            color: "var(--text)", outline: "none", fontFamily: "inherit",
-          }}
-        />
-        <SendBtn onClick={onSend} val={val} />
-      </div>
-    );
-  }
-
   const privateUnreadTotal = Object.values(memberUnreads).reduce((s, c) => s + c, 0);
-
-  function DotBadge() {
-    return <span style={{ display: "inline-block", width: 7, height: 7, background: "#dc2626", borderRadius: "50%", marginLeft: 6, verticalAlign: "middle" }} />;
-  }
 
   return (
     <div style={{ margin: "-1.25rem", display: "flex", flexDirection: "column", height: "calc(100dvh - 140px)" }}>
@@ -2005,15 +2008,15 @@ function Chat({ currentUser, onUnreadChange }) {
               border: "1px solid var(--border)", borderRadius: 8,
               cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
             }}>
-            {btn.label}{btn.badge && <DotBadge />}
+            {btn.label}{btn.badge && <ChatDotBadge />}
           </button>
         ))}
       </div>
 
       {mode === "group" ? (
         <>
-          <Bubbles messages={groupMessages} endRef={groupEndRef} />
-          <InputRow val={groupInput} setVal={setGroupInput} onSend={sendGroup} placeholder="Message the group…" />
+          <ChatBubbles messages={groupMessages} endRef={groupEndRef} currentUid={currentUser.uid} />
+          <ChatInputRow val={groupInput} setVal={setGroupInput} onSend={sendGroup} placeholder="Message the group…" sending={sending} />
         </>
       ) : activeChatId ? (
         <>
@@ -2028,8 +2031,8 @@ function Chat({ currentUser, onUnreadChange }) {
             </div>
             <span style={{ fontSize: 15, fontWeight: 700 }}>{activeMember.displayName}</span>
           </div>
-          <Bubbles messages={privateMessages} endRef={privateEndRef} />
-          <InputRow val={privateInput} setVal={setPrivateInput} onSend={sendPrivate} placeholder={`Message ${activeMember.displayName}…`} />
+          <ChatBubbles messages={privateMessages} endRef={privateEndRef} currentUid={currentUser.uid} />
+          <ChatInputRow val={privateInput} setVal={setPrivateInput} onSend={sendPrivate} placeholder={`Message ${activeMember.displayName}…`} sending={sending} />
         </>
       ) : (
         /* Members list */
