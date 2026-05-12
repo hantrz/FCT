@@ -833,6 +833,7 @@ function NewMatch({ players, onSave }) {
 // ── Players ───────────────────────────────────────────────────────────────────
 function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectPlayer, onNavigateToStats }) {
   const [name, setName] = useState("");
+  const [mobile, setMobile] = useState("");
   const [icon, setIcon] = useState(AVATAR_ICONS[0]);
   const [adding, setAdding] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);
@@ -873,8 +874,8 @@ function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectP
   async function handleAdd() {
     if (!name.trim() || adding) return;
     setAdding(true);
-    await onAdd(name.trim(), icon, uploadedImage);
-    setName(""); setUploadedImage(null); setAdding(false);
+    await onAdd(name.trim(), icon, uploadedImage, mobile.trim());
+    setName(""); setMobile(""); setUploadedImage(null); setAdding(false);
   }
 
   function startEdit(p) {
@@ -924,7 +925,7 @@ function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectP
               </div>
             </div>
           )}
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: name.trim().toLowerCase() !== "random man" ? 8 : 0 }}>
             <input value={name} onChange={e => setName(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleAdd()}
               placeholder="Player name" style={{ flex: 1 }} />
@@ -932,6 +933,15 @@ function Players({ players, matches, onAdd, onRemove, onEdit, isAdmin, onSelectP
               {adding ? "..." : "Add"}
             </button>
           </div>
+          {name.trim().toLowerCase() !== "random man" && (
+            <input
+              value={mobile}
+              onChange={e => setMobile(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleAdd()}
+              placeholder="Mobile number (01XXXXXXXXX) — for login account"
+              style={{ width: "100%", boxSizing: "border-box" }}
+            />
+          )}
         </div>
       )}
 
@@ -2002,6 +2012,7 @@ export default function CarromTracker() {
   const [showForcePasswordChange, setShowForcePasswordChange] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const [showSpin, setShowSpin] = useState(false);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
@@ -2060,10 +2071,30 @@ export default function CarromTracker() {
     }
   }
 
-  async function addPlayer(name, icon, imageUrl = null) {
+  function showToast(message) {
+    setToast(message);
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  async function addPlayer(name, icon, imageUrl = null, mobile = "") {
     const data = { name, icon, createdAt: serverTimestamp() };
     if (imageUrl) data.imageUrl = imageUrl;
     await addDoc(collection(db, "players"), data);
+
+    if (mobile && name.trim().toLowerCase() !== "random man") {
+      try {
+        const res = await fetch("/api/createUser", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ displayName: name.trim(), mobile }),
+        });
+        if (res.ok) {
+          showToast("Player added and login account created");
+        }
+      } catch {
+        // player was saved; auth creation failure is non-fatal
+      }
+    }
   }
   async function removePlayer(id) {
     if (!confirm("Remove this player?")) return;
@@ -2214,6 +2245,18 @@ export default function CarromTracker() {
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
       </div>
       {showSpin && <TeamSpin players={players} matches={matches} onClose={() => setShowSpin(false)} />}
+      {toast && (
+        <div style={{
+          position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)",
+          background: "#14a800", color: "#fff",
+          padding: "10px 22px", borderRadius: 8,
+          boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+          fontSize: 14, fontWeight: 600, zIndex: 3000,
+          whiteSpace: "nowrap", pointerEvents: "none",
+        }}>
+          {toast}
+        </div>
+      )}
       {showForcePasswordChange && currentUser && (
         <ForcePasswordChange
           currentUser={currentUser}
