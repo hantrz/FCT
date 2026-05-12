@@ -1757,6 +1757,239 @@ function TeamSpin({ players, matches, onClose }) {
   );
 }
 
+// ── My Profile ────────────────────────────────────────────────────────────────
+function ProfileAvatar({ displayName, matchedPlayer, size = 72 }) {
+  if (matchedPlayer?.imageUrl) {
+    return (
+      <img src={matchedPlayer.imageUrl} alt={displayName}
+        style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border)", flexShrink: 0 }} />
+    );
+  }
+  if (matchedPlayer?.icon) {
+    return (
+      <div style={{ width: size, height: size, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size * 0.5), background: "var(--bg-secondary)", border: "2px solid var(--border)", flexShrink: 0 }}>
+        {matchedPlayer.icon}
+      </div>
+    );
+  }
+  const initials = (displayName || "?").trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: PALETTE[0] + "20", color: PALETTE[0],
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: Math.round(size * 0.34), fontWeight: 700,
+      border: `2px solid ${PALETTE[0]}40`, flexShrink: 0,
+    }}>
+      {initials}
+    </div>
+  );
+}
+
+function MyProfile({ currentUser, players, matches, onNameUpdate }) {
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(currentUser.displayName);
+  const [savingName, setSavingName] = useState(false);
+
+  const matchedPlayer = players.find(
+    p => p.name.toLowerCase() === currentUser.displayName.toLowerCase()
+  );
+  const playerId = matchedPlayer?.id;
+
+  const myMatches = playerId
+    ? matches.filter(m => m.team1.includes(playerId) || m.team2.includes(playerId))
+    : [];
+
+  let wins = 0, losses = 0, totalPoints = 0;
+  const partnerWins = {};
+  for (const m of myMatches) {
+    const inT1 = m.team1.includes(playerId);
+    const won = (inT1 && m.winner === "team1") || (!inT1 && m.winner === "team2");
+    if (won) {
+      wins++;
+      totalPoints += m.winnerScore ?? 0;
+      const partners = (inT1 ? m.team1 : m.team2).filter(id => id !== playerId);
+      for (const pid of partners) partnerWins[pid] = (partnerWins[pid] || 0) + 1;
+    } else {
+      losses++;
+      totalPoints += m.loserScore ?? 0;
+    }
+  }
+  const played = wins + losses;
+  const winRate = played > 0 ? Math.round((wins / played) * 100) : 0;
+
+  let bestPartnerId = null, bestPartnerWins = 0;
+  for (const [pid, w] of Object.entries(partnerWins)) {
+    if (w > bestPartnerWins) { bestPartnerWins = w; bestPartnerId = pid; }
+  }
+  const bestPartner = bestPartnerId ? players.find(p => p.id === bestPartnerId) : null;
+
+  const recentMatches = myMatches.slice(0, 5);
+
+  function maskMobile(mobile) {
+    if (!mobile || mobile.length < 6) return mobile || "—";
+    return mobile.slice(0, 3) + "XXXXX" + mobile.slice(-2);
+  }
+
+  const memberSince = currentUser.createdAt?.toDate
+    ? currentUser.createdAt.toDate().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    : "—";
+
+  async function saveName() {
+    const trimmed = nameInput.trim();
+    if (!trimmed || trimmed === currentUser.displayName) { setEditingName(false); return; }
+    setSavingName(true);
+    await updateDoc(doc(db, "users", currentUser.uid), { displayName: trimmed });
+    onNameUpdate(trimmed);
+    setSavingName(false);
+    setEditingName(false);
+  }
+
+  const getName = id => players.find(p => p.id === id)?.name || "?";
+
+  return (
+    <div>
+      {/* Profile card */}
+      <div className="card" style={{ marginBottom: "1rem", textAlign: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+          <ProfileAvatar displayName={currentUser.displayName} matchedPlayer={matchedPlayer} size={72} />
+        </div>
+
+        {editingName ? (
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", alignItems: "center", marginBottom: 6 }}>
+            <input
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") saveName(); if (e.key === "Escape") setEditingName(false); }}
+              style={{ fontSize: 15, fontWeight: 700, textAlign: "center", maxWidth: 180 }}
+              autoFocus
+            />
+            <button onClick={saveName} disabled={savingName} className="btn btn-primary" style={{ fontSize: 12, padding: "5px 10px" }}>
+              {savingName ? "…" : "Save"}
+            </button>
+            <button onClick={() => setEditingName(false)} className="btn" style={{ fontSize: 12, padding: "5px 10px" }}>✕</button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, marginBottom: 6 }}>
+            <p style={{ fontSize: 18, fontWeight: 800, fontFamily: "'Sora', sans-serif", margin: 0 }}>
+              {currentUser.displayName}
+            </p>
+            <button
+              onClick={() => { setNameInput(currentUser.displayName); setEditingName(true); }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, padding: "2px 4px", opacity: 0.55, lineHeight: 1 }}
+              title="Edit name"
+            >✏️</button>
+          </div>
+        )}
+
+        <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "3px 0" }}>
+          📱 {maskMobile(currentUser.mobile)}
+        </p>
+        <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
+          Member since {memberSince}
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className="card" style={{ marginBottom: "1rem" }}>
+        <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>My Stats</p>
+        {!playerId ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>
+            No player profile found matching your name.
+          </p>
+        ) : (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: bestPartner ? 10 : 0 }}>
+              {[
+                { label: "Played", value: played, size: 22 },
+                { label: "Win Rate", value: null },
+                { label: "Wins / Losses", value: null },
+                { label: "Points Scored", value: totalPoints, size: 22 },
+              ].map((item, i) => (
+                <div key={i} style={{ background: "var(--bg-secondary)", borderRadius: 8, padding: "10px 12px" }}>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 3px" }}>{item.label}</p>
+                  {i === 1 && (
+                    <p style={{ fontSize: 22, fontWeight: 800, margin: 0, color: winRate > 50 ? "var(--green)" : winRate < 50 ? "#dc2626" : "var(--text)" }}>
+                      {winRate}%
+                    </p>
+                  )}
+                  {i === 2 && (
+                    <p style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>
+                      <span style={{ color: "var(--green)" }}>{wins}W</span>
+                      <span style={{ color: "var(--text-muted)", fontWeight: 400 }}> / </span>
+                      <span style={{ color: "#dc2626" }}>{losses}L</span>
+                    </p>
+                  )}
+                  {item.value !== null && item.value !== undefined && i !== 2 && (
+                    <p style={{ fontSize: item.size || 22, fontWeight: 800, margin: 0 }}>{item.value}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            {bestPartner && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--bg-secondary)", borderRadius: 8 }}>
+                <PlayerAvatar player={bestPartner} size={34} />
+                <div>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 2px" }}>Best Partner</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>
+                    {bestPartner.name}{" "}
+                    <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 400 }}>({bestPartnerWins} wins together)</span>
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Recent matches */}
+      <div className="card">
+        <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Recent Matches</p>
+        {recentMatches.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>No matches yet.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {recentMatches.map(m => {
+              const w1 = m.winner === "team1";
+              const myInT1 = m.team1.includes(playerId);
+              const won = (myInT1 && w1) || (!myInT1 && !w1);
+              const date = m.createdAt
+                ? m.createdAt.toDate().toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+                : "—";
+              const renderTeam = ids => ids.map(id => getName(id)).join(" & ");
+              return (
+                <div key={m.id} className="match-item">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, marginBottom: 2, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: w1 ? 700 : 400, color: w1 ? "var(--green)" : "var(--text-muted)" }}>
+                        {w1 ? "★ " : ""}{renderTeam(m.team1)}
+                      </span>
+                      <span style={{ fontSize: 10, color: "var(--text-muted)", padding: "1px 4px", background: "var(--bg-secondary)", borderRadius: 4 }}>vs</span>
+                      <span style={{ fontWeight: !w1 ? 700 : 400, color: !w1 ? "var(--green)" : "var(--text-muted)" }}>
+                        {!w1 ? "★ " : ""}{renderTeam(m.team2)}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
+                      {date} · {m.winnerScore ?? "?"}-{m.loserScore ?? "?"} · {m.type}
+                    </p>
+                  </div>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 12, flexShrink: 0,
+                    background: won ? "rgba(20,168,0,0.12)" : "rgba(220,38,38,0.1)",
+                    color: won ? "var(--green)" : "#dc2626",
+                  }}>
+                    {won ? "Win" : "Loss"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ──────────────────────────────────────────────────────────────────
 const PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "FNF@2026";
 const SESSION_KEY = "ct_auth";
@@ -2136,10 +2369,12 @@ export default function CarromTracker() {
     ...(!isMember ? [{ k: "players", l: "Players" }] : []),
     { k: "stats", l: "Stats" },
     { k: "history", l: "History" },
+    ...(isMember ? [{ k: "profile", l: "👤 Me" }] : []),
   ];
 
   if (tab === "match" && !isAdmin && !isMember) setTab("board");
   if (tab === "players" && isMember) setTab("board");
+  if (tab === "profile" && !isMember) setTab("board");
 
   return (
     <div className="app">
@@ -2253,6 +2488,14 @@ export default function CarromTracker() {
         {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
+        {tab === "profile" && isMember && currentUser && (
+          <MyProfile
+            currentUser={currentUser}
+            players={players}
+            matches={matches}
+            onNameUpdate={name => setCurrentUser(prev => ({ ...prev, displayName: name }))}
+          />
+        )}
       </div>
       {showSpin && <TeamSpin players={players} matches={matches} onClose={() => setShowSpin(false)} />}
       {toast && (
