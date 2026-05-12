@@ -1738,8 +1738,8 @@ function TeamSpin({ players, matches, onClose }) {
 }
 
 // ── Main App ──────────────────────────────────────────────────────────────────
-const PASSCODE = process.env.NEXT_PUBLIC_APP_PASSCODE || "fnf2024";
-const MEMBER_PASSCODE = "FCT2026";
+const PASSCODE = process.env.NEXT_PUBLIC_ADMIN_PASSCODE || "FNF@2026";
+const MEMBER_PASSCODE = process.env.NEXT_PUBLIC_MEMBER_PASSWORD || "FCT@2026";
 const SESSION_KEY = "ct_auth";
 
 function LoginScreen({ onLogin }) {
@@ -1979,7 +1979,7 @@ export default function CarromTracker() {
           </div>
         </div>
         <div style={{ position: "absolute", top: "50%", right: 16, transform: "translateY(-50%)", display: "flex", flexDirection: "column", alignItems: "stretch", gap: 6, zIndex: 2 }}>
-          <a href="https://fnfschool.com" target="_blank" rel="noopener noreferrer"
+          <a href="https://www.facebook.com/TechZahidul/" target="_blank" rel="noopener noreferrer"
             className="nav-btn-hover nav-btn-fnf"
             style={{
               display: "flex", flexDirection: "column", alignItems: "center",
