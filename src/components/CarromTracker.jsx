@@ -1777,6 +1777,33 @@ function TeamSpin({ players, matches, onClose }) {
   );
 }
 
+// ── Chat audio + notifications ────────────────────────────────────────────────
+function playDing() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.3, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    o.start(ctx.currentTime);
+    o.stop(ctx.currentTime + 0.3);
+  } catch {}
+}
+
+function showChatNotification(senderName, text, chatContext, isActive, mode, activeChatId) {
+  if (typeof window === "undefined" || Notification.permission !== "granted") return;
+  if (chatContext === "group" && isActive && mode === "group") return;
+  if (chatContext !== "group" && isActive && mode === "private" && activeChatId === chatContext) return;
+  try {
+    new Notification(`New message from ${senderName}`, {
+      body: text.slice(0, 50),
+      icon: "/icon-192.png",
+    });
+  } catch {}
+}
+
 // ── Chat helpers (module-level so React never remounts them on re-render) ─────
 function formatChatTime(ts) {
   if (!ts?.toDate) return "";
@@ -1862,7 +1889,7 @@ function ChatInputRow({ val, setVal, onSend, placeholder, sending }) {
 }
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
-function Chat({ currentUser, onUnreadChange }) {
+function Chat({ currentUser, onUnreadChange, isActive }) {
   const [mode, setMode] = useState("group");
   const [groupMessages, setGroupMessages] = useState([]);
   const [groupInput, setGroupInput] = useState("");
@@ -1877,6 +1904,20 @@ function Chat({ currentUser, onUnreadChange }) {
   const [sending, setSending] = useState(false);
   const groupEndRef = useRef(null);
   const privateEndRef = useRef(null);
+  const groupMsgCountRef = useRef(-1);
+  const privateMsgCountRef = useRef(-1);
+  const modeRef = useRef(mode);
+  const activeChatIdRef = useRef(activeChatId);
+  const isActiveRef = useRef(isActive);
+
+  useEffect(() => { modeRef.current = mode; }, [mode]);
+  useEffect(() => { activeChatIdRef.current = activeChatId; }, [activeChatId]);
+  useEffect(() => { isActiveRef.current = isActive; }, [isActive]);
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
 
   // Read status from Firestore (tracks last-read timestamps)
   useEffect(() => {
@@ -1890,7 +1931,18 @@ function Chat({ currentUser, onUnreadChange }) {
   useEffect(() => {
     const q = query(collection(db, "groupChat"), orderBy("timestamp", "asc"), limit(50));
     const unsub = onSnapshot(q, snap => {
-      setGroupMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const prev = groupMsgCountRef.current;
+      if (prev >= 0 && msgs.length > prev) {
+        const fromOther = msgs.slice(prev).find(m => m.uid !== currentUser.uid);
+        if (fromOther) {
+          playDing();
+          showChatNotification(fromOther.senderName, fromOther.text, "group",
+            isActiveRef.current, modeRef.current, activeChatIdRef.current);
+        }
+      }
+      groupMsgCountRef.current = msgs.length;
+      setGroupMessages(msgs);
     });
     return () => unsub();
   }, []);
@@ -1943,9 +1995,21 @@ function Chat({ currentUser, onUnreadChange }) {
   // Private conversation messages
   useEffect(() => {
     if (!activeChatId) { setPrivateMessages([]); return; }
+    privateMsgCountRef.current = -1;
     const q = query(collection(db, "privateChats", activeChatId, "messages"), orderBy("timestamp", "asc"), limit(50));
     const unsub = onSnapshot(q, snap => {
-      setPrivateMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const prev = privateMsgCountRef.current;
+      if (prev >= 0 && msgs.length > prev) {
+        const fromOther = msgs.slice(prev).find(m => m.uid !== currentUser.uid);
+        if (fromOther) {
+          playDing();
+          showChatNotification(fromOther.senderName, fromOther.text, activeChatId,
+            isActiveRef.current, modeRef.current, activeChatIdRef.current);
+        }
+      }
+      privateMsgCountRef.current = msgs.length;
+      setPrivateMessages(msgs);
     });
     setDoc(doc(db, "chatReads", currentUser.uid), { [activeChatId]: serverTimestamp() }, { merge: true }).catch(() => {});
     return () => unsub();
@@ -1992,7 +2056,7 @@ function Chat({ currentUser, onUnreadChange }) {
   const privateUnreadTotal = Object.values(memberUnreads).reduce((s, c) => s + c, 0);
 
   return (
-    <div style={{ margin: "-1.25rem", display: "flex", flexDirection: "column", height: "calc(100dvh - 140px)" }}>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
       {/* Mode toggles */}
       <div style={{ display: "flex", gap: 8, padding: "10px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg-card)", flexShrink: 0 }}>
         {[
@@ -2562,6 +2626,7 @@ export default function CarromTracker() {
   const [showSpin, setShowSpin] = useState(false);
   const [toast, setToast] = useState(null);
   const [chatUnread, setChatUnread] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
@@ -2796,9 +2861,11 @@ export default function CarromTracker() {
       <div className="tabs-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div className="tabs">
           {TABS.map(({ k, l }) => (
-            <button key={k} className={`tab-btn ${tab === k ? "active" : ""}`} onClick={() => setTab(k)}>
+            <button key={k}
+              className={`tab-btn ${(k === "chat" ? chatOpen : (!chatOpen && tab === k)) ? "active" : ""}`}
+              onClick={() => { if (k === "chat") { setChatOpen(true); } else { setChatOpen(false); setTab(k); } }}>
               {l}
-              {k === "chat" && chatUnread && tab !== "chat" && (
+              {k === "chat" && chatUnread && !chatOpen && (
                 <span style={{ display: "inline-block", width: 6, height: 6, background: "#dc2626", borderRadius: "50%", marginLeft: 4, verticalAlign: "middle", position: "relative", top: -2 }} />
               )}
             </button>
@@ -2827,9 +2894,7 @@ export default function CarromTracker() {
         {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} onResetPassword={isAdmin ? handleResetPassword : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
-        {tab === "chat" && isFirebaseUser && currentUser && (
-          <Chat currentUser={currentUser} onUnreadChange={setChatUnread} />
-        )}
+        {null /* chat is rendered as fullscreen overlay below */}
         {tab === "profile" && isFirebaseUser && currentUser && (
           <MyProfile
             currentUser={currentUser}
@@ -2839,6 +2904,27 @@ export default function CarromTracker() {
           />
         )}
       </div>
+      {/* Fullscreen chat overlay */}
+      {chatOpen && isFirebaseUser && currentUser && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 1000,
+          background: "var(--bg)", display: "flex", flexDirection: "column",
+        }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "12px 16px",
+            background: "var(--bg-card)", borderBottom: "1px solid var(--border)",
+            flexShrink: 0,
+          }}>
+            <button onClick={() => setChatOpen(false)} style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: 22, color: "var(--text)", lineHeight: 1, padding: "2px 8px 2px 0",
+            }}>←</button>
+            <span style={{ fontSize: 16, fontWeight: 700 }}>Chat</span>
+          </div>
+          <Chat currentUser={currentUser} onUnreadChange={setChatUnread} isActive={chatOpen} />
+        </div>
+      )}
       {showSpin && <TeamSpin players={players} matches={matches} onClose={() => setShowSpin(false)} />}
       {toast && (
         <div style={{
