@@ -2907,7 +2907,7 @@ export default function CarromTracker() {
       {/* Fullscreen chat overlay */}
       {chatOpen && isFirebaseUser && currentUser && (
         <div style={{
-          position: "fixed", inset: 0, zIndex: 1000,
+          position: "absolute", inset: 0, zIndex: 1000,
           background: "var(--bg)", display: "flex", flexDirection: "column",
         }}>
           <div style={{
@@ -2954,7 +2954,7 @@ export default function CarromTracker() {
         target="_blank"
         rel="noopener noreferrer"
         style={{
-          display: "block",
+          display: chatOpen ? "none" : "block",
           margin: "32px 16px 24px",
           background: "linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)",
           borderRadius: 16,
