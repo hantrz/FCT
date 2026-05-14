@@ -174,8 +174,15 @@ body {
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  flex: 1;
+  min-width: 0;
 }
 .tabs::-webkit-scrollbar { display: none; }
+
+@media (min-width: 769px) {
+  .tab-btn { font-size: 11px; padding: 10px 5px; gap: 3px; }
+  .tab-btn svg { width: 18px; height: 18px; }
+}
 
 .tab-btn {
   background: none;
