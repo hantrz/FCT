@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import admin from "firebase-admin";
-import { readFileSync } from "fs";
-import { join } from "path";
 
 function getAdmin() {
   if (admin.apps.length > 0) return admin;
-  const serviceAccount = JSON.parse(
-    readFileSync(join(process.cwd(), "scripts", "serviceAccount.json"), "utf8")
-  );
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
   return admin;
 }
