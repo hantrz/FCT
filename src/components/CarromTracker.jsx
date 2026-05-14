@@ -1832,7 +1832,7 @@ function ChatSendBtn({ onClick, val, sending }) {
 
 function ChatBubbles({ messages, endRef, currentUid }) {
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px 80px", display: "flex", flexDirection: "column", gap: 10 }}>
       {messages.length === 0 && (
         <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 13, marginTop: 28 }}>
           No messages yet — say something! 👋
@@ -1870,7 +1870,7 @@ function ChatBubbles({ messages, endRef, currentUid }) {
 function ChatInputRow({ val, setVal, onSend, placeholder, sending }) {
   const inputRef = useRef(null);
   return (
-    <div style={{ display: "flex", gap: 8, padding: "10px 16px", borderTop: "1px solid var(--border)", background: "var(--bg-card)", flexShrink: 0 }}>
+    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, display: "flex", gap: 8, padding: "10px 16px", borderTop: "1px solid var(--border)", background: "var(--bg-card)", zIndex: 1001 }}>
       <input
         ref={inputRef}
         value={val}
@@ -2907,7 +2907,7 @@ export default function CarromTracker() {
       {/* Fullscreen chat overlay */}
       {chatOpen && isFirebaseUser && currentUser && (
         <div style={{
-          position: "absolute", inset: 0, zIndex: 1000,
+          position: "fixed", inset: 0, zIndex: 1000, height: "100dvh",
           background: "var(--bg)", display: "flex", flexDirection: "column",
         }}>
           <div style={{
