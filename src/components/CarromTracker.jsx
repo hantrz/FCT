@@ -2763,13 +2763,54 @@ export default function CarromTracker() {
   // Firebase-auth users (Mr. Zed = admin, others = member) get chat + profile tabs
   const isFirebaseUser = !!currentUser;
 
+  const TAB_ICONS = {
+    board: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 9H3.5a2.5 2.5 0 010-5H6"/><path d="M18 9h2.5a2.5 2.5 0 000-5H18"/>
+        <path d="M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0012 0V2z"/>
+      </svg>
+    ),
+    match: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+        <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
+      </svg>
+    ),
+    players: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+    ),
+    stats: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M18 20V10M12 20V4M6 20v-6"/>
+      </svg>
+    ),
+    history: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+    ),
+    chat: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+      </svg>
+    ),
+    profile: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+    ),
+  };
+
   const TABS = [
     { k: "board", l: "Leaderboard" },
     ...((isAdmin || isMember) ? [{ k: "match", l: "New Match" }] : []),
     ...(isAdmin ? [{ k: "players", l: "Players" }] : []),
     { k: "stats", l: "Stats" },
     { k: "history", l: "History" },
-    ...(isFirebaseUser ? [{ k: "chat", l: "Chat" }, { k: "profile", l: "👤 Me" }] : []),
+    ...(isFirebaseUser ? [{ k: "chat", l: "Chat" }, { k: "profile", l: "Me" }] : []),
   ];
 
   if (tab === "match" && !isAdmin && !isMember) setTab("board");
@@ -2866,10 +2907,13 @@ export default function CarromTracker() {
             <button key={k}
               className={`tab-btn ${(k === "chat" ? chatOpen : (!chatOpen && tab === k)) ? "active" : ""}`}
               onClick={() => { if (k === "chat") { setChatOpen(true); } else { setChatOpen(false); setTab(k); } }}>
-              {l}
-              {k === "chat" && chatUnread && !chatOpen && (
-                <span style={{ display: "inline-block", width: 6, height: 6, background: "#dc2626", borderRadius: "50%", marginLeft: 4, verticalAlign: "middle", position: "relative", top: -2 }} />
-              )}
+              <span style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+                {TAB_ICONS[k]}
+                {k === "chat" && chatUnread && !chatOpen && (
+                  <span style={{ position: "absolute", top: -3, right: -5, width: 6, height: 6, background: "#dc2626", borderRadius: "50%" }} />
+                )}
+              </span>
+              <span className="tab-label">{l}</span>
             </button>
           ))}
         </div>
