@@ -2338,9 +2338,11 @@ function MyProfile({ currentUser, players, matches, onNameUpdate }) {
               const w1 = m.winner === "team1";
               const myInT1 = m.team1.includes(playerId);
               const won = (myInT1 && w1) || (!myInT1 && !w1);
-              const date = m.createdAt
+              const date = m.createdAt?.toDate
                 ? m.createdAt.toDate().toLocaleDateString("en-GB", { day: "numeric", month: "short" })
                 : "—";
+              const hasScore = m.winnerScore != null || m.loserScore != null;
+              const scoreStr = hasScore ? ` · ${m.winnerScore ?? "?"}–${m.loserScore ?? "?"}` : "";
               const renderTeam = ids => ids.map(id => getName(id)).join(" & ");
               return (
                 <div key={m.id} className="match-item">
@@ -2355,7 +2357,7 @@ function MyProfile({ currentUser, players, matches, onNameUpdate }) {
                       </span>
                     </div>
                     <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
-                      {date} · {m.winnerScore ?? "?"}-{m.loserScore ?? "?"} · {m.type}
+                      {date}{scoreStr} · {m.type}
                     </p>
                   </div>
                   <span style={{
