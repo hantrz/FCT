@@ -15,7 +15,10 @@
       "Bash(Select-Object -First 100)",
       "Bash(npm install *)",
       "Bash(node scripts/createUsers.js)",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(git restore *)",
+      "PowerShell(\\(Get-Content \"K:\\\\FCT\\\\carrom-tracker\\\\src\\\\components\\\\CarromTracker.jsx\" | Measure-Object -Line\\).Lines)",
+      "Bash(git diff *)"
     ]
   }
 }
