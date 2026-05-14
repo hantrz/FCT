@@ -2171,7 +2171,7 @@ function ProfileAvatar({ displayName, matchedPlayer, size = 72 }) {
   );
 }
 
-function MyProfile({ currentUser, players, matches, onNameUpdate }) {
+function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout }) {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(currentUser.displayName);
   const [savingName, setSavingName] = useState(false);
@@ -2328,7 +2328,7 @@ function MyProfile({ currentUser, players, matches, onNameUpdate }) {
       </div>
 
       {/* Recent matches */}
-      <div className="card">
+      <div className="card" style={{ marginBottom: "1rem" }}>
         <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Recent Matches</p>
         {recentMatches.length === 0 ? (
           <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>No matches yet.</p>
@@ -2373,6 +2373,22 @@ function MyProfile({ currentUser, players, matches, onNameUpdate }) {
           </div>
         )}
       </div>
+
+      {/* Logout */}
+      <button onClick={onLogout} style={{
+        width: "100%", padding: "13px", borderRadius: 8,
+        background: "#dc2626", color: "#fff", border: "none",
+        cursor: "pointer", fontSize: 14, fontWeight: 700,
+        fontFamily: "inherit", display: "flex", alignItems: "center",
+        justifyContent: "center", gap: 8, marginBottom: "1rem",
+      }}>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Logout
+      </button>
     </div>
   );
 }
@@ -2901,7 +2917,7 @@ export default function CarromTracker() {
         </div>
       </div>
 
-      <div className="tabs-wrap" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div className="tabs-wrap" style={{ display: "flex", alignItems: "center" }}>
         <div className="tabs">
           {TABS.map(({ k, l }) => (
             <button key={k}
@@ -2917,14 +2933,7 @@ export default function CarromTracker() {
             </button>
           ))}
         </div>
-        {(isAdmin || isMember) ? (
-          <button onClick={handleLogout} className="nav-btn-hover nav-btn-login" style={{
-            background: "transparent", border: "1px solid rgba(255,255,255,0.5)",
-            borderRadius: 6, padding: "4px 14px", color: "rgba(255,255,255,0.9)",
-            fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
-            marginRight: 4, flexShrink: 0,
-          }}>Logout</button>
-        ) : (
+        {!isFirebaseUser && (
           <button onClick={() => setAuthState("login")} className="nav-btn-hover nav-btn-login" style={{
             background: "transparent", border: "1px solid rgba(255,255,255,0.5)",
             borderRadius: 6, padding: "4px 14px", color: "rgba(255,255,255,0.9)",
@@ -2947,6 +2956,7 @@ export default function CarromTracker() {
             players={players}
             matches={matches}
             onNameUpdate={name => setCurrentUser(prev => ({ ...prev, displayName: name }))}
+            onLogout={handleLogout}
           />
         )}
       </div>
