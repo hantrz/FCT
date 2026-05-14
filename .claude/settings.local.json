@@ -18,7 +18,8 @@
       "Bash(npx next *)",
       "Bash(git restore *)",
       "PowerShell(\\(Get-Content \"K:\\\\FCT\\\\carrom-tracker\\\\src\\\\components\\\\CarromTracker.jsx\" | Measure-Object -Line\\).Lines)",
-      "Bash(git diff *)"
+      "Bash(git diff *)",
+      "Bash(wsl grep *)"
     ]
   }
 }
