@@ -1625,6 +1625,7 @@ function TeamSpin({ players, matches, onClose }) {
   const [strikeFirst, setStrikeFirst] = useState(null);
   const [particles, setParticles] = useState([]);
   const strikeBoxRef = useRef(null);
+  const audioCtxRef = useRef(null);
 
   const SOFT_CONDITIONS = [
     { id: "winRate", label: "⚖️ Win rate balanced" },
@@ -1656,6 +1657,7 @@ function TeamSpin({ players, matches, onClose }) {
 
     try {
       const matchCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioCtxRef.current = matchCtx;
       let beatCount = 0;
       const totalBeats = 20;
 
@@ -1713,17 +1715,28 @@ function TeamSpin({ players, matches, onClose }) {
       const beatInterval = setInterval(() => {
         if (beatCount >= totalBeats) {
           clearInterval(beatInterval);
-          const finalOsc = matchCtx.createOscillator();
-          const finalGain = matchCtx.createGain();
-          finalOsc.connect(finalGain); finalGain.connect(matchCtx.destination);
-          finalOsc.type = "sine";
-          finalOsc.frequency.setValueAtTime(880, matchCtx.currentTime);
-          finalOsc.frequency.setValueAtTime(1100, matchCtx.currentTime + 0.1);
-          finalOsc.frequency.setValueAtTime(1320, matchCtx.currentTime + 0.2);
-          finalGain.gain.setValueAtTime(0.3, matchCtx.currentTime);
-          finalGain.gain.exponentialRampToValueAtTime(0.001, matchCtx.currentTime + 0.5);
-          finalOsc.start(matchCtx.currentTime);
-          finalOsc.stop(matchCtx.currentTime + 0.5);
+          try {
+            const now2 = matchCtx.currentTime;
+            const thudOsc = matchCtx.createOscillator();
+            const thudGain = matchCtx.createGain();
+            thudOsc.connect(thudGain); thudGain.connect(matchCtx.destination);
+            thudOsc.type = "sine";
+            thudOsc.frequency.setValueAtTime(120, now2);
+            thudOsc.frequency.exponentialRampToValueAtTime(40, now2 + 0.15);
+            thudGain.gain.setValueAtTime(0.6, now2);
+            thudGain.gain.exponentialRampToValueAtTime(0.001, now2 + 0.2);
+            thudOsc.start(now2); thudOsc.stop(now2 + 0.2);
+            const clickOsc = matchCtx.createOscillator();
+            const clickGain = matchCtx.createGain();
+            clickOsc.connect(clickGain); clickGain.connect(matchCtx.destination);
+            clickOsc.type = "square";
+            clickOsc.frequency.setValueAtTime(300, now2);
+            clickOsc.frequency.exponentialRampToValueAtTime(80, now2 + 0.05);
+            clickGain.gain.setValueAtTime(0.4, now2);
+            clickGain.gain.exponentialRampToValueAtTime(0.001, now2 + 0.06);
+            clickOsc.start(now2); clickOsc.stop(now2 + 0.07);
+            setTimeout(() => { try { matchCtx.close(); } catch(e) {} }, 300);
+          } catch(e) {}
           return;
         }
         scheduleBeats();
@@ -2081,21 +2094,23 @@ function TeamSpin({ players, matches, onClose }) {
                 }}>
                   ⚙️ Balancing rules applied
                 </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", alignItems: "center" }}>
                   {appliedConditions.map((label, i) => (
                     <span key={i} style={{
-                      fontSize: 12, fontWeight: 600,
-                      padding: "4px 10px", borderRadius: 12,
+                      fontSize: 11, fontWeight: 600,
+                      padding: "5px 10px", borderRadius: 12,
                       background: "#fbbf24", color: "#1a1a1a",
+                      textAlign: "center",
                     }}>
                       {label}
                     </span>
                   ))}
                   {recentPairBlocked && (
                     <span style={{
-                      fontSize: 12, fontWeight: 600,
-                      padding: "4px 10px", borderRadius: 12,
+                      fontSize: 11, fontWeight: 600,
+                      padding: "5px 10px", borderRadius: 12,
                       background: "#ef4444", color: "#ffffff",
+                      textAlign: "center",
                     }}>
                       🚫 Last 2 match partners separated
                     </span>
