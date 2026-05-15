@@ -1623,7 +1623,8 @@ function TeamSpin({ players, matches, onClose }) {
   const [appliedConditions, setAppliedConditions] = useState([]);
   const [recentPairBlocked, setRecentPairBlocked] = useState(false);
   const [strikeFirst, setStrikeFirst] = useState(null);
-  const [showConfetti, setShowConfetti] = useState(false);
+  const [particles, setParticles] = useState([]);
+  const strikeBoxRef = useRef(null);
 
   const SOFT_CONDITIONS = [
     { id: "winRate", label: "⚖️ Win rate balanced" },
@@ -1639,6 +1640,7 @@ function TeamSpin({ players, matches, onClose }) {
     setAppliedConditions([]);
     setRecentPairBlocked(false);
     setStrikeFirst(null);
+    setParticles([]);
     if (selected.includes(id)) {
       setSelected(selected.filter(p => p !== id));
     } else if (selected.length < 4) {
@@ -1743,8 +1745,53 @@ function TeamSpin({ players, matches, onClose }) {
         setAppliedConditions(active.map(c => c.label));
         const striker = getStrikeFirstPlayer(matches, selectedPlayers);
         setStrikeFirst(striker);
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 2500);
+        setTimeout(() => {
+          const box = strikeBoxRef.current;
+          if (!box) return;
+          const rect = box.getBoundingClientRect();
+          const modalEl = box.closest('[data-modal="spin"]');
+          const modalRect = modalEl ? modalEl.getBoundingClientRect() : { left: 0, top: 0 };
+          const originX = rect.left - modalRect.left + rect.width / 2;
+          const originY = rect.top - modalRect.top + rect.height / 2;
+
+          const newParticles = Array.from({ length: 80 }).map((_, i) => {
+            const angle = (Math.random() * 360) * (Math.PI / 180);
+            const distance = 80 + Math.random() * 180;
+            const tx = Math.cos(angle) * distance;
+            const ty = Math.sin(angle) * distance;
+            const size = 4 + Math.random() * 8;
+            const duration = 0.8 + Math.random() * 0.8;
+            const delay = Math.random() * 0.3;
+            const colors = ["#fbbf24","#ef4444","#3b82f6","#10b981","#f59e0b","#8b5cf6","#ec4899","#06b6d4","#ffffff"];
+            return { id: i, x: originX, y: originY, tx, ty, size, duration, delay, color: colors[i % colors.length], shape: Math.random() > 0.5 ? "50%" : "2px" };
+          });
+          setParticles(newParticles);
+          setTimeout(() => setParticles([]), 2000);
+
+          try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const playBang = (time, freq, type = "square") => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.type = type;
+              osc.frequency.setValueAtTime(freq, time);
+              osc.frequency.exponentialRampToValueAtTime(freq * 0.1, time + 0.3);
+              gain.gain.setValueAtTime(0.3, time);
+              gain.gain.exponentialRampToValueAtTime(0.001, time + 0.4);
+              osc.start(time);
+              osc.stop(time + 0.4);
+            };
+            const now = ctx.currentTime;
+            playBang(now, 800, "sawtooth");
+            playBang(now + 0.05, 600, "square");
+            playBang(now + 0.1, 1000, "sawtooth");
+            playBang(now + 0.15, 500, "triangle");
+            playBang(now + 0.3, 750, "sawtooth");
+            playBang(now + 0.35, 900, "square");
+          } catch(e) {}
+        }, 100);
         setSpinning(false);
         setShuffleNames([]);
       }
@@ -1758,7 +1805,7 @@ function TeamSpin({ players, matches, onClose }) {
     setAppliedConditions([]);
     setRecentPairBlocked(false);
     setStrikeFirst(null);
-    setShowConfetti(false);
+    setParticles([]);
   };
 
   return (
@@ -1767,10 +1814,11 @@ function TeamSpin({ players, matches, onClose }) {
       style={{
         position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
         display: "flex", alignItems: "center", justifyContent: "center",
-        zIndex: 1000, padding: 16, backdropFilter: "blur(6px)",
+        zIndex: 1000, padding: 16, backdropFilter: "blur(6px)", overflow: "visible",
       }}
     >
       <div
+        data-modal="spin"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: "#ffffff",
@@ -1779,25 +1827,9 @@ function TeamSpin({ players, matches, onClose }) {
           maxWidth: 480, width: "100%", maxHeight: "90vh", overflowY: "auto",
           border: "1px solid rgba(0,0,0,0.1)",
           boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
-          position: "relative", overflow: "hidden",
+          position: "relative", overflow: "visible",
         }}
       >
-        {showConfetti && Array.from({ length: 30 }).map((_, i) => (
-          <div
-            key={i}
-            className="confetti-piece"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: 0,
-              background: ["#fbbf24","#ef4444","#3b82f6","#10b981","#f59e0b","#8b5cf6"][i % 6],
-              width: `${6 + Math.random() * 6}px`,
-              height: `${6 + Math.random() * 6}px`,
-              animationDuration: `${1.2 + Math.random() * 1.2}s`,
-              animationDelay: `${Math.random() * 0.4}s`,
-              borderRadius: Math.random() > 0.5 ? "50%" : "2px",
-            }}
-          />
-        ))}
         <button
           onClick={onClose}
           style={{
@@ -1945,7 +1977,7 @@ function TeamSpin({ players, matches, onClose }) {
               🎉 Teams ready! Let the game begin.
             </p>
             {strikeFirst && (
-              <div style={{
+              <div ref={strikeBoxRef} style={{
                 marginTop: 12, padding: "12px 16px",
                 background: "linear-gradient(135deg, #fef3c7, #fde68a)",
                 borderRadius: 12,
@@ -1997,6 +2029,24 @@ function TeamSpin({ players, matches, onClose }) {
             )}
           </>
         )}
+        {particles.map(p => (
+          <div
+            key={p.id}
+            className="particle"
+            style={{
+              left: p.x,
+              top: p.y,
+              width: p.size,
+              height: p.size,
+              background: p.color,
+              borderRadius: p.shape,
+              animationDuration: `${p.duration}s`,
+              animationDelay: `${p.delay}s`,
+              "--tx": `${p.tx}px`,
+              "--ty": `${p.ty}px`,
+            }}
+          />
+        ))}
       </div>
     </div>
   );
@@ -3062,10 +3112,6 @@ export default function CarromTracker() {
   return (
     <div className="app">
       <style>{`
-  @keyframes confetti-fall {
-    0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
-    100% { transform: translateY(400px) rotate(720deg); opacity: 0; }
-  }
   @keyframes pop-in {
     0% { transform: scale(0.5); opacity: 0; }
     60% { transform: scale(1.08); }
@@ -3074,13 +3120,15 @@ export default function CarromTracker() {
   .team-result-pop {
     animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   }
-  .confetti-piece {
+  @keyframes burst {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+  }
+  .particle {
     position: absolute;
-    width: 8px;
-    height: 8px;
-    border-radius: 2px;
-    animation: confetti-fall linear forwards;
+    border-radius: 50%;
     pointer-events: none;
+    animation: burst ease-out forwards;
   }
   .nav-btn-hover {
     transition: transform 0.2s ease, box-shadow 0.3s ease, filter 0.2s ease;
