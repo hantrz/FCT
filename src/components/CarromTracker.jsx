@@ -1474,40 +1474,69 @@ function getLastMatchLosers(matches) {
 }
 
 function getRecentTeammatePairs(matches, lastN = 2) {
-  function getTime(m) {
-    const t = m.timestamp || m.date || m.createdAt;
-    if (!t) return 0;
-    if (typeof t === "number") return t;
-    if (t.toMillis) return t.toMillis();
-    if (t.seconds) return t.seconds * 1000;
-    if (t instanceof Date) return t.getTime();
-    return 0;
-  }
-
-  const sorted = [...matches].sort((a, b) => getTime(b) - getTime(a));
-  const recent = sorted.slice(0, lastN);
-
-  console.log("Recent matches used for blocking:", recent.map(m => ({
-    teamA: m.teamA,
-    teamB: m.teamB,
-    time: getTime(m),
-  })));
-
-  const blockedPairs = new Set();
-  recent.forEach(m => {
-    const teams = [m.teamA || [], m.teamB || []];
-    teams.forEach(team => {
-      for (let i = 0; i < team.length; i++) {
-        for (let j = i + 1; j < team.length; j++) {
-          const pair = [team[i], team[j]].sort().join("|||");
-          blockedPairs.add(pair);
-        }
+  try {
+    function getTime(m) {
+      try {
+        const t = m.timestamp || m.date || m.createdAt || m.time;
+        if (!t) return 0;
+        if (typeof t === "number") return t;
+        if (typeof t.toMillis === "function") return t.toMillis();
+        if (t.seconds) return t.seconds * 1000;
+        if (t instanceof Date) return t.getTime();
+        return 0;
+      } catch (e) {
+        return 0;
       }
-    });
-  });
+    }
 
-  console.log("Blocked pairs:", [...blockedPairs]);
-  return blockedPairs;
+    const sorted = [...matches].sort((a, b) => getTime(b) - getTime(a));
+    const recent = sorted.slice(0, lastN);
+
+    console.log("=== TEAM SPIN DEBUG ===");
+    console.log("Total matches:", matches.length);
+    if (matches.length > 0) {
+      console.log("Sample match structure:", JSON.stringify(matches[0], null, 2));
+    }
+    console.log("Recent matches selected:", recent.map(m => ({
+      teamA: m.teamA,
+      teamB: m.teamB,
+      team1: m.team1,
+      team2: m.team2,
+      players: m.players,
+      winner: m.winner,
+      time: getTime(m),
+    })));
+
+    const blockedPairs = new Set();
+
+    recent.forEach(m => {
+      const teamA = m.teamA || m.team1 || m.players?.teamA || [];
+      const teamB = m.teamB || m.team2 || m.players?.teamB || [];
+      const teams = [teamA, teamB];
+
+      teams.forEach(team => {
+        if (!Array.isArray(team) || team.length < 2) return;
+        for (let i = 0; i < team.length; i++) {
+          for (let j = i + 1; j < team.length; j++) {
+            const id1 = typeof team[i] === "string" ? team[i] : team[i]?.id;
+            const id2 = typeof team[j] === "string" ? team[j] : team[j]?.id;
+            if (id1 && id2) {
+              const pair = [id1, id2].sort().join("|||");
+              blockedPairs.add(pair);
+              console.log("Blocking pair:", id1, "+", id2);
+            }
+          }
+        }
+      });
+    });
+
+    console.log("Total blocked pairs:", blockedPairs.size, [...blockedPairs]);
+    return blockedPairs;
+
+  } catch (err) {
+    console.error("getRecentTeammatePairs error:", err);
+    return new Set();
+  }
 }
 
 // ── Team Spin ─────────────────────────────────────────────────────────────────
@@ -1554,33 +1583,34 @@ function TeamSpin({ players, matches, onClose }) {
       { teamA: [p1, p4], teamB: [p2, p3] },
     ];
 
-    const blockedPairs = getRecentTeammatePairs(matches, 2);
-    const filteredByRecent = configs.filter(c => {
-      const allTeams = [c.teamA, c.teamB];
-      return allTeams.every(team => {
-        for (let i = 0; i < team.length; i++) {
-          for (let j = i + 1; j < team.length; j++) {
-            const pair = [team[i].id, team[j].id].sort().join("|||");
-            if (blockedPairs.has(pair)) return false;
+    let filteredByRecent = configs;
+    try {
+      const blockedPairs = getRecentTeammatePairs(matches, 2);
+      const afterFilter = configs.filter(c => {
+        const allTeams = [c.teamA, c.teamB];
+        return allTeams.every(team => {
+          for (let i = 0; i < team.length; i++) {
+            for (let j = i + 1; j < team.length; j++) {
+              const pair = [team[i].id, team[j].id].sort().join("|||");
+              if (blockedPairs.has(pair)) {
+                console.log("Config blocked because of pair:", team[i].name, "+", team[j].name);
+                return false;
+              }
+            }
           }
-        }
-        return true;
+          return true;
+        });
       });
-    });
-    console.log("All configs:", configs.map(c => ({
-      teamA: c.teamA.map(p => p.name),
-      teamB: c.teamB.map(p => p.name),
-    })));
-    console.log("After recent pair filter:", filteredByRecent.map(c => ({
-      teamA: c.teamA.map(p => p.name),
-      teamB: c.teamB.map(p => p.name),
-    })));
-
-    if (filteredByRecent.length > 0) {
-      configs = filteredByRecent;
-    } else {
-      console.warn("All configs blocked by recent pair rule — using fallback");
+      if (afterFilter.length > 0) {
+        filteredByRecent = afterFilter;
+        console.log("Configs after recent pair filter:", filteredByRecent.length);
+      } else {
+        console.warn("All configs blocked — using fallback");
+      }
+    } catch (err) {
+      console.error("Recent pair filtering error:", err);
     }
+    configs = filteredByRecent;
     setRecentPairBlocked(filteredByRecent.length > 0 && filteredByRecent.length < 3);
 
     const numConds = 1 + Math.floor(Math.random() * 3);
