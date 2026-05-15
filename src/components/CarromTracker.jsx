@@ -1655,94 +1655,6 @@ function TeamSpin({ players, matches, onClose }) {
     setTeams(null);
     setAppliedConditions([]);
 
-    try {
-      const matchCtx = new (window.AudioContext || window.webkitAudioContext)();
-      audioCtxRef.current = matchCtx;
-      let beatCount = 0;
-      const totalBeats = 20;
-
-      const playTick = (time, pitch, vol) => {
-        const osc = matchCtx.createOscillator();
-        const gain = matchCtx.createGain();
-        const osc2 = matchCtx.createOscillator();
-        const gain2 = matchCtx.createGain();
-        osc.connect(gain); gain.connect(matchCtx.destination);
-        osc2.connect(gain2); gain2.connect(matchCtx.destination);
-        osc.type = "sine";
-        osc2.type = "triangle";
-        osc.frequency.setValueAtTime(pitch, time);
-        osc2.frequency.setValueAtTime(pitch * 1.5, time);
-        gain.gain.setValueAtTime(vol, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
-        gain2.gain.setValueAtTime(vol * 0.3, time);
-        gain2.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
-        osc.start(time); osc.stop(time + 0.1);
-        osc2.start(time); osc2.stop(time + 0.08);
-      };
-
-      const playWhoosh = (time) => {
-        const bufferSize = matchCtx.sampleRate * 0.15;
-        const buffer = matchCtx.createBuffer(1, bufferSize, matchCtx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-        const source = matchCtx.createBufferSource();
-        const filter = matchCtx.createBiquadFilter();
-        const gain = matchCtx.createGain();
-        source.buffer = buffer;
-        filter.type = "bandpass";
-        filter.frequency.setValueAtTime(800, time);
-        filter.frequency.exponentialRampToValueAtTime(200, time + 0.15);
-        gain.gain.setValueAtTime(0.15, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
-        source.connect(filter); filter.connect(gain); gain.connect(matchCtx.destination);
-        source.start(time); source.stop(time + 0.2);
-      };
-
-      const basePitches = [440, 494, 523, 587, 659, 698, 784, 880];
-      let now = matchCtx.currentTime;
-
-      const scheduleBeats = () => {
-        const progress = beatCount / totalBeats;
-        const interval = 0.18 - (progress * 0.08);
-        const pitch = basePitches[beatCount % basePitches.length] * (1 + progress * 0.3);
-        const vol = 0.15 + progress * 0.25;
-        playTick(now, pitch, vol);
-        if (beatCount % 4 === 0) playWhoosh(now + 0.05);
-        now += interval;
-        beatCount++;
-      };
-
-      const beatInterval = setInterval(() => {
-        if (beatCount >= totalBeats) {
-          clearInterval(beatInterval);
-          try {
-            const now2 = matchCtx.currentTime;
-            const thudOsc = matchCtx.createOscillator();
-            const thudGain = matchCtx.createGain();
-            thudOsc.connect(thudGain); thudGain.connect(matchCtx.destination);
-            thudOsc.type = "sine";
-            thudOsc.frequency.setValueAtTime(120, now2);
-            thudOsc.frequency.exponentialRampToValueAtTime(40, now2 + 0.15);
-            thudGain.gain.setValueAtTime(0.6, now2);
-            thudGain.gain.exponentialRampToValueAtTime(0.001, now2 + 0.2);
-            thudOsc.start(now2); thudOsc.stop(now2 + 0.2);
-            const clickOsc = matchCtx.createOscillator();
-            const clickGain = matchCtx.createGain();
-            clickOsc.connect(clickGain); clickGain.connect(matchCtx.destination);
-            clickOsc.type = "square";
-            clickOsc.frequency.setValueAtTime(300, now2);
-            clickOsc.frequency.exponentialRampToValueAtTime(80, now2 + 0.05);
-            clickGain.gain.setValueAtTime(0.4, now2);
-            clickGain.gain.exponentialRampToValueAtTime(0.001, now2 + 0.06);
-            clickOsc.start(now2); clickOsc.stop(now2 + 0.07);
-            setTimeout(() => { try { matchCtx.close(); } catch(e) {} }, 300);
-          } catch(e) {}
-          return;
-        }
-        scheduleBeats();
-      }, 100);
-    } catch(e) {}
-
     const selectedPlayers = selected.map(id => players.find(p => p.id === id));
     const [p1, p2, p3, p4] = selectedPlayers;
 
@@ -1823,13 +1735,64 @@ function TeamSpin({ players, matches, onClose }) {
     scored.sort((a, b) => b.score - a.score);
     const finalConfig = scored[0].cfg;
 
+    let spinAudioCtx = null;
+    try {
+      spinAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e) {}
+
     let count = 0;
     const interval = setInterval(() => {
       const shuffleArr = [...selectedPlayers].sort(() => Math.random() - 0.5);
       setShuffleNames(shuffleArr.map(p => p.name));
       count++;
+      if (spinAudioCtx) {
+        try {
+          const progress = count / 20;
+          const now = spinAudioCtx.currentTime;
+          const pitch = 300 + (progress * 600);
+          const vol = 0.08 + (progress * 0.18);
+          const osc = spinAudioCtx.createOscillator();
+          const gain = spinAudioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(spinAudioCtx.destination);
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(pitch, now);
+          gain.gain.setValueAtTime(vol, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.09);
+        } catch(e) {}
+      }
       if (count >= 20) {
         clearInterval(interval);
+        if (spinAudioCtx) {
+          try {
+            const now = spinAudioCtx.currentTime;
+            const thud = spinAudioCtx.createOscillator();
+            const thudGain = spinAudioCtx.createGain();
+            thud.connect(thudGain);
+            thudGain.connect(spinAudioCtx.destination);
+            thud.type = "sine";
+            thud.frequency.setValueAtTime(150, now);
+            thud.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+            thudGain.gain.setValueAtTime(0.7, now);
+            thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+            thud.start(now);
+            thud.stop(now + 0.2);
+            const click = spinAudioCtx.createOscillator();
+            const clickGain = spinAudioCtx.createGain();
+            click.connect(clickGain);
+            clickGain.connect(spinAudioCtx.destination);
+            click.type = "square";
+            click.frequency.setValueAtTime(400, now);
+            click.frequency.exponentialRampToValueAtTime(80, now + 0.05);
+            clickGain.gain.setValueAtTime(0.4, now);
+            clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+            click.start(now);
+            click.stop(now + 0.07);
+            setTimeout(() => { try { spinAudioCtx.close(); } catch(e) {} }, 250);
+          } catch(e) {}
+        }
         setTeams(finalConfig);
         setAppliedConditions(active.map(c => c.label));
         const striker = getStrikeFirstPlayer(matches, selectedPlayers);
