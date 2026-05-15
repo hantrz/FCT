@@ -1473,6 +1473,28 @@ function getLastMatchLosers(matches) {
   return [];
 }
 
+function getRecentTeammatePairs(matches, lastN = 2) {
+  const sorted = [...matches].sort((a, b) => {
+    const ta = a.timestamp || a.date || a.createdAt || 0;
+    const tb = b.timestamp || b.date || b.createdAt || 0;
+    return tb - ta;
+  });
+  const recent = sorted.slice(0, lastN);
+  const blockedPairs = new Set();
+  recent.forEach(m => {
+    const teams = [m.teamA || [], m.teamB || []];
+    teams.forEach(team => {
+      for (let i = 0; i < team.length; i++) {
+        for (let j = i + 1; j < team.length; j++) {
+          const pair = [team[i], team[j]].sort().join("|||");
+          blockedPairs.add(pair);
+        }
+      }
+    });
+  });
+  return blockedPairs;
+}
+
 // ── Team Spin ─────────────────────────────────────────────────────────────────
 function TeamSpin({ players, matches, onClose }) {
   const [selected, setSelected] = useState([]);
@@ -1480,6 +1502,7 @@ function TeamSpin({ players, matches, onClose }) {
   const [teams, setTeams] = useState(null);
   const [shuffleNames, setShuffleNames] = useState([]);
   const [appliedConditions, setAppliedConditions] = useState([]);
+  const [recentPairBlocked, setRecentPairBlocked] = useState(false);
 
   const SOFT_CONDITIONS = [
     { id: "winRate", label: "⚖️ Win rate balanced" },
@@ -1493,6 +1516,7 @@ function TeamSpin({ players, matches, onClose }) {
     if (spinning) return;
     setTeams(null);
     setAppliedConditions([]);
+    setRecentPairBlocked(false);
     if (selected.includes(id)) {
       setSelected(selected.filter(p => p !== id));
     } else if (selected.length < 4) {
@@ -1514,6 +1538,24 @@ function TeamSpin({ players, matches, onClose }) {
       { teamA: [p1, p3], teamB: [p2, p4] },
       { teamA: [p1, p4], teamB: [p2, p3] },
     ];
+
+    const blockedPairs = getRecentTeammatePairs(matches, 2);
+    const filteredByRecent = configs.filter(c => {
+      const allTeams = [c.teamA, c.teamB];
+      return allTeams.every(team => {
+        for (let i = 0; i < team.length; i++) {
+          for (let j = i + 1; j < team.length; j++) {
+            const pair = [team[i].id, team[j].id].sort().join("|||");
+            if (blockedPairs.has(pair)) return false;
+          }
+        }
+        return true;
+      });
+    });
+    if (filteredByRecent.length > 0) {
+      configs = filteredByRecent;
+    }
+    setRecentPairBlocked(filteredByRecent.length > 0 && filteredByRecent.length < 3);
 
     const numConds = 1 + Math.floor(Math.random() * 3);
     const shuffledConds = [...SOFT_CONDITIONS].sort(() => Math.random() - 0.5);
@@ -1575,6 +1617,7 @@ function TeamSpin({ players, matches, onClose }) {
     setTeams(null);
     setShuffleNames([]);
     setAppliedConditions([]);
+    setRecentPairBlocked(false);
   };
 
   return (
@@ -1744,6 +1787,19 @@ function TeamSpin({ players, matches, onClose }) {
             }}>
               🎉 Teams ready! Let the game begin.
             </p>
+            {recentPairBlocked && (
+              <div style={{
+                marginTop: 12, padding: "8px 14px",
+                background: "#fef2f2", borderRadius: 10,
+                border: "1px solid #fca5a5",
+                display: "flex", alignItems: "center", gap: 8,
+              }}>
+                <span style={{ fontSize: 16 }}>🚫</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#991b1b" }}>
+                  Recent teammate pairs avoided — last 2 match partners separated
+                </span>
+              </div>
+            )}
             {appliedConditions.length > 0 && (
               <div style={{
                 marginTop: 16, padding: 12,
