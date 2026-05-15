@@ -2050,17 +2050,11 @@ function TeamSpin({ players, matches, onClose }) {
                 }}>
                   <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>TEAM A</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 6 }}>
-                    {teams.teamA[0].photoURL
-                      ? <img src={teams.teamA[0].photoURL} style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.5)" }} />
-                      : <span style={{ fontSize: 20 }}>{teams.teamA[0].icon || "👤"}</span>
-                    }
+                    <PlayerAvatar player={teams.teamA[0]} size={32} />
                     <span style={{ fontSize: 15, fontWeight: 700 }}>{teams.teamA[0].name}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
-                    {teams.teamA[1].photoURL
-                      ? <img src={teams.teamA[1].photoURL} style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.5)" }} />
-                      : <span style={{ fontSize: 20 }}>{teams.teamA[1].icon || "👤"}</span>
-                    }
+                    <PlayerAvatar player={teams.teamA[1]} size={32} />
                     <span style={{ fontSize: 15, fontWeight: 700 }}>{teams.teamA[1].name}</span>
                   </div>
                 </div>
@@ -2072,17 +2066,11 @@ function TeamSpin({ players, matches, onClose }) {
                 }}>
                   <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>TEAM B</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 6 }}>
-                    {teams.teamB[0].photoURL
-                      ? <img src={teams.teamB[0].photoURL} style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.5)" }} />
-                      : <span style={{ fontSize: 20 }}>{teams.teamB[0].icon || "👤"}</span>
-                    }
+                    <PlayerAvatar player={teams.teamB[0]} size={32} />
                     <span style={{ fontSize: 15, fontWeight: 700 }}>{teams.teamB[0].name}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
-                    {teams.teamB[1].photoURL
-                      ? <img src={teams.teamB[1].photoURL} style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.5)" }} />
-                      : <span style={{ fontSize: 20 }}>{teams.teamB[1].icon || "👤"}</span>
-                    }
+                    <PlayerAvatar player={teams.teamB[1]} size={32} />
                     <span style={{ fontSize: 15, fontWeight: 700 }}>{teams.teamB[1].name}</span>
                   </div>
                 </div>
