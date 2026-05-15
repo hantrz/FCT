@@ -551,7 +551,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
             }}>
               {[
                 { k: "points", l: "POINTS RULES" },
-                { k: "spin",   l: "SPIN LOGIC" },
+                { k: "spin",   l: "SPIN/HIT LOGIC" },
                 { k: "badges", l: "BADGE GUIDE" }
               ].map(t => (
                 <button
@@ -638,6 +638,30 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
               {/* SPIN LOGIC CONTENT */}
               {guideTab === "spin" && (
                 <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 12,
+                    padding: "12px 0 16px",
+                    marginBottom: 8,
+                    borderBottom: "2px solid rgba(239, 68, 68, 0.25)",
+                  }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                      background: "linear-gradient(135deg, #ef4444, #b91c1c)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 20,
+                      boxShadow: "0 2px 8px rgba(239, 68, 68, 0.4)",
+                    }}>
+                      🚫
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: "#ef4444" }}>
+                        Partner Cooldown: Last 2 match teammates stay separated
+                      </div>
+                      <div style={{ fontSize: 12, color: "#ef4444", opacity: 0.75, marginTop: 2 }}>
+                        Hard rule — always applied, cannot be overridden
+                      </div>
+                    </div>
+                  </div>
                   {[
                     { icon: "⚖️", color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Win Rate Balance: Both teams' combined win rates kept similar" },
                     { icon: "📈", color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Recent Form: Balance based on last 5 matches" },
@@ -661,36 +685,44 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     </div>
                   ))}
                   <div style={{
-                    display: "flex", alignItems: "center", gap: 12,
-                    padding: "12px 0",
-                    borderTop: "1px solid rgba(0,0,0,0.08)",
-                    marginTop: 8,
-                  }}>
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                      background: "linear-gradient(135deg, #ef4444, #b91c1c)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 20,
-                      boxShadow: "0 2px 8px rgba(239, 68, 68, 0.35)",
-                    }}>
-                      🚫
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: "#1a1a1a" }}>
-                        Partner Cooldown: Last 2 match teammates stay separated
-                      </div>
-                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-                        Hard rule — always applied, cannot be overridden
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{
                     marginTop: 10, paddingTop: 10,
                     borderTop: `0.5px solid ${guideColors.separator}`,
                     fontSize: 11, color: guideColors.noteText,
                     fontStyle: "italic", textAlign: "center"
                   }}>
                     Each spin randomly applies 1-3 soft conditions for variety
+                  </div>
+                  <div style={{
+                    marginTop: 16,
+                    paddingTop: 16,
+                    borderTop: "2px solid rgba(251, 191, 36, 0.3)",
+                  }}>
+                    <div style={{
+                      fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+                      textTransform: "uppercase", color: "#f59e0b",
+                      marginBottom: 10,
+                    }}>
+                      🎯 Strike First Logic
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                        background: "linear-gradient(135deg, #fbbf24, #f59e0b)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 20,
+                        boxShadow: "0 2px 8px rgba(251, 191, 36, 0.4)",
+                      }}>
+                        🎯
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14 }}>
+                          First Strike: Last match loser gets to go first
+                        </div>
+                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                          A random player from the losing team of the last match strikes first
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1545,6 +1577,43 @@ function getRecentTeammatePairs(matches, selectedPlayerIds, lastN = 2) {
   }
 }
 
+function getStrikeFirstPlayer(matches, selectedPlayers) {
+  try {
+    function getTime(m) {
+      const t = m.timestamp || m.date || m.createdAt || m.time;
+      if (!t) return 0;
+      if (typeof t === "number") return t;
+      if (typeof t.toMillis === "function") return t.toMillis();
+      if (t.seconds) return t.seconds * 1000;
+      if (t instanceof Date) return t.getTime();
+      return 0;
+    }
+    const selectedIds = selectedPlayers.map(p => p.id);
+    const sorted = [...matches].sort((a, b) => getTime(b) - getTime(a));
+    const lastRelevant = sorted.find(m => {
+      const teamA = m.teamA || m.team1 || [];
+      const teamB = m.teamB || m.team2 || [];
+      const allPlayers = [...teamA, ...teamB];
+      return selectedIds.some(id => allPlayers.includes(id));
+    });
+    if (!lastRelevant) {
+      return selectedPlayers[Math.floor(Math.random() * selectedPlayers.length)];
+    }
+    const teamA = lastRelevant.teamA || lastRelevant.team1 || [];
+    const teamB = lastRelevant.teamB || lastRelevant.team2 || [];
+    const winner = lastRelevant.winner;
+    const loserTeam = (winner === "A" || winner === "teamA") ? teamB : teamA;
+    const loserIds = loserTeam.filter(id => selectedIds.includes(id));
+    if (loserIds.length === 0) {
+      return selectedPlayers[Math.floor(Math.random() * selectedPlayers.length)];
+    }
+    const strikerId = loserIds[Math.floor(Math.random() * loserIds.length)];
+    return selectedPlayers.find(p => p.id === strikerId) || selectedPlayers[Math.floor(Math.random() * selectedPlayers.length)];
+  } catch (err) {
+    return selectedPlayers[Math.floor(Math.random() * selectedPlayers.length)];
+  }
+}
+
 // ── Team Spin ─────────────────────────────────────────────────────────────────
 function TeamSpin({ players, matches, onClose }) {
   const [selected, setSelected] = useState([]);
@@ -1553,6 +1622,7 @@ function TeamSpin({ players, matches, onClose }) {
   const [shuffleNames, setShuffleNames] = useState([]);
   const [appliedConditions, setAppliedConditions] = useState([]);
   const [recentPairBlocked, setRecentPairBlocked] = useState(false);
+  const [strikeFirst, setStrikeFirst] = useState(null);
 
   const SOFT_CONDITIONS = [
     { id: "winRate", label: "⚖️ Win rate balanced" },
@@ -1567,6 +1637,7 @@ function TeamSpin({ players, matches, onClose }) {
     setTeams(null);
     setAppliedConditions([]);
     setRecentPairBlocked(false);
+    setStrikeFirst(null);
     if (selected.includes(id)) {
       setSelected(selected.filter(p => p !== id));
     } else if (selected.length < 4) {
@@ -1669,6 +1740,8 @@ function TeamSpin({ players, matches, onClose }) {
         clearInterval(interval);
         setTeams(finalConfig);
         setAppliedConditions(active.map(c => c.label));
+        const striker = getStrikeFirstPlayer(matches, selectedPlayers);
+        setStrikeFirst(striker);
         setSpinning(false);
         setShuffleNames([]);
       }
@@ -1681,6 +1754,7 @@ function TeamSpin({ players, matches, onClose }) {
     setShuffleNames([]);
     setAppliedConditions([]);
     setRecentPairBlocked(false);
+    setStrikeFirst(null);
   };
 
   return (
@@ -1850,6 +1924,26 @@ function TeamSpin({ players, matches, onClose }) {
             }}>
               🎉 Teams ready! Let the game begin.
             </p>
+            {strikeFirst && (
+              <div style={{
+                marginTop: 12, padding: "12px 16px",
+                background: "linear-gradient(135deg, #fef3c7, #fde68a)",
+                borderRadius: 12,
+                border: "1px solid #fbbf24",
+                display: "flex", alignItems: "center", gap: 10,
+                boxShadow: "0 2px 8px rgba(251, 191, 36, 0.2)",
+              }}>
+                <span style={{ fontSize: 22 }}>🎯</span>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    Strikes First
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#1a1a1a" }}>
+                    {strikeFirst.icon || "👤"} {strikeFirst.name}
+                  </div>
+                </div>
+              </div>
+            )}
             {(appliedConditions.length > 0 || recentPairBlocked) && (
               <div style={{
                 marginTop: 16, padding: 12,
