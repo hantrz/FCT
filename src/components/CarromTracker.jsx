@@ -1826,20 +1826,7 @@ function TeamSpin({ players, matches, onClose }) {
             }}>
               🎉 Teams ready! Let the game begin.
             </p>
-            {recentPairBlocked && (
-              <div style={{
-                marginTop: 12, padding: "8px 14px",
-                background: "#fef2f2", borderRadius: 10,
-                border: "1px solid #fca5a5",
-                display: "flex", alignItems: "center", gap: 8,
-              }}>
-                <span style={{ fontSize: 16 }}>🚫</span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#991b1b" }}>
-                  Recent teammate pairs avoided — last 2 match partners separated
-                </span>
-              </div>
-            )}
-            {appliedConditions.length > 0 && (
+            {(appliedConditions.length > 0 || recentPairBlocked) && (
               <div style={{
                 marginTop: 16, padding: 12,
                 background: "#fef3c7", borderRadius: 10,
@@ -1862,6 +1849,15 @@ function TeamSpin({ players, matches, onClose }) {
                       {label}
                     </span>
                   ))}
+                  {recentPairBlocked && (
+                    <span style={{
+                      fontSize: 12, fontWeight: 600,
+                      padding: "4px 10px", borderRadius: 12,
+                      background: "#ef4444", color: "#ffffff",
+                    }}>
+                      🚫 Last 2 match partners separated
+                    </span>
+                  )}
                 </div>
               </div>
             )}
