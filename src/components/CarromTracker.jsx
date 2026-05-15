@@ -1623,6 +1623,7 @@ function TeamSpin({ players, matches, onClose }) {
   const [appliedConditions, setAppliedConditions] = useState([]);
   const [recentPairBlocked, setRecentPairBlocked] = useState(false);
   const [strikeFirst, setStrikeFirst] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const SOFT_CONDITIONS = [
     { id: "winRate", label: "⚖️ Win rate balanced" },
@@ -1742,6 +1743,8 @@ function TeamSpin({ players, matches, onClose }) {
         setAppliedConditions(active.map(c => c.label));
         const striker = getStrikeFirstPlayer(matches, selectedPlayers);
         setStrikeFirst(striker);
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 2500);
         setSpinning(false);
         setShuffleNames([]);
       }
@@ -1755,6 +1758,7 @@ function TeamSpin({ players, matches, onClose }) {
     setAppliedConditions([]);
     setRecentPairBlocked(false);
     setStrikeFirst(null);
+    setShowConfetti(false);
   };
 
   return (
@@ -1775,9 +1779,25 @@ function TeamSpin({ players, matches, onClose }) {
           maxWidth: 480, width: "100%", maxHeight: "90vh", overflowY: "auto",
           border: "1px solid rgba(0,0,0,0.1)",
           boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
-          position: "relative",
+          position: "relative", overflow: "hidden",
         }}
       >
+        {showConfetti && Array.from({ length: 30 }).map((_, i) => (
+          <div
+            key={i}
+            className="confetti-piece"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: 0,
+              background: ["#fbbf24","#ef4444","#3b82f6","#10b981","#f59e0b","#8b5cf6"][i % 6],
+              width: `${6 + Math.random() * 6}px`,
+              height: `${6 + Math.random() * 6}px`,
+              animationDuration: `${1.2 + Math.random() * 1.2}s`,
+              animationDelay: `${Math.random() * 0.4}s`,
+              borderRadius: Math.random() > 0.5 ? "50%" : "2px",
+            }}
+          />
+        ))}
         <button
           onClick={onClose}
           style={{
@@ -1880,7 +1900,7 @@ function TeamSpin({ players, matches, onClose }) {
 
         {teams && (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="team-result-pop" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div style={{
                 padding: 16, borderRadius: 12,
                 background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
@@ -1930,11 +1950,12 @@ function TeamSpin({ players, matches, onClose }) {
                 background: "linear-gradient(135deg, #fef3c7, #fde68a)",
                 borderRadius: 12,
                 border: "1px solid #fbbf24",
-                display: "flex", alignItems: "center", gap: 10,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                 boxShadow: "0 2px 8px rgba(251, 191, 36, 0.2)",
+                textAlign: "center",
               }}>
                 <span style={{ fontSize: 22 }}>🎯</span>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a" }}>
+                <div style={{ fontSize: 15, color: "#1a1a1a" }}>
                   Strikes First: <span style={{ fontWeight: 800 }}>{strikeFirst.name}</span>
                 </div>
               </div>
@@ -3041,6 +3062,26 @@ export default function CarromTracker() {
   return (
     <div className="app">
       <style>{`
+  @keyframes confetti-fall {
+    0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(400px) rotate(720deg); opacity: 0; }
+  }
+  @keyframes pop-in {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.08); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .team-result-pop {
+    animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  .confetti-piece {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    animation: confetti-fall linear forwards;
+    pointer-events: none;
+  }
   .nav-btn-hover {
     transition: transform 0.2s ease, box-shadow 0.3s ease, filter 0.2s ease;
   }
