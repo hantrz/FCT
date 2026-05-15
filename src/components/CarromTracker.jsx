@@ -661,6 +661,30 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     </div>
                   ))}
                   <div style={{
+                    display: "flex", alignItems: "center", gap: 12,
+                    padding: "12px 0",
+                    borderTop: "1px solid rgba(0,0,0,0.08)",
+                    marginTop: 8,
+                  }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                      background: "linear-gradient(135deg, #ef4444, #b91c1c)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 20,
+                      boxShadow: "0 2px 8px rgba(239, 68, 68, 0.35)",
+                    }}>
+                      🚫
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: "#1a1a1a" }}>
+                        Partner Cooldown: Last 2 match teammates stay separated
+                      </div>
+                      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+                        Hard rule — always applied, cannot be overridden
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{
                     marginTop: 10, paddingTop: 10,
                     borderTop: `0.5px solid ${guideColors.separator}`,
                     fontSize: 11, color: guideColors.noteText,
