@@ -1934,13 +1934,8 @@ function TeamSpin({ players, matches, onClose }) {
                 boxShadow: "0 2px 8px rgba(251, 191, 36, 0.2)",
               }}>
                 <span style={{ fontSize: 22 }}>🎯</span>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Strikes First
-                  </div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "#1a1a1a" }}>
-                    {strikeFirst.icon || "👤"} {strikeFirst.name}
-                  </div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#1a1a1a" }}>
+                  Strikes First: <span style={{ fontWeight: 800 }}>{strikeFirst.name}</span>
                 </div>
               </div>
             )}
