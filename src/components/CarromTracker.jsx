@@ -1624,6 +1624,7 @@ function TeamSpin({ players, matches, onClose }) {
   const [recentPairBlocked, setRecentPairBlocked] = useState(false);
   const [strikeFirst, setStrikeFirst] = useState(null);
   const [particles, setParticles] = useState([]);
+  const [showResult, setShowResult] = useState(false);
   const strikeBoxRef = useRef(null);
   const audioCtxRef = useRef(null);
 
@@ -1642,6 +1643,7 @@ function TeamSpin({ players, matches, onClose }) {
     setRecentPairBlocked(false);
     setStrikeFirst(null);
     setParticles([]);
+    setShowResult(false);
     if (selected.includes(id)) {
       setSelected(selected.filter(p => p !== id));
     } else if (selected.length < 4) {
@@ -1801,7 +1803,7 @@ function TeamSpin({ players, matches, onClose }) {
           const box = strikeBoxRef.current;
           if (!box) return;
           const rect = box.getBoundingClientRect();
-          const modalEl = box.closest('[data-modal="spin"]');
+          const modalEl = box.closest('[data-modal="spin-result"]');
           const modalRect = modalEl ? modalEl.getBoundingClientRect() : { left: 0, top: 0 };
           const originX = rect.left - modalRect.left + rect.width / 2;
           const originY = rect.top - modalRect.top + rect.height / 2;
@@ -1846,6 +1848,7 @@ function TeamSpin({ players, matches, onClose }) {
         }, 100);
         setSpinning(false);
         setShuffleNames([]);
+        setShowResult(true);
       }
     }, 100);
   };
@@ -1858,6 +1861,7 @@ function TeamSpin({ players, matches, onClose }) {
     setRecentPairBlocked(false);
     setStrikeFirst(null);
     setParticles([]);
+    setShowResult(false);
   };
 
   return (
@@ -1981,61 +1985,117 @@ function TeamSpin({ players, matches, onClose }) {
             {shuffleNames.join(" • ")}
           </div>
         )}
+      </div>
 
-        {teams && (
-          <>
-            <div className="team-result-pop" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div style={{
-                padding: 16, borderRadius: 12,
-                background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
-                textAlign: "center", color: "white",
-                boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)"
-              }}>
-                <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>TEAM A</div>
-                <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.6 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 4 }}>
-                    <PlayerAvatar player={teams.teamA[0]} size={28} />
-                    <span>{teams.teamA[0].name}</span>
+      {showResult && (
+        <div
+          onClick={() => setShowResult(false)}
+          style={{
+            position: "fixed", inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 1100, padding: 16,
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            data-modal="spin-result"
+            style={{
+              background: "#ffffff", borderRadius: 20, padding: 24,
+              maxWidth: 440, width: "100%", maxHeight: "90vh", overflowY: "auto",
+              border: "1px solid rgba(0,0,0,0.08)",
+              boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
+              position: "relative", overflow: "visible",
+            }}
+          >
+            {particles.map(p => (
+              <div
+                key={p.id}
+                className="particle"
+                style={{
+                  left: p.x, top: p.y,
+                  width: p.size, height: p.size,
+                  background: p.color,
+                  borderRadius: p.shape,
+                  animationDuration: `${p.duration}s`,
+                  animationDelay: `${p.delay}s`,
+                  "--tx": `${p.tx}px`,
+                  "--ty": `${p.ty}px`,
+                }}
+              />
+            ))}
+
+            <button
+              onClick={() => setShowResult(false)}
+              style={{
+                position: "absolute", top: 12, right: 12,
+                background: "rgba(0,0,0,0.05)", border: "none",
+                color: "#1a1a1a", fontSize: 20, cursor: "pointer",
+                lineHeight: 1, padding: "4px 10px", borderRadius: 6, fontWeight: 700,
+              }}
+            >×</button>
+
+            <h3 style={{ textAlign: "center", fontSize: 18, fontWeight: 800, margin: "0 0 20px", color: "#1a1a1a" }}>
+              🎲 Teams Ready!
+            </h3>
+
+            {teams && (
+              <div className="team-result-pop" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                <div style={{
+                  padding: 16, borderRadius: 12,
+                  background: "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+                  textAlign: "center", color: "white",
+                  boxShadow: "0 4px 12px rgba(59,130,246,0.3)",
+                }}>
+                  <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>TEAM A</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 6 }}>
+                    {teams.teamA[0].photoURL
+                      ? <img src={teams.teamA[0].photoURL} style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.5)" }} />
+                      : <span style={{ fontSize: 20 }}>{teams.teamA[0].icon || "👤"}</span>
+                    }
+                    <span style={{ fontSize: 15, fontWeight: 700 }}>{teams.teamA[0].name}</span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                    <PlayerAvatar player={teams.teamA[1]} size={28} />
-                    <span>{teams.teamA[1].name}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+                    {teams.teamA[1].photoURL
+                      ? <img src={teams.teamA[1].photoURL} style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.5)" }} />
+                      : <span style={{ fontSize: 20 }}>{teams.teamA[1].icon || "👤"}</span>
+                    }
+                    <span style={{ fontSize: 15, fontWeight: 700 }}>{teams.teamA[1].name}</span>
+                  </div>
+                </div>
+                <div style={{
+                  padding: 16, borderRadius: 12,
+                  background: "linear-gradient(135deg, #ef4444, #b91c1c)",
+                  textAlign: "center", color: "white",
+                  boxShadow: "0 4px 12px rgba(239,68,68,0.3)",
+                }}>
+                  <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>TEAM B</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 6 }}>
+                    {teams.teamB[0].photoURL
+                      ? <img src={teams.teamB[0].photoURL} style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.5)" }} />
+                      : <span style={{ fontSize: 20 }}>{teams.teamB[0].icon || "👤"}</span>
+                    }
+                    <span style={{ fontSize: 15, fontWeight: 700 }}>{teams.teamB[0].name}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+                    {teams.teamB[1].photoURL
+                      ? <img src={teams.teamB[1].photoURL} style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.5)" }} />
+                      : <span style={{ fontSize: 20 }}>{teams.teamB[1].icon || "👤"}</span>
+                    }
+                    <span style={{ fontSize: 15, fontWeight: 700 }}>{teams.teamB[1].name}</span>
                   </div>
                 </div>
               </div>
-              <div style={{
-                padding: 16, borderRadius: 12,
-                background: "linear-gradient(135deg, #ef4444, #b91c1c)",
-                textAlign: "center", color: "white",
-                boxShadow: "0 4px 12px rgba(239, 68, 68, 0.3)"
-              }}>
-                <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 8, fontWeight: 600 }}>TEAM B</div>
-                <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.6 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 4 }}>
-                    <PlayerAvatar player={teams.teamB[0]} size={28} />
-                    <span>{teams.teamB[0].name}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                    <PlayerAvatar player={teams.teamB[1]} size={28} />
-                    <span>{teams.teamB[1].name}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <p style={{
-              textAlign: "center", marginTop: 16, marginBottom: 0,
-              fontSize: 13, color: "#6b7280"
-            }}>
-              🎉 Teams ready! Let the game begin.
-            </p>
+            )}
+
             {strikeFirst && (
               <div ref={strikeBoxRef} style={{
-                marginTop: 12, padding: "12px 16px",
+                marginBottom: 12, padding: "12px 16px",
                 background: "linear-gradient(135deg, #fef3c7, #fde68a)",
-                borderRadius: 12,
-                border: "1px solid #fbbf24",
+                borderRadius: 12, border: "1px solid #fbbf24",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                boxShadow: "0 2px 8px rgba(251, 191, 36, 0.2)",
+                boxShadow: "0 2px 8px rgba(251,191,36,0.2)",
                 textAlign: "center",
               }}>
                 <span style={{ fontSize: 22 }}>🎯</span>
@@ -2044,64 +2104,51 @@ function TeamSpin({ players, matches, onClose }) {
                 </div>
               </div>
             )}
+
             {(appliedConditions.length > 0 || recentPairBlocked) && (
               <div style={{
-                marginTop: 16, padding: 12,
-                background: "#fef3c7", borderRadius: 10,
-                border: "1px solid #fbbf24",
+                padding: 12, background: "#fef3c7",
+                borderRadius: 10, border: "1px solid #fbbf24",
               }}>
                 <div style={{
                   fontSize: 11, fontWeight: 700, color: "#92400e",
                   textTransform: "uppercase", letterSpacing: "0.06em",
                   marginBottom: 8, textAlign: "center",
                 }}>
-                  ⚙️ Balancing rules applied
+                  ⚙️ Balancing Rules Applied
                 </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", alignItems: "center" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center" }}>
                   {appliedConditions.map((label, i) => (
                     <span key={i} style={{
-                      fontSize: 11, fontWeight: 600,
-                      padding: "5px 10px", borderRadius: 12,
-                      background: "#fbbf24", color: "#1a1a1a",
-                      textAlign: "center",
-                    }}>
-                      {label}
-                    </span>
+                      fontSize: 11, fontWeight: 600, padding: "5px 10px",
+                      borderRadius: 12, background: "#fbbf24", color: "#1a1a1a",
+                    }}>{label}</span>
                   ))}
                   {recentPairBlocked && (
                     <span style={{
-                      fontSize: 11, fontWeight: 600,
-                      padding: "5px 10px", borderRadius: 12,
-                      background: "#ef4444", color: "#ffffff",
-                      textAlign: "center",
-                    }}>
-                      🚫 Last 2 match partners separated
-                    </span>
+                      fontSize: 11, fontWeight: 600, padding: "5px 10px",
+                      borderRadius: 12, background: "#ef4444", color: "#ffffff",
+                    }}>🚫 Last 2 match partners separated</span>
                   )}
                 </div>
               </div>
             )}
-          </>
-        )}
-        {particles.map(p => (
-          <div
-            key={p.id}
-            className="particle"
-            style={{
-              left: p.x,
-              top: p.y,
-              width: p.size,
-              height: p.size,
-              background: p.color,
-              borderRadius: p.shape,
-              animationDuration: `${p.duration}s`,
-              animationDelay: `${p.delay}s`,
-              "--tx": `${p.tx}px`,
-              "--ty": `${p.ty}px`,
-            }}
-          />
-        ))}
-      </div>
+
+            <button
+              onClick={() => setShowResult(false)}
+              style={{
+                marginTop: 16, width: "100%",
+                padding: "12px", borderRadius: 10, border: "none",
+                background: "linear-gradient(135deg, #f59e0b, #ef4444)",
+                color: "white", fontWeight: 700, fontSize: 15,
+                cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              🎰 Spin Again
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
