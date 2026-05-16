@@ -658,7 +658,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                         Partner Cooldown: Last 2 match teammates stay separated
                       </div>
                       <div style={{ fontSize: 12, color: "#ef4444", opacity: 0.75, marginTop: 2 }}>
-                        Hard rule — always applied, cannot be overridden
+                        Hard rule: always applied, cannot be overridden
                       </div>
                     </div>
                   </div>
@@ -1005,7 +1005,21 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
         <div className="empty"><p>No players added yet.</p></div>
       ) : (
         <div className="players-grid">
-          {players.map((p, i) => {
+          {[...players].sort((a, b) => {
+            const getpts = (p) => {
+              let wins = 0, played = 0;
+              matches.forEach(m => {
+                const inA = (m.team1 || []).includes(p.id);
+                const inB = (m.team2 || []).includes(p.id);
+                if (inA || inB) {
+                  played++;
+                  if ((inA && m.winner === "team1") || (inB && m.winner === "team2")) wins++;
+                }
+              });
+              return wins * 3 + (played - wins) * 1;
+            };
+            return getpts(b) - getpts(a);
+          }).map((p, i) => {
             const st = stats.find(s => s.id === p.id) || { played: 0, winPct: 0 };
             const c = PALETTE[i % PALETTE.length];
             return (
@@ -3187,14 +3201,13 @@ export default function CarromTracker() {
   const TABS = [
     { k: "board", l: "Leaderboard" },
     ...((isAdmin || isMember) ? [{ k: "match", l: "New Match" }] : []),
-    ...(isAdmin ? [{ k: "players", l: "Players" }] : []),
+    { k: "players", l: "Players" },
     { k: "stats", l: "Stats" },
     { k: "history", l: "History" },
     ...(isFirebaseUser ? [{ k: "chat", l: "Chat" }, { k: "profile", l: "Me" }] : []),
   ];
 
   if (tab === "match" && !isAdmin && !isMember) setTab("board");
-  if (tab === "players" && !isAdmin) setTab("board");
   if (tab === "profile" && !isFirebaseUser) setTab("board");
   if (tab === "chat" && !isFirebaseUser) setTab("board");
 
