@@ -1376,6 +1376,14 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
     const played = won + lost;
     const winPct = played > 0 ? Math.round((won / played) * 100) : 0;
     const streak = getStreak(p.id, matches);
+    const pmSorted = [...pm].sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
+    let maxWinStreak = 0, maxLossStreak = 0, curWin = 0, curLoss = 0;
+    for (const m of pmSorted) {
+      const inT1 = m.team1.includes(p.id);
+      const isW = (inT1 && m.winner === "team1") || (!inT1 && m.winner === "team2");
+      if (isW) { curWin++; curLoss = 0; if (curWin > maxWinStreak) maxWinStreak = curWin; }
+      else { curLoss++; curWin = 0; if (curLoss > maxLossStreak) maxLossStreak = curLoss; }
+    }
     const idx = players.findIndex(x => x.id === p.id);
     const c = PALETTE[idx % PALETTE.length];
 
@@ -1437,11 +1445,10 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
           <div className="metric"><label>Won</label><span style={{ color: "var(--green)" }}>{won}</span></div>
           <div className="metric"><label>Win Rate</label><span style={{ color: "var(--green)", fontSize: 20 }}>{winPct}%</span></div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: "1rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: "1rem" }}>
           <div className="metric"><label>Lost</label><span style={{ color: "var(--danger)" }}>{lost}</span></div>
-          <div className="metric"><label>Streak</label>
-            <span style={{ fontSize: 20, color: streak.endsWith("W") ? "var(--green)" : "var(--danger)" }}>{streak}</span>
-          </div>
+          <div className="metric"><label>MAX WIN STREAK</label><span style={{ fontSize: 20, color: "var(--green)" }}>{maxWinStreak}W</span></div>
+          <div className="metric"><label>MAX LOSS STREAK</label><span style={{ fontSize: 20, color: "var(--danger)" }}>{maxLossStreak}L</span></div>
         </div>
         {Object.keys(opponents).length > 0 && (
           <div className="card" style={{ marginBottom: "1rem" }}>
