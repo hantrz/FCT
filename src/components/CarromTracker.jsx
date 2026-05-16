@@ -1166,6 +1166,28 @@ function getMatchBadgeLogs(match, allMatches, players) {
     }
   });
 
+  loserTeam.forEach(playerId => {
+    const playerMatches = matchesUpToAndIncludingThis.filter(m =>
+      (m.team1 || []).includes(playerId) || (m.team2 || []).includes(playerId)
+    );
+
+    let consecutiveLosses = 0;
+    for (let i = playerMatches.length - 1; i >= 0; i--) {
+      const m = playerMatches[i];
+      const inTeam1 = (m.team1 || []).includes(playerId);
+      const isLoss = !((inTeam1 && m.winner === "team1") || (!inTeam1 && m.winner === "team2"));
+      if (isLoss) {
+        consecutiveLosses++;
+      } else {
+        break;
+      }
+    }
+
+    if (consecutiveLosses > 0 && consecutiveLosses % 3 === 0) {
+      logs.push({ type: "losstrick", text: `😢 ${getPlayerName(playerId)} earned Loss-trick` });
+    }
+  });
+
   if (match.loserScore !== null && match.loserScore !== undefined && Number(match.loserScore) === 0) {
     const winnerNames = winnerTeam.map(getPlayerName).join(" & ");
     logs.push({ type: "cleanwin", text: `💎 ${winnerNames} — Clean Win (Opponent scored 0 points)` });
@@ -1243,7 +1265,7 @@ function History({ players, matches, onDelete, isAdmin }) {
                 return badgeLogs.length > 0 ? (
                   <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 3 }}>
                     {badgeLogs.map((log, i) => (
-                      <div key={i} style={{ fontSize: 12, color: log.type === "hattrick" ? "#c2410c" : log.type === "cleanwin" ? "#1d4ed8" : "#6b7280", fontWeight: 500 }}>
+                      <div key={i} style={{ fontSize: 12, color: log.type === "hattrick" ? "#c2410c" : log.type === "losstrick" ? "#b91c1c" : log.type === "cleanwin" ? "#1d4ed8" : "#6b7280", fontWeight: 500 }}>
                         {log.text}
                       </div>
                     ))}
