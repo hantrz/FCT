@@ -493,7 +493,9 @@ input:focus, select:focus {
 
 @media (max-width: 768px) {
   .tab-label { display: none; }
-  .tab-btn { padding: 10px 14px; gap: 0; }
+  .tab-btn { padding: 10px 14px; gap: 0; margin-left: 0 !important; }
+  .tabs { display: contents; }
+  .tabs-wrap { justify-content: space-evenly; padding: 0; }
 }
 
 @media (max-width: 480px) {
@@ -502,7 +504,7 @@ input:focus, select:focus {
   .header-text h1 { font-size: 17px; }
   .header-badge { font-size: 9px; padding: 4px 8px; }
 
-  .tabs-wrap { padding: 0 0.75rem; }
+  .tabs-wrap { padding: 0; }
   .tab-btn { padding: 9px 10px; font-size: 12px; }
 
   .content { padding: 1rem; }
