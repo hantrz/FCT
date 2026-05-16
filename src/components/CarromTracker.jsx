@@ -1266,7 +1266,7 @@ function History({ players, matches, onDelete, isAdmin }) {
                 return badgeLogs.length > 0 ? (
                   <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 3 }}>
                     {badgeLogs.map((log, i) => (
-                      <div key={i} style={{ fontSize: 12, color: log.type === "hattrick" ? "#c2410c" : log.type === "losstrick" ? "#b91c1c" : log.type === "cleanwin" ? "#1d4ed8" : "#6b7280", fontWeight: 500 }}>
+                      <div key={i} style={{ fontSize: 12, color: log.type === "hattrick" ? "#d97706" : log.type === "losstrick" ? "#dc2626" : log.type === "cleanwin" ? "#1d4ed8" : "#6b7280", fontWeight: 500 }}>
                         {log.text}
                       </div>
                     ))}
