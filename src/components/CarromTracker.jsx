@@ -1289,8 +1289,9 @@ function History({ players, matches, onDelete, isAdmin }) {
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
-function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
-  const [mode, setMode] = useState("date");
+function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode, setStatsMode }) {
+  const mode = statsMode;
+  const setMode = setStatsMode;
   const [dateFilter, setDateFilter] = useState("alltime");
   const [tooltip, setTooltip] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -3195,6 +3196,7 @@ export default function CarromTracker() {
   const [currentUser, setCurrentUser] = useState(null); // { uid, displayName, mobile, role, mustChangePassword }
   const [showForcePasswordChange, setShowForcePasswordChange] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState("");
+  const [statsMode, setStatsMode] = useState("date");
   const [showSpin, setShowSpin] = useState(false);
   const [toast, setToast] = useState(null);
   const [chatUnread, setChatUnread] = useState(false);
@@ -3526,10 +3528,10 @@ export default function CarromTracker() {
       </div>
 
       <div className="content">
-        {tab === "board" && <Leaderboard players={players} matches={matches} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
+        {tab === "board" && <Leaderboard players={players} matches={matches} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => { setStatsMode("player"); setTab("stats"); }} />}
         {tab === "match" && (isAdmin || isMember) && <NewMatch players={players} onSave={saveMatch} />}
-        {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} onResetPassword={isAdmin ? handleResetPassword : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => setTab("stats")} />}
-        {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} />}
+        {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} onResetPassword={isAdmin ? handleResetPassword : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => { setStatsMode("player"); setTab("stats"); }} />}
+        {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} statsMode={statsMode} setStatsMode={setStatsMode} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
         {null /* chat is rendered as fullscreen overlay below */}
         {tab === "profile" && isFirebaseUser && currentUser && (
