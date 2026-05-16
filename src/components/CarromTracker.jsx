@@ -1006,24 +1006,17 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
       ) : (
         <div className="players-grid">
           {[...players].sort((a, b) => {
-            const getpts = (p) => {
-              let wins = 0, played = 0;
-              matches.forEach(m => {
-                const inA = (m.team1 || []).includes(p.id);
-                const inB = (m.team2 || []).includes(p.id);
-                if (inA || inB) {
-                  played++;
-                  if ((inA && m.winner === "team1") || (inB && m.winner === "team2")) wins++;
-                }
-              });
-              return wins * 3 + (played - wins) * 1;
+            const getPoints = (p) => {
+              const st = computeStats([p], matches)[0] || { won: 0, lost: 0 };
+              const badges = calcBadges(p.id, matches);
+              return 10 + (st.won * 3) + (st.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
             };
-            return getpts(b) - getpts(a);
+            return getPoints(b) - getPoints(a);
           }).map((p, i) => {
             const st = stats.find(s => s.id === p.id) || { played: 0, winPct: 0 };
-            const c = PALETTE[i % PALETTE.length];
             return (
-              <div key={p.id} className="player-card" onClick={() => { if (onSelectPlayer && onNavigateToStats) { onSelectPlayer(p.id); onNavigateToStats(); } }} style={{ cursor: onSelectPlayer ? "pointer" : "default" }}>
+              <div key={p.id} className="player-card" onClick={() => { if (onSelectPlayer && onNavigateToStats) { onSelectPlayer(p.id); onNavigateToStats(); } }}
+                style={{ cursor: onSelectPlayer ? "pointer" : "default", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
                 {isAdmin && (
                   <div style={{ position: "absolute", top: 6, right: 6, display: "flex", gap: 2 }}>
                     <button onClick={(e) => { e.stopPropagation(); startEdit(p); }} style={{
@@ -1037,12 +1030,12 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
                     }}>×</button>
                   </div>
                 )}
-                <div style={{ marginBottom: 10 }}>
+                <div style={{ margin: "0 auto 8px" }}>
                   <PlayerAvatar player={p} size={46} />
                 </div>
-                <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{p.name}</p>
-                <p className="text-muted" style={{ fontSize: 11 }}>{st.played} matches</p>
-                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--green)", marginTop: 2 }}>{st.winPct}% win rate</p>
+                <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 3, textAlign: "center" }}>{p.name}</p>
+                <p className="text-muted" style={{ fontSize: 11, textAlign: "center" }}>{st.played} matches</p>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--green)", marginTop: 2, textAlign: "center" }}>{st.winPct}% win rate</p>
                 {isAdmin && onResetPassword && p.name.toLowerCase() !== "random man" && (
                   <button
                     onClick={(e) => {
