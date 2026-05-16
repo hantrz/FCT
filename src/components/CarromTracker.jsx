@@ -1294,6 +1294,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
   const setMode = setStatsMode;
   const [dateFilter, setDateFilter] = useState("alltime");
   const [tooltip, setTooltip] = useState(null);
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 768);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -1301,6 +1302,12 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
 
   const getName = id => players.find(p => p.id === id)?.name || "?";
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   function filterByDate(ms) {
     if (dateFilter === "alltime") return ms;
@@ -1487,9 +1494,73 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
       const points = base + (p.won * 3) + (p.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
       return { ...p, points, badges };
     }).sort((a, b) => b.points - a.points || b.winPct - a.winPct);
+    const rankColors = { 1: "#d97706", 2: "#64748b", 3: "#b45309" };
+    const badgePills = (p) => (<>
+      {p.badges.hatTricks > 0 && (
+        <span style={{ position:"relative", display:"inline-flex" }} onMouseEnter={() => setTooltip(`${p.id}-fire`)} onMouseLeave={() => setTooltip(null)}>
+          <span style={{ fontSize:11, borderRadius:20, padding:"1px 6px", fontWeight:600, background:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }}>{p.badges.hatTricks} 🔥</span>
+          {tooltip === `${p.id}-fire` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>🔥 Hat-trick!<br/>{p.badges.hatTricks === 1 ? "1 hat-trick achieved" : `${p.badges.hatTricks} hat-tricks achieved`}<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+        </span>
+      )}
+      {p.badges.lossTricks > 0 && (
+        <span style={{ position:"relative", display:"inline-flex" }} onMouseEnter={() => setTooltip(`${p.id}-loss-trick`)} onMouseLeave={() => setTooltip(null)}>
+          <span style={{ fontSize:11, borderRadius:20, padding:"1px 6px", fontWeight:600, background:"#fef2f2", color:"#b91c1c", border:"0.5px solid #fca5a5" }}>{p.badges.lossTricks} 😢</span>
+          {tooltip === `${p.id}-loss-trick` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>😢 Loss-trick!<br/>{p.badges.lossTricks === 1 ? "1 loss-trick" : `${p.badges.lossTricks} loss-tricks`}<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+        </span>
+      )}
+      {p.badges.cleanWins > 0 && (
+        <span style={{ position:"relative", display:"inline-flex" }} onMouseEnter={() => setTooltip(`${p.id}-clean-win`)} onMouseLeave={() => setTooltip(null)}>
+          <span style={{ fontSize:11, borderRadius:20, padding:"1px 6px", fontWeight:600, background:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }}>{p.badges.cleanWins} 💎</span>
+          {tooltip === `${p.id}-clean-win` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💎 Clean Win<br/>Won with opponent scoring 0<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+        </span>
+      )}
+      {p.badges.cleanLosses > 0 && (
+        <span style={{ position:"relative", display:"inline-flex" }} onMouseEnter={() => setTooltip(`${p.id}-clean-loss`)} onMouseLeave={() => setTooltip(null)}>
+          <span className="clean-loss-badge" style={{ fontSize:11, borderRadius:20, padding:"1px 6px", fontWeight:600 }}>{p.badges.cleanLosses} 💎</span>
+          {tooltip === `${p.id}-clean-loss` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💎 Clean Loss<br/>Lost while scoring 0 points<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+        </span>
+      )}
+    </>);
+
     return (
       <div>
         <p className="text-muted" style={{ fontSize: 12, marginBottom: "1rem", fontWeight: 600 }}>{dateFilter === "alltime" ? `All ${filtered.length} matches` : `${filtered.length} matches in this period`}</p>
+        {isMobile ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {stats.map((p, i) => {
+              const isTop3 = i < 3;
+              const ptsColor = isTop3 ? "#f59e0b" : p.points < 0 ? "#dc2626" : "var(--text)";
+              return (
+                <div key={p.id} style={{ background: "var(--card-bg)", borderRadius: 14, border: "1px solid var(--border)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", width: 24 }}>
+                    <span style={{ fontWeight: isTop3 ? 900 : 700, fontSize: isTop3 ? 18 : 14, color: isTop3 ? rankColors[i + 1] : "var(--color-text-primary)", lineHeight: 1 }}>{i + 1}</span>
+                  </div>
+                  <PlayerAvatar player={p} size={38} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                      {badgePills(p)}
+                    </div>
+                    <div style={{ display: "flex", gap: 5, marginTop: 3, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.played}P</span>
+                      <span style={{ fontSize: 11, color: "#16a34a", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.won}W</span>
+                      <span style={{ fontSize: 11, color: "#dc2626", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.lost}L</span>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: ptsColor, lineHeight: 1 }}>{p.points}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, justifyContent: "flex-end" }}>
+                      <div style={{ height: 4, borderRadius: 4, background: "var(--border)", width: 48, overflow: "hidden" }}>
+                        <div style={{ height: "100%", borderRadius: 4, background: "#16a34a", width: `${p.winPct}%` }} />
+                      </div>
+                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{p.winPct}%</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
         <div className="table-wrap">
           <table>
             <thead>
@@ -1511,30 +1582,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <Avatar id={p.id} allPlayers={players} size={24} />
                       <span style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1, minWidth: 0 }}>{p.name}</span>
-                      {p.badges.hatTricks > 0 && (
-                        <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-fire`)} onMouseLeave={() => setTooltip(null)}>
-                          <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }}>{p.badges.hatTricks} 🔥</span>
-                          {tooltip === `${p.id}-fire` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>🔥 Hat-trick!<br/>{p.badges.hatTricks === 1 ? "1 hat-trick achieved" : `${p.badges.hatTricks} hat-tricks achieved`}<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
-                        </span>
-                      )}
-                      {p.badges.lossTricks > 0 && (
-                        <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-loss-trick`)} onMouseLeave={() => setTooltip(null)}>
-                          <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fef2f2", color:"#b91c1c", border:"0.5px solid #fca5a5" }}>{p.badges.lossTricks} 😢</span>
-                          {tooltip === `${p.id}-loss-trick` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>😢 Loss-trick!<br/>{p.badges.lossTricks === 1 ? "1 loss-trick" : `${p.badges.lossTricks} loss-tricks`}<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
-                        </span>
-                      )}
-                      {p.badges.cleanWins > 0 && (
-                        <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-clean-win`)} onMouseLeave={() => setTooltip(null)}>
-                          <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }}>{p.badges.cleanWins} 💎</span>
-                          {tooltip === `${p.id}-clean-win` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💎 Clean Win<br/>Won with opponent scoring 0<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
-                        </span>
-                      )}
-                      {p.badges.cleanLosses > 0 && (
-                        <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-clean-loss`)} onMouseLeave={() => setTooltip(null)}>
-                          <span className="clean-loss-badge" style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600 }}>{p.badges.cleanLosses} 💎</span>
-                          {tooltip === `${p.id}-clean-loss` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💎 Clean Loss<br/>Lost while scoring 0 points<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
-                        </span>
-                      )}
+                      {badgePills(p)}
                     </div>
                   </td>
                   <td style={{ textAlign: "center", fontSize: 13 }}>{p.played}</td>
@@ -1552,6 +1600,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
             </tbody>
           </table>
         </div>
+        )}
       </div>
     );
   }
