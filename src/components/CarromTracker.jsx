@@ -3480,7 +3480,8 @@ export default function CarromTracker() {
           {TABS.map(({ k, l }) => (
             <button key={k}
               className={`tab-btn ${(k === "chat" ? chatOpen : (!chatOpen && tab === k)) ? "active" : ""}`}
-              onClick={() => { if (k === "chat") { setChatOpen(true); } else { setChatOpen(false); setTab(k); } }}>
+              onClick={() => { if (k === "chat") { setChatOpen(true); } else { setChatOpen(false); setTab(k); } }}
+              style={k === "chat" ? { marginLeft: "auto" } : undefined}>
               <span style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
                 {TAB_ICONS[k]}
                 {k === "chat" && chatUnread && !chatOpen && (
