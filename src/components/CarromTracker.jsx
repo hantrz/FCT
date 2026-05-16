@@ -1267,7 +1267,7 @@ function History({ players, matches, onDelete, isAdmin }) {
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
 function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
-  const [mode, setMode] = useState("player");
+  const [mode, setMode] = useState("date");
   const [dateFilter, setDateFilter] = useState("alltime");
   const [tooltip, setTooltip] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -1459,7 +1459,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
     const baseStats = computeStats(players, filtered).filter(s => s.played > 0);
     const stats = baseStats.map(p => {
       const badges = calcBadges(p.id, filtered);
-      const points = (p.won * 3) + (p.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
+      const points = 10 + (p.won * 3) + (p.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
       return { ...p, points, badges };
     }).sort((a, b) => b.points - a.points || b.winPct - a.winPct);
     return (
@@ -1605,7 +1605,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
   return (
     <div>
       <div className="stats-mode-btns" style={{ display: "flex", gap: 8, marginBottom: "1.25rem", flexWrap: "wrap" }}>
-        {[{ k: "player", l: "By Player" }, { k: "date", l: "By Date" }, { k: "duo", l: "Best Partner" }].map(({ k, l }) => (
+        {[{ k: "date", l: "By Date" }, { k: "player", l: "By Player" }, { k: "duo", l: "Best Partner" }].map(({ k, l }) => (
           <button key={k} className={`btn btn-format ${mode === k ? "active" : ""}`} onClick={() => setMode(k)}>{l}</button>
         ))}
       </div>
