@@ -1174,6 +1174,32 @@ function getMatchBadgeLogs(match, allMatches, players) {
   return logs;
 }
 
+function formatMatchDateTime(match) {
+  function getTime(m) {
+    const t = m.timestamp || m.date || m.createdAt || m.time;
+    if (!t) return null;
+    if (typeof t === "number") return new Date(t);
+    if (typeof t.toMillis === "function") return new Date(t.toMillis());
+    if (t.seconds) return new Date(t.seconds * 1000);
+    if (t instanceof Date) return t;
+    return null;
+  }
+  const date = getTime(match);
+  if (!date) return "Unknown date";
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const bdOffset = 6 * 60;
+  const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+  const bdDate = new Date(utc + (bdOffset * 60000));
+  const day = bdDate.getDate();
+  const month = months[bdDate.getMonth()];
+  const year = bdDate.getFullYear();
+  let hours = bdDate.getHours();
+  const minutes = bdDate.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
+}
+
 // ── History ───────────────────────────────────────────────────────────────────
 function History({ players, matches, onDelete, isAdmin }) {
   const getName = id => players.find(p => p.id === id)?.name || "?";
@@ -1184,9 +1210,6 @@ function History({ players, matches, onDelete, isAdmin }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {matches.map(m => {
         const w1 = m.winner === "team1";
-        const date = m.createdAt
-          ? m.createdAt.toDate().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
-          : "—";
         const renderTeam = (ids, won) => (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexWrap: "wrap", fontSize: 13, fontWeight: won ? 700 : 400, color: won ? "var(--green)" : "var(--text-muted)" }}>
             {won && "★ "}
@@ -1207,7 +1230,7 @@ function History({ players, matches, onDelete, isAdmin }) {
                 <span className="text-muted" style={{ fontSize: 10, padding: "1px 5px", background: "var(--bg-secondary)", borderRadius: 4 }}>vs</span>
                 {renderTeam(m.team2, !w1)}
               </div>
-              <p className="text-muted" style={{ fontSize: 11 }}>{date} · {m.type}</p>
+              <p className="text-muted" style={{ fontSize: 11 }}>{formatMatchDateTime(m)} · {m.type || "2v2"}</p>
               <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2, display: "flex", alignItems: "center", gap: 3 }}>
                 <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.6 }}>
                   <circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.5" />
