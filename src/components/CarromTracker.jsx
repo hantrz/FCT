@@ -1201,10 +1201,20 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
         return matchTime >= startOfDay.getTime() && matchTime <= endOfDay.getTime();
       });
     }
+    if (dateFilter === "weekly") {
+      const dayOfWeek = now.getDay();
+      const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() + diffToMonday);
+      startOfWeek.setHours(0, 0, 0, 0);
+      return ms.filter(m => {
+        if (!m.createdAt) return false;
+        return m.createdAt.toDate() >= startOfWeek;
+      });
+    }
     return ms.filter(m => {
       if (!m.createdAt) return false;
       const d = m.createdAt.toDate();
-      if (dateFilter === "weekly") return (now - d) / 864e5 < 7;
       if (dateFilter === "monthly") {
         return d.getFullYear() === parseInt(selectedMonth.split("-")[0]) &&
           d.getMonth() + 1 === parseInt(selectedMonth.split("-")[1]);
@@ -1349,7 +1359,12 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
   function renderDateStats() {
     const filtered = filterByDate(matches);
     if (!filtered.length) return <div className="empty"><p>No matches found for this period.</p></div>;
-    const stats = computeStats(players, filtered).filter(s => s.played > 0);
+    const baseStats = computeStats(players, filtered).filter(s => s.played > 0);
+    const stats = baseStats.map(p => {
+      const badges = calcBadges(p.id, filtered);
+      const points = 10 + (p.won * 3) + (p.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
+      return { ...p, points };
+    }).sort((a, b) => b.points - a.points || b.winPct - a.winPct);
     return (
       <div>
         <p className="text-muted" style={{ fontSize: 12, marginBottom: "1rem", fontWeight: 600 }}>{filtered.length} matches in this period</p>
@@ -1359,8 +1374,10 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
               <tr>
                 <th style={{ width: 36 }}>#</th>
                 <th>Player</th>
-                <th style={{ width: 56, textAlign: "center" }}>P</th>
+                <th style={{ width: 44, textAlign: "center" }}>P</th>
                 <th style={{ width: 44, textAlign: "center" }}>W</th>
+                <th style={{ width: 44, textAlign: "center" }}>L</th>
+                <th style={{ width: 54, textAlign: "center" }}>PTS</th>
                 <th style={{ width: 88, textAlign: "right" }}>Win%</th>
               </tr>
             </thead>
@@ -1376,6 +1393,8 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
                   </td>
                   <td style={{ textAlign: "center", fontSize: 13 }}>{p.played}</td>
                   <td style={{ textAlign: "center" }} className="text-success"><b>{p.won}</b></td>
+                  <td style={{ textAlign: "center", color: "#dc2626", fontWeight: 600, fontSize: 13 }}>{p.lost}</td>
+                  <td style={{ textAlign: "center", color: "#f59e0b", fontWeight: 700, fontSize: 13 }}>{p.points}</td>
                   <td>
                     <div className="win-bar-wrap">
                       <div className="win-bar"><div className="win-bar-fill" style={{ width: `${p.winPct}%` }} /></div>
