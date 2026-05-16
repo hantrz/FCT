@@ -2687,21 +2687,23 @@ function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout }) {
     ? matches.filter(m => m.team1.includes(playerId) || m.team2.includes(playerId))
     : [];
 
-  let wins = 0, losses = 0, totalPoints = 0;
+  let wins = 0, losses = 0;
   const partnerWins = {};
   for (const m of myMatches) {
     const inT1 = m.team1.includes(playerId);
     const won = (inT1 && m.winner === "team1") || (!inT1 && m.winner === "team2");
     if (won) {
       wins++;
-      totalPoints += m.winnerScore ?? 0;
       const partners = (inT1 ? m.team1 : m.team2).filter(id => id !== playerId);
       for (const pid of partners) partnerWins[pid] = (partnerWins[pid] || 0) + 1;
     } else {
       losses++;
-      totalPoints += m.loserScore ?? 0;
     }
   }
+  const meBadges = playerId ? calcBadges(playerId, matches) : { hatTricks: 0, lossTricks: 0, cleanWins: 0, cleanLosses: 0 };
+  const totalPoints = playerId
+    ? 10 + (wins * 3) + (losses * -2) + (meBadges.hatTricks * 3) + (meBadges.lossTricks * -3) + (meBadges.cleanWins * 2) + (meBadges.cleanLosses * -3)
+    : 0;
   const played = wins + losses;
   const winRate = played > 0 ? Math.round((wins / played) * 100) : 0;
 
