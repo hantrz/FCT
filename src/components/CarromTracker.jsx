@@ -1168,9 +1168,7 @@ function getMatchBadgeLogs(match, allMatches, players) {
 
   if (match.loserScore !== null && match.loserScore !== undefined && Number(match.loserScore) === 0) {
     const winnerNames = winnerTeam.map(getPlayerName).join(" & ");
-    const loserNames = loserTeam.map(getPlayerName).join(" & ");
-    logs.push({ type: "cleanwin", text: `💎 ${winnerNames} — Clean Win` });
-    logs.push({ type: "cleanloss", text: `♦ ${loserNames} — Clean Loss` });
+    logs.push({ type: "cleanwin", text: `💎 ${winnerNames} — Clean Win (Opponent scored 0 points)` });
   }
 
   return logs;
