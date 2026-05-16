@@ -314,8 +314,8 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     const points = 10
       + (p.won * 3)
       + (p.lost * -2)
-      + (badges.cleanWins * 2)
-      + (badges.cleanLosses * -3)
+      + (badges.cleanWins * 5)
+      + (badges.cleanLosses * -5)
       + (badges.hatTricks * 3)
       + (badges.lossTricks * -3);
     return { ...p, points };
@@ -1009,7 +1009,7 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
             const getPoints = (p) => {
               const st = computeStats([p], matches)[0] || { won: 0, lost: 0 };
               const badges = calcBadges(p.id, matches);
-              return 10 + (st.won * 3) + (st.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
+              return 10 + (st.won * 3) + (st.lost * -2) + (badges.cleanWins * 5) + (badges.cleanLosses * -5) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
             };
             return getPoints(b) - getPoints(a);
           }).map((p, i) => {
@@ -1362,7 +1362,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
     const baseStats = computeStats(players, filtered).filter(s => s.played > 0);
     const stats = baseStats.map(p => {
       const badges = calcBadges(p.id, filtered);
-      const points = (p.won * 3) + (p.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
+      const points = (p.won * 3) + (p.lost * -2) + (badges.cleanWins * 5) + (badges.cleanLosses * -5) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
       return { ...p, points };
     }).sort((a, b) => b.points - a.points || b.winPct - a.winPct);
     return (
