@@ -1386,6 +1386,12 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
     }
     const idx = players.findIndex(x => x.id === p.id);
     const c = PALETTE[idx % PALETTE.length];
+    const lbStats = computeStats(players, matches).map(q => {
+      const qb = calcBadges(q.id, matches);
+      return { id: q.id, pts: 10 + (q.won * 3) + (q.lost * -2) + (qb.hatTricks * 3) + (qb.lossTricks * -3) + (qb.cleanWins * 2) + (qb.cleanLosses * -3) };
+    }).sort((a, b) => b.pts - a.pts);
+    const playerRank = lbStats.findIndex(q => q.id === p.id) + 1;
+    const playerPts = lbStats.find(q => q.id === p.id)?.pts ?? 0;
 
     return (
       <div>
@@ -1406,6 +1412,10 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
                 </div>
               ) : null;
             })()}
+            <div style={{ display: "flex", gap: 10, marginTop: 6, marginBottom: 6 }}>
+              <span style={{ background: "#fef9c3", color: "#92400e", border: "1px solid #fde68a", borderRadius: 20, padding: "3px 10px", fontSize: 13, fontWeight: 700 }}>🏆 Rank #{playerRank}</span>
+              <span style={{ background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0", borderRadius: 20, padding: "3px 10px", fontSize: 13, fontWeight: 700 }}>✦ {playerPts} pts</span>
+            </div>
             {(() => {
               const playerMatches = matches.filter(m => {
                 const ids = [...(m.team1 || [m.player1]), ...(m.team2 || [m.player2])];
