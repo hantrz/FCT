@@ -1184,6 +1184,23 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
 
   function filterByDate(ms) {
     const now = new Date();
+    if (dateFilter === "today") {
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      return ms.filter(m => {
+        function getTime(m) {
+          const t = m.timestamp || m.date || m.createdAt || m.time;
+          if (!t) return 0;
+          if (typeof t === "number") return t;
+          if (typeof t.toMillis === "function") return t.toMillis();
+          if (t.seconds) return t.seconds * 1000;
+          if (t instanceof Date) return t.getTime();
+          return 0;
+        }
+        const matchTime = getTime(m);
+        return matchTime >= startOfDay.getTime() && matchTime <= endOfDay.getTime();
+      });
+    }
     return ms.filter(m => {
       if (!m.createdAt) return false;
       const d = m.createdAt.toDate();
@@ -1467,7 +1484,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
 
       {mode === "date" && (
         <div style={{ display: "flex", gap: 8, marginBottom: "1.25rem", flexWrap: "wrap", alignItems: "center" }}>
-          {[{ k: "weekly", l: "This Week" }, { k: "monthly", l: "Monthly" }, { k: "yearly", l: "Yearly" }].map(({ k, l }) => (
+          {[{ k: "today", l: "Today" }, { k: "weekly", l: "This Week" }, { k: "monthly", l: "Monthly" }, { k: "yearly", l: "Yearly" }].map(({ k, l }) => (
             <button key={k} className={`btn btn-format ${dateFilter === k ? "active" : ""}`} onClick={() => setDateFilter(k)}>{l}</button>
           ))}
           {dateFilter === "monthly" && (
