@@ -3235,9 +3235,7 @@ export default function CarromTracker() {
     await updateDoc(doc(db, "players", id), data);
   }
   async function saveMatch(data) {
-    const addedBy = isAdmin
-      ? { uid: "admin", name: "Admin" }
-      : { uid: currentUser.uid, name: currentUser.displayName };
+    const addedBy = { uid: currentUser?.uid || "admin", name: currentUser?.displayName || "Admin" };
     await addDoc(collection(db, "matches"), { ...data, addedBy, createdAt: serverTimestamp() });
     setTab("board");
   }
