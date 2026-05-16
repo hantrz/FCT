@@ -1269,6 +1269,7 @@ function History({ players, matches, onDelete, isAdmin }) {
 function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
   const [mode, setMode] = useState("player");
   const [dateFilter, setDateFilter] = useState("weekly");
+  const [tooltip, setTooltip] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -1458,7 +1459,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
     const stats = baseStats.map(p => {
       const badges = calcBadges(p.id, filtered);
       const points = (p.won * 3) + (p.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
-      return { ...p, points };
+      return { ...p, points, badges };
     }).sort((a, b) => b.points - a.points || b.winPct - a.winPct);
     return (
       <div>
@@ -1480,10 +1481,34 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
               {stats.map((p, i) => (
                 <tr key={p.id}>
                   <td className="text-muted" style={{ fontWeight: 600 }}>{i + 1}</td>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <td style={{ maxWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <Avatar id={p.id} allPlayers={players} size={24} />
-                      <span style={{ fontSize: 13, fontWeight: 500 }}>{p.name}</span>
+                      <span style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1, minWidth: 0 }}>{p.name}</span>
+                      {p.badges.hatTricks > 0 && (
+                        <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-fire`)} onMouseLeave={() => setTooltip(null)}>
+                          <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }}>{p.badges.hatTricks} 🔥</span>
+                          {tooltip === `${p.id}-fire` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>🔥 Hat-trick!<br/>{p.badges.hatTricks === 1 ? "1 hat-trick achieved" : `${p.badges.hatTricks} hat-tricks achieved`}<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+                        </span>
+                      )}
+                      {p.badges.lossTricks > 0 && (
+                        <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-loss-trick`)} onMouseLeave={() => setTooltip(null)}>
+                          <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fef2f2", color:"#b91c1c", border:"0.5px solid #fca5a5" }}>{p.badges.lossTricks} 😬</span>
+                          {tooltip === `${p.id}-loss-trick` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>😬 Loss-trick!<br/>{p.badges.lossTricks === 1 ? "1 loss-trick" : `${p.badges.lossTricks} loss-tricks`}<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+                        </span>
+                      )}
+                      {p.badges.cleanWins > 0 && (
+                        <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-clean-win`)} onMouseLeave={() => setTooltip(null)}>
+                          <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }}>{p.badges.cleanWins} 💎</span>
+                          {tooltip === `${p.id}-clean-win` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💎 Clean Win<br/>Won with opponent scoring 0<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+                        </span>
+                      )}
+                      {p.badges.cleanLosses > 0 && (
+                        <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-clean-loss`)} onMouseLeave={() => setTooltip(null)}>
+                          <span className="clean-loss-badge" style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600 }}>{p.badges.cleanLosses} 💎</span>
+                          {tooltip === `${p.id}-clean-loss` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💎 Clean Loss<br/>Lost while scoring 0 points<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td style={{ textAlign: "center", fontSize: 13 }}>{p.played}</td>
