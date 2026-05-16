@@ -1362,7 +1362,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
     const baseStats = computeStats(players, filtered).filter(s => s.played > 0);
     const stats = baseStats.map(p => {
       const badges = calcBadges(p.id, filtered);
-      const points = 10 + (p.won * 3) + (p.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
+      const points = (p.won * 3) + (p.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
       return { ...p, points };
     }).sort((a, b) => b.points - a.points || b.winPct - a.winPct);
     return (
