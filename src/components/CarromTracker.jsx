@@ -1268,7 +1268,7 @@ function History({ players, matches, onDelete, isAdmin }) {
 // ── Stats ─────────────────────────────────────────────────────────────────────
 function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
   const [mode, setMode] = useState("player");
-  const [dateFilter, setDateFilter] = useState("weekly");
+  const [dateFilter, setDateFilter] = useState("alltime");
   const [tooltip, setTooltip] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date();
@@ -1279,6 +1279,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
   const getName = id => players.find(p => p.id === id)?.name || "?";
 
   function filterByDate(ms) {
+    if (dateFilter === "alltime") return ms;
     const now = new Date();
     if (dateFilter === "today") {
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
@@ -1463,7 +1464,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
     }).sort((a, b) => b.points - a.points || b.winPct - a.winPct);
     return (
       <div>
-        <p className="text-muted" style={{ fontSize: 12, marginBottom: "1rem", fontWeight: 600 }}>{filtered.length} matches in this period</p>
+        <p className="text-muted" style={{ fontSize: 12, marginBottom: "1rem", fontWeight: 600 }}>{dateFilter === "alltime" ? `All ${filtered.length} matches` : `${filtered.length} matches in this period`}</p>
         <div className="table-wrap">
           <table>
             <thead>
@@ -1623,7 +1624,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
 
       {mode === "date" && (
         <div style={{ display: "flex", gap: 8, marginBottom: "1.25rem", flexWrap: "wrap", alignItems: "center" }}>
-          {[{ k: "today", l: "Today" }, { k: "weekly", l: "This Week" }, { k: "monthly", l: "Monthly" }, { k: "yearly", l: "Yearly" }].map(({ k, l }) => (
+          {[{ k: "alltime", l: "All Time" }, { k: "today", l: "Today" }, { k: "weekly", l: "This Week" }, { k: "monthly", l: "Monthly" }, { k: "yearly", l: "Yearly" }].map(({ k, l }) => (
             <button key={k} className={`btn btn-format ${dateFilter === k ? "active" : ""}`} onClick={() => setDateFilter(k)}>{l}</button>
           ))}
           {dateFilter === "monthly" && (
