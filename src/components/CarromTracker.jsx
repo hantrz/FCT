@@ -1143,15 +1143,26 @@ function getMatchBadgeLogs(match, allMatches, players) {
     const playerMatches = matchesUpToAndIncludingThis.filter(m =>
       (m.team1 || []).includes(playerId) || (m.team2 || []).includes(playerId)
     );
-    if (playerMatches.length >= 3) {
-      const last3 = playerMatches.slice(-3);
-      const allWins = last3.every(m => {
-        const inTeam1 = (m.team1 || []).includes(playerId);
-        return (inTeam1 && m.winner === "team1") || (!inTeam1 && m.winner === "team2");
-      });
-      if (allWins && last3[2].id === match.id) {
-        logs.push({ type: "hattrick", text: `🔥 ${getPlayerName(playerId)} earned Hat-trick` });
+
+    let consecutiveWins = 0;
+    for (let i = playerMatches.length - 1; i >= 0; i--) {
+      const m = playerMatches[i];
+      const inTeam1 = (m.team1 || []).includes(playerId);
+      const isWin = (inTeam1 && m.winner === "team1") || (!inTeam1 && m.winner === "team2");
+      if (isWin) {
+        consecutiveWins++;
+      } else {
+        break;
       }
+    }
+
+    const isThisMatchAWin = (() => {
+      const inTeam1 = (match.team1 || []).includes(playerId);
+      return (inTeam1 && match.winner === "team1") || (!inTeam1 && match.winner === "team2");
+    })();
+
+    if (isThisMatchAWin && consecutiveWins > 0 && consecutiveWins % 3 === 0) {
+      logs.push({ type: "hattrick", text: `🔥 ${getPlayerName(playerId)} earned Hat-trick` });
     }
   });
 
