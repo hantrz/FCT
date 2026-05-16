@@ -1114,6 +1114,57 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
   );
 }
 
+function getMatchBadgeLogs(match, allMatches, players) {
+  const logs = [];
+  const team1 = match.team1 || [];
+  const team2 = match.team2 || [];
+  const winnerTeam = match.winner === "team1" ? team1 : team2;
+  const loserTeam = match.winner === "team1" ? team2 : team1;
+
+  const getPlayerName = (id) => {
+    const p = players.find(p => p.id === id);
+    return p ? p.name : id;
+  };
+
+  function getTime(m) {
+    const t = m.timestamp || m.date || m.createdAt || m.time;
+    if (!t) return 0;
+    if (typeof t === "number") return t;
+    if (typeof t.toMillis === "function") return t.toMillis();
+    if (t.seconds) return t.seconds * 1000;
+    if (t instanceof Date) return t.getTime();
+    return 0;
+  }
+  const sortedMatches = [...allMatches].sort((a, b) => getTime(a) - getTime(b));
+  const thisMatchIndex = sortedMatches.findIndex(m => m.id === match.id);
+  const matchesUpToAndIncludingThis = sortedMatches.slice(0, thisMatchIndex + 1);
+
+  winnerTeam.forEach(playerId => {
+    const playerMatches = matchesUpToAndIncludingThis.filter(m =>
+      (m.team1 || []).includes(playerId) || (m.team2 || []).includes(playerId)
+    );
+    if (playerMatches.length >= 3) {
+      const last3 = playerMatches.slice(-3);
+      const allWins = last3.every(m => {
+        const inTeam1 = (m.team1 || []).includes(playerId);
+        return (inTeam1 && m.winner === "team1") || (!inTeam1 && m.winner === "team2");
+      });
+      if (allWins && last3[2].id === match.id) {
+        logs.push({ type: "hattrick", text: `🔥 ${getPlayerName(playerId)} earned Hat-trick` });
+      }
+    }
+  });
+
+  if (match.loserScore !== null && match.loserScore !== undefined && Number(match.loserScore) === 0) {
+    const winnerNames = winnerTeam.map(getPlayerName).join(" & ");
+    const loserNames = loserTeam.map(getPlayerName).join(" & ");
+    logs.push({ type: "cleanwin", text: `💎 ${winnerNames} — Clean Win` });
+    logs.push({ type: "cleanloss", text: `♦ ${loserNames} — Clean Loss` });
+  }
+
+  return logs;
+}
+
 // ── History ───────────────────────────────────────────────────────────────────
 function History({ players, matches, onDelete, isAdmin }) {
   const getName = id => players.find(p => p.id === id)?.name || "?";
@@ -1155,6 +1206,18 @@ function History({ players, matches, onDelete, isAdmin }) {
                 </svg>
                 Added by {m.addedBy?.name ?? "Admin"}
               </p>
+              {(() => {
+                const badgeLogs = getMatchBadgeLogs(m, matches, players);
+                return badgeLogs.length > 0 ? (
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 3 }}>
+                    {badgeLogs.map((log, i) => (
+                      <div key={i} style={{ fontSize: 12, color: log.type === "hattrick" ? "#c2410c" : log.type === "cleanwin" ? "#1d4ed8" : "#6b7280", fontWeight: 500 }}>
+                        {log.text}
+                      </div>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
             </div>
             {isAdmin && (
               <button onClick={() => onDelete(m.id)} style={{
