@@ -425,7 +425,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                         )}
                         {badges.cleanLosses > 0 && (
                           <span style={{ position:"relative", display:"inline-flex" }} onMouseEnter={() => setTooltip(`${p.id}-clean-loss`)} onMouseLeave={() => setTooltip(null)}>
-                            <span style={{ fontSize:11, borderRadius:20, padding:"1px 6px", fontWeight:600, background:"rgba(0, 0, 0, 0.24)", color:"#1a1a1a", border:"0.5px solid rgba(0, 0, 0, 0.50)" }}>{badges.cleanLosses} 💎</span>
+                            <span style={{ fontSize:11, borderRadius:20, padding:"1px 6px", fontWeight:600, background:"rgba(60, 60, 60, 0.85)", color:"#ffffff", border:"0.5px solid rgba(255, 255, 255, 0.2)" }}>{badges.cleanLosses} 💎</span>
                             {tooltip === `${p.id}-clean-loss` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💎 Clean Loss<br/>Lost while scoring 0 points<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
                           </span>
                         )}
@@ -508,7 +508,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                           )}
                           {badges.cleanLosses > 0 && (
                             <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-clean-loss`)} onMouseLeave={() => setTooltip(null)}>
-                              <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"rgba(0, 0, 0, 0.24)", color:"#1a1a1a", border:"0.5px solid rgba(0, 0, 0, 0.50)" }}>{badges.cleanLosses} 💎</span>
+                              <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"rgba(60, 60, 60, 0.85)", color:"#ffffff", border:"0.5px solid rgba(255, 255, 255, 0.2)" }}>{badges.cleanLosses} 💎</span>
                               {tooltip === `${p.id}-clean-loss` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💎 Clean Loss<br/>Lost while scoring 0 points<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
                             </span>
                           )}
@@ -585,7 +585,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                   {[
                     { badge: { bg:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }, icon:"🔥", label:"Hat-trick: Every 3 consecutive wins" },
                     { badge: { bg:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }, icon:"💎", label:"Clean Win: Opponent scored 0 points" },
-                    { badge: { bg:"rgba(0, 0, 0, 0.24)", color:"#1a1a1a", border:"0.5px solid rgba(0, 0, 0, 0.50)" }, icon:"💎", label:"Clean Loss: You scored 0 points" },
+                    { badge: { bg:"rgba(60, 60, 60, 0.85)", color:"#ffffff", border:"0.5px solid rgba(255, 255, 255, 0.2)" }, icon:"💎", label:"Clean Loss: You scored 0 points" },
                   ].map((item, i, arr) => (
                     <div key={i} style={{
                       display: "flex", alignItems: "center", gap: 10,
@@ -1266,7 +1266,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer }) {
                 <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:6 }}>
                   {b.hatTricks > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }}>{b.hatTricks} 🔥</span>}
                   {b.cleanWins > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }}>{b.cleanWins} 💎</span>}
-                  {b.cleanLosses > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"rgba(0, 0, 0, 0.24)", color:"#1a1a1a", border:"0.5px solid rgba(0, 0, 0, 0.50)" }}>{b.cleanLosses} 💎</span>}
+                  {b.cleanLosses > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"rgba(60, 60, 60, 0.85)", color:"#ffffff", border:"0.5px solid rgba(255, 255, 255, 0.2)" }}>{b.cleanLosses} 💎</span>}
                 </div>
               ) : null;
             })()}
