@@ -703,10 +703,10 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                       </div>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 14 }}>
-                          First Strike: Last match loser gets to go first
+                          First Strike: Fully Random
                         </div>
                         <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-                          A random player from the losing team of the last match strikes first
+                          No rules or points-based logic — one random player from the 4 selected players gets to strike first
                         </div>
                       </div>
                     </div>
