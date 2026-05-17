@@ -2041,40 +2041,7 @@ function getRecentTeammatePairs(matches, selectedPlayerIds, lastN = 2) {
 }
 
 function getStrikeFirstPlayer(matches, selectedPlayers) {
-  try {
-    function getTime(m) {
-      const t = m.timestamp || m.date || m.createdAt || m.time;
-      if (!t) return 0;
-      if (typeof t === "number") return t;
-      if (typeof t.toMillis === "function") return t.toMillis();
-      if (t.seconds) return t.seconds * 1000;
-      if (t instanceof Date) return t.getTime();
-      return 0;
-    }
-    const selectedIds = selectedPlayers.map(p => p.id);
-    const sorted = [...matches].sort((a, b) => getTime(b) - getTime(a));
-    const lastRelevant = sorted.find(m => {
-      const teamA = m.teamA || m.team1 || [];
-      const teamB = m.teamB || m.team2 || [];
-      const allPlayers = [...teamA, ...teamB];
-      return selectedIds.some(id => allPlayers.includes(id));
-    });
-    if (!lastRelevant) {
-      return selectedPlayers[Math.floor(Math.random() * selectedPlayers.length)];
-    }
-    const team1 = lastRelevant.team1 || [];
-    const team2 = lastRelevant.team2 || [];
-    const winner = lastRelevant.winner;
-    const loserTeam = (winner === "team1") ? team2 : team1;
-    const loserIds = loserTeam.filter(id => selectedIds.includes(id));
-    if (loserIds.length === 0) {
-      return selectedPlayers[Math.floor(Math.random() * selectedPlayers.length)];
-    }
-    const strikerId = loserIds[Math.floor(Math.random() * loserIds.length)];
-    return selectedPlayers.find(p => p.id === strikerId) || selectedPlayers[Math.floor(Math.random() * selectedPlayers.length)];
-  } catch (err) {
-    return selectedPlayers[Math.floor(Math.random() * selectedPlayers.length)];
-  }
+  return selectedPlayers[Math.floor(Math.random() * selectedPlayers.length)];
 }
 
 // ── Team Spin ─────────────────────────────────────────────────────────────────
