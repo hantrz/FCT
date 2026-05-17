@@ -639,31 +639,8 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
               {/* SPIN LOGIC CONTENT */}
               {guideTab === "spin" && (
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 12,
-                    padding: "12px 0 16px",
-                    marginBottom: 8,
-                    borderBottom: "2px solid rgba(239, 68, 68, 0.25)",
-                  }}>
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                      background: "linear-gradient(135deg, #ef4444, #b91c1c)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 20,
-                      boxShadow: "0 2px 8px rgba(239, 68, 68, 0.4)",
-                    }}>
-                      🚫
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: "#ef4444" }}>
-                        Partner Cooldown: Last 2 match teammates stay separated
-                      </div>
-                      <div style={{ fontSize: 12, color: "#ef4444", opacity: 0.75, marginTop: 2 }}>
-                        Hard rule: always applied, cannot be overridden
-                      </div>
-                    </div>
-                  </div>
                   {[
+                    { icon: "🚫", color: { bg:"#fee2e2", fg:"#dc2626", bd:"#fca5a5" }, label: "Partner Cooldown: Last 2 match teammates stay separated", textColor: "#dc2626" },
                     { icon: "⚖️", color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Win Rate Balance: Both teams' combined win rates kept similar" },
                     { icon: "📈", color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Recent Form: Balance based on last 5 matches" },
                     { icon: "🔀", color: { bg:"#fef3c7", fg:"#a16207", bd:"#fde68a" }, label: "Partner Split: Frequent partners get separated" },
@@ -682,7 +659,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                         background: item.color.bg, color: item.color.fg, border: `0.5px solid ${item.color.bd}`,
                         flexShrink: 0, minWidth: 32
                       }}>{item.icon}</span>
-                      <span style={{ fontSize: 12, color: guideColors.labelText }}>{item.label}</span>
+                      <span style={{ fontSize: 12, color: item.textColor || guideColors.labelText }}>{item.label}</span>
                     </div>
                   ))}
                   <div style={{
