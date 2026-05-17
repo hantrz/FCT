@@ -1277,6 +1277,8 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
   const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
+  const [h2hPlayer1, setH2hPlayer1] = useState("");
+  const [h2hPlayer2, setH2hPlayer2] = useState("");
 
   const getName = id => players.find(p => p.id === id)?.name || "?";
 
@@ -1663,6 +1665,180 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
     );
   }
 
+  function renderH2HStats() {
+    const p1 = players.find(p => p.id === h2hPlayer1);
+    const p2 = players.find(p => p.id === h2hPlayer2);
+
+    function getMatchTime(m) {
+      const t = m.timestamp || m.date || m.createdAt || m.time;
+      if (!t) return 0;
+      if (typeof t === "number") return t;
+      if (typeof t.toMillis === "function") return t.toMillis();
+      if (t.seconds) return t.seconds * 1000;
+      if (t instanceof Date) return t.getTime();
+      return 0;
+    }
+
+    const relevantMatches = matches
+      .filter(m => {
+        const inT1 = (m.team1 || []).includes(h2hPlayer1) || (m.team1 || []).includes(h2hPlayer2);
+        const inT2 = (m.team2 || []).includes(h2hPlayer1) || (m.team2 || []).includes(h2hPlayer2);
+        const p1InT1 = (m.team1 || []).includes(h2hPlayer1);
+        const p1InT2 = (m.team2 || []).includes(h2hPlayer1);
+        const p2InT1 = (m.team1 || []).includes(h2hPlayer2);
+        const p2InT2 = (m.team2 || []).includes(h2hPlayer2);
+        return (p1InT1 || p1InT2) && (p2InT1 || p2InT2);
+      })
+      .sort((a, b) => getMatchTime(b) - getMatchTime(a));
+
+    let p1Wins = 0, p2Wins = 0, sameTeam = 0;
+    for (const m of relevantMatches) {
+      const p1InT1 = (m.team1 || []).includes(h2hPlayer1);
+      const p2InT1 = (m.team1 || []).includes(h2hPlayer2);
+      if (p1InT1 === p2InT1) {
+        sameTeam++;
+      } else {
+        const p1Won = (p1InT1 && m.winner === "team1") || (!p1InT1 && m.winner === "team2");
+        if (p1Won) p1Wins++; else p2Wins++;
+      }
+    }
+
+    const total = p1Wins + p2Wins + sameTeam;
+    const h2hTotal = p1Wins + p2Wins;
+
+    return (
+      <div>
+        <div style={{ display: "flex", gap: 8, marginBottom: "1.25rem" }}>
+          <div style={{ flex: 1 }}>
+            <p className="section-label">Player 1</p>
+            <PlayerSelect
+              players={players}
+              value={h2hPlayer1}
+              onChange={setH2hPlayer1}
+              placeholder="Select Player 1"
+              excludeIds={h2hPlayer2 ? [h2hPlayer2] : []}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p className="section-label">Player 2</p>
+            <PlayerSelect
+              players={players}
+              value={h2hPlayer2}
+              onChange={setH2hPlayer2}
+              placeholder="Select Player 2"
+              excludeIds={h2hPlayer1 ? [h2hPlayer1] : []}
+            />
+          </div>
+        </div>
+
+        {p1 && p2 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* VS card */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg-secondary)", borderRadius: 10, padding: "14px 16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                <PlayerAvatar player={p1} size={40} />
+                <span style={{ fontSize: 13, fontWeight: 700 }}>{p1.name}</span>
+              </div>
+              <span style={{ fontSize: 16, fontWeight: 800, color: "var(--text-muted)", letterSpacing: 2 }}>VS</span>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                <PlayerAvatar player={p2} size={40} />
+                <span style={{ fontSize: 13, fontWeight: 700 }}>{p2.name}</span>
+              </div>
+            </div>
+
+            {/* Result summary boxes */}
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ flex: 1, background: "var(--bg-secondary)", borderRadius: 8, padding: "12px 8px", textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--green)" }}>{p1Wins}</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{p1.name} wins</div>
+              </div>
+              <div style={{ flex: 1, background: "var(--bg-secondary)", borderRadius: 8, padding: "12px 8px", textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-muted)" }}>{sameTeam}</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Same Team</div>
+              </div>
+              <div style={{ flex: 1, background: "var(--bg-secondary)", borderRadius: 8, padding: "12px 8px", textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--green)" }}>{p2Wins}</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{p2.name} wins</div>
+              </div>
+            </div>
+
+            {/* Win bar */}
+            {h2hTotal > 0 && (
+              <div style={{ display: "flex", height: 8, borderRadius: 6, overflow: "hidden", gap: 2 }}>
+                {p1Wins > 0 && <div style={{ flex: p1Wins, background: "var(--green)", borderRadius: "6px 0 0 6px" }} />}
+                {sameTeam > 0 && <div style={{ flex: sameTeam, background: "var(--border)" }} />}
+                {p2Wins > 0 && <div style={{ flex: p2Wins, background: "var(--green)", borderRadius: "0 6px 6px 0" }} />}
+              </div>
+            )}
+
+            {/* Match history */}
+            <div style={{ marginTop: 4 }}>
+              <p className="section-label" style={{ marginBottom: 8 }}>Match History ({total} matches)</p>
+              {relevantMatches.length === 0 ? (
+                <div className="empty"><p>No matches between these players yet.</p></div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {relevantMatches.map(m => {
+                    const p1InT1 = (m.team1 || []).includes(h2hPlayer1);
+                    const sameTeamMatch = p1InT1 === (m.team1 || []).includes(h2hPlayer2);
+                    const p1Team = p1InT1 ? m.team1 : m.team2;
+                    const p2Team = p1InT1 ? m.team2 : m.team1;
+                    const p1TeamWon = (p1InT1 && m.winner === "team1") || (!p1InT1 && m.winner === "team2");
+                    const badgeLogs = getMatchBadgeLogs(m, matches, players);
+                    const renderSide = (ids, won) => (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, flexWrap: "wrap", fontSize: 12, fontWeight: won ? 700 : 400, color: won ? "var(--green)" : "var(--text-muted)" }}>
+                        {won && "★ "}
+                        {ids.map((id, i) => (
+                          <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+                            {i > 0 && <span style={{ opacity: 0.5 }}>&amp;</span>}
+                            <PlayerAvatar player={players.find(p => p.id === id)} size={18} />
+                            <span>{getName(id)}</span>
+                          </span>
+                        ))}
+                      </span>
+                    );
+                    return (
+                      <div key={m.id} className="match-item">
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 3 }}>
+                            {sameTeamMatch ? (
+                              <>
+                                {renderSide(p1Team, p1TeamWon)}
+                                <span className="text-muted" style={{ fontSize: 10, padding: "1px 5px", background: "var(--bg-secondary)", borderRadius: 4 }}>vs</span>
+                                {renderSide(p2Team, !p1TeamWon)}
+                                <span style={{ fontSize: 10, padding: "1px 6px", background: "#dbeafe", color: "#1d4ed8", borderRadius: 4, fontWeight: 600 }}>same team</span>
+                              </>
+                            ) : (
+                              <>
+                                {renderSide(p1Team, p1TeamWon)}
+                                <span className="text-muted" style={{ fontSize: 10, padding: "1px 5px", background: "var(--bg-secondary)", borderRadius: 4 }}>vs</span>
+                                {renderSide(p2Team, !p1TeamWon)}
+                              </>
+                            )}
+                          </div>
+                          <p className="text-muted" style={{ fontSize: 11 }}>{formatMatchDateTime(m)}</p>
+                          {badgeLogs.length > 0 && (
+                            <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 2 }}>
+                              {badgeLogs.map((log, i) => (
+                                <div key={i} style={{ fontSize: 11, color: log.type === "hattrick" ? "#d97706" : log.type === "losstrick" ? "#dc2626" : "#1d4ed8", fontWeight: 500 }}>
+                                  {log.text}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const now = new Date();
   const monthOptions = Array.from({ length: 12 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -1673,7 +1849,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
   return (
     <div>
       <div className="stats-mode-btns" style={{ display: "flex", gap: 8, marginBottom: "1.25rem", flexWrap: "wrap" }}>
-        {[{ k: "date", l: "By Date" }, { k: "player", l: "By Player" }, { k: "duo", l: "Best Partner" }].map(({ k, l }) => (
+        {[{ k: "date", l: "By Date" }, { k: "player", l: "By Player" }, { k: "duo", l: "Best Partner" }, { k: "h2h", l: "Head to Head" }].map(({ k, l }) => (
           <button key={k} className={`btn btn-format ${mode === k ? "active" : ""}`} onClick={() => setMode(k)}>{l}</button>
         ))}
       </div>
@@ -1711,6 +1887,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
       {mode === "player" && renderPlayerStats()}
       {mode === "date" && renderDateStats()}
       {mode === "duo" && renderDuoStats()}
+      {mode === "h2h" && renderH2HStats()}
     </div>
   );
 }
