@@ -649,7 +649,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
               {guideTab === "spin" && (
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   {[
-                    { icon: "🚫", color: { bg:"#fee2e2", fg:"#dc2626", bd:"#fca5a5" }, label: "Partner Cooldown: Last 2 match teammates stay separated", textColor: "#dc2626" },
+                    { icon: "🚫", color: { bg:"#fee2e2", fg:"#dc2626", bd:"#fca5a5" }, label: "Partner Cooldown: Last 2 match teammates stay separated" },
                     { icon: "⚖️", color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Win Rate Balance: Both teams' combined win rates kept similar" },
                     { icon: "📈", color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Recent Form: Balance based on last 5 matches" },
                     { icon: "🔀", color: { bg:"#fef3c7", fg:"#a16207", bd:"#fde68a" }, label: "Partner Split: Frequent partners get separated" },
