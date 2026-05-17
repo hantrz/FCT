@@ -2062,10 +2062,10 @@ function getStrikeFirstPlayer(matches, selectedPlayers) {
     if (!lastRelevant) {
       return selectedPlayers[Math.floor(Math.random() * selectedPlayers.length)];
     }
-    const teamA = lastRelevant.teamA || lastRelevant.team1 || [];
-    const teamB = lastRelevant.teamB || lastRelevant.team2 || [];
+    const team1 = lastRelevant.team1 || [];
+    const team2 = lastRelevant.team2 || [];
     const winner = lastRelevant.winner;
-    const loserTeam = (winner === "A" || winner === "teamA") ? teamB : teamA;
+    const loserTeam = (winner === "team1") ? team2 : team1;
     const loserIds = loserTeam.filter(id => selectedIds.includes(id));
     if (loserIds.length === 0) {
       return selectedPlayers[Math.floor(Math.random() * selectedPlayers.length)];
