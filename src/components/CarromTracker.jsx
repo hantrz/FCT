@@ -1709,15 +1709,15 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
     const p1Leading = p1Wins > p2Wins;
     const p2Leading = p2Wins > p1Wins;
     const p1BoxStyle = p1Leading
-      ? { background: "#dcfce7", border: "2px solid #16a34a" }
+      ? { background: "#dcfce7" }
       : p2Leading
-        ? { background: "#fee2e2", border: "2px solid #dc2626" }
-        : { background: "#dcfce7", border: "2px solid #16a34a" };
+        ? { background: "#fee2e2" }
+        : { background: "#dcfce7" };
     const p2BoxStyle = p2Leading
-      ? { background: "#dcfce7", border: "2px solid #16a34a" }
+      ? { background: "#dcfce7" }
       : p1Leading
-        ? { background: "#fee2e2", border: "2px solid #dc2626" }
-        : { background: "#dcfce7", border: "2px solid #16a34a" };
+        ? { background: "#fee2e2" }
+        : { background: "#dcfce7" };
     const p1NumColor = p1Leading ? "#16a34a" : p2Leading ? "#dc2626" : "#16a34a";
     const p2NumColor = p2Leading ? "#16a34a" : p1Leading ? "#dc2626" : "#16a34a";
 
