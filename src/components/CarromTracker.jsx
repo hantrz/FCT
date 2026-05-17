@@ -558,9 +558,10 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
               overflowX: "auto"
             }}>
               {[
-                { k: "points", l: "POINTS RULES" },
-                { k: "spin",   l: "SPIN/HIT RULES" },
-                { k: "badges", l: "BADGE GUIDE" }
+                { k: "points",   l: "POINTS RULES" },
+                { k: "spin",     l: "SPIN/HIT RULES" },
+                { k: "badges",   l: "BADGE GUIDE" },
+                { k: "features", l: "APP FEATURES" }
               ].map(t => (
                 <button
                   key={t.k}
@@ -710,6 +711,32 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+              {/* APP FEATURES CONTENT */}
+              {guideTab === "features" && (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {[
+                    { icon: "🏆", name: "Leaderboard", desc: "Points-based ranking system & Win%, Matches, Wins, Losses filter" },
+                    { icon: "📊", name: "Stats", desc: "By Date, By Player, Best Partner analysis & Head to Head record" },
+                    { icon: "📜", name: "Match History", desc: "Full match log with date & time, Hat-trick & Loss-trick notifications, Clean Win & Clean Loss tracking" },
+                    { icon: "🎰", name: "Team Spin", desc: "Smart balanced team selection with Partner Cooldown rule & Strike First logic" },
+                    { icon: "🏅", name: "Badge System", desc: "Hat-trick (3 consecutive wins), Loss-trick (3 consecutive losses), Clean Win & Clean Loss badges" },
+                    { icon: "💬", name: "Chat", desc: "Real-time group chat & private messaging between members" },
+                    { icon: "👤", name: "Profile", desc: "Personal stats, rank, points & match history" },
+                  ].map((item, i, arr) => (
+                    <div key={i} style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      paddingTop: i === 0 ? 0 : 8,
+                      paddingBottom: i === arr.length - 1 ? 0 : 8,
+                      borderBottom: i === arr.length - 1 ? "none" : `0.5px solid ${guideColors.separator}`
+                    }}>
+                      <span style={{ fontSize: 16, flexShrink: 0, lineHeight: 1 }}>{item.icon}</span>
+                      <span style={{ fontSize: 12, color: guideColors.labelText }}>
+                        <span style={{ fontWeight: 600 }}>{item.name}:</span>{" "}{item.desc}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
