@@ -335,7 +335,15 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     return 0;
   });
 
-  const thisWeek = matches.filter(m => m.createdAt && Date.now() - m.createdAt.toMillis() < 7 * 864e5).length;
+  const thisWeek = (() => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+    return matches.filter(m => m.createdAt && m.createdAt.toDate() >= monday).length;
+  })();
   const rankClass = i => i === 0 ? "rank-1" : i === 1 ? "rank-2" : i === 2 ? "rank-3" : "text-muted";
   const rankColors = ["#f59e0b", "#9ca3af", "#cd7c41"];
 
