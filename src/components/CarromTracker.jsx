@@ -1681,8 +1681,6 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
 
     const relevantMatches = matches
       .filter(m => {
-        const inT1 = (m.team1 || []).includes(h2hPlayer1) || (m.team1 || []).includes(h2hPlayer2);
-        const inT2 = (m.team2 || []).includes(h2hPlayer1) || (m.team2 || []).includes(h2hPlayer2);
         const p1InT1 = (m.team1 || []).includes(h2hPlayer1);
         const p1InT2 = (m.team2 || []).includes(h2hPlayer1);
         const p2InT1 = (m.team1 || []).includes(h2hPlayer2);
@@ -1691,20 +1689,37 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
       })
       .sort((a, b) => getMatchTime(b) - getMatchTime(a));
 
-    let p1Wins = 0, p2Wins = 0, sameTeam = 0;
+    let p1Wins = 0, p2Wins = 0, sameTeam = 0, sameTeamWins = 0, sameTeamLosses = 0;
     for (const m of relevantMatches) {
       const p1InT1 = (m.team1 || []).includes(h2hPlayer1);
       const p2InT1 = (m.team1 || []).includes(h2hPlayer2);
       if (p1InT1 === p2InT1) {
         sameTeam++;
+        const theirTeamWon = (p1InT1 && m.winner === "team1") || (!p1InT1 && m.winner === "team2");
+        if (theirTeamWon) sameTeamWins++; else sameTeamLosses++;
       } else {
         const p1Won = (p1InT1 && m.winner === "team1") || (!p1InT1 && m.winner === "team2");
         if (p1Won) p1Wins++; else p2Wins++;
       }
     }
 
-    const total = p1Wins + p2Wins + sameTeam;
     const h2hTotal = p1Wins + p2Wins;
+
+    // FIX 4: box colors based on who leads
+    const p1Leading = p1Wins > p2Wins;
+    const p2Leading = p2Wins > p1Wins;
+    const p1BoxStyle = p1Leading
+      ? { background: "#f0fdf4", border: "1px solid #16a34a" }
+      : p2Leading
+        ? { background: "#fef2f2", border: "1px solid #dc2626" }
+        : { background: "var(--bg-secondary)", border: "1px solid transparent" };
+    const p2BoxStyle = p2Leading
+      ? { background: "#f0fdf4", border: "1px solid #16a34a" }
+      : p1Leading
+        ? { background: "#fef2f2", border: "1px solid #dc2626" }
+        : { background: "var(--bg-secondary)", border: "1px solid transparent" };
+    const p1NumColor = p1Leading ? "#16a34a" : p2Leading ? "#dc2626" : "var(--text-muted)";
+    const p2NumColor = p2Leading ? "#16a34a" : p1Leading ? "#dc2626" : "var(--text-muted)";
 
     return (
       <div>
@@ -1733,31 +1748,41 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
 
         {p1 && p2 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {/* VS card */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg-secondary)", borderRadius: 10, padding: "14px 16px" }}>
+            {/* FIX 1: VS card as 3-col grid matching stat boxes */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, background: "var(--bg-secondary)", borderRadius: 10, padding: "14px 16px" }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <PlayerAvatar player={p1} size={40} />
-                <span style={{ fontSize: 13, fontWeight: 700 }}>{p1.name}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, textAlign: "center" }}>{p1.name}</span>
               </div>
-              <span style={{ fontSize: 16, fontWeight: 800, color: "var(--text-muted)", letterSpacing: 2 }}>VS</span>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: "var(--text-muted)", letterSpacing: 2 }}>VS</span>
+              </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <PlayerAvatar player={p2} size={40} />
-                <span style={{ fontSize: 13, fontWeight: 700 }}>{p2.name}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, textAlign: "center" }}>{p2.name}</span>
               </div>
             </div>
 
             {/* Result summary boxes */}
             <div style={{ display: "flex", gap: 8 }}>
-              <div style={{ flex: 1, background: "var(--bg-secondary)", borderRadius: 8, padding: "12px 8px", textAlign: "center" }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--green)" }}>{p1Wins}</div>
+              <div style={{ flex: 1, borderRadius: 8, padding: "12px 8px", textAlign: "center", ...p1BoxStyle }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: p1NumColor }}>{p1Wins}</div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{p1.name} wins</div>
               </div>
+              {/* FIX 2: Same Team box with W/L record */}
               <div style={{ flex: 1, background: "var(--bg-secondary)", borderRadius: 8, padding: "12px 8px", textAlign: "center" }}>
                 <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-muted)" }}>{sameTeam}</div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Same Team</div>
+                {sameTeam > 0 && (
+                  <div style={{ fontSize: 11, marginTop: 3, display: "flex", justifyContent: "center", gap: 4 }}>
+                    <span style={{ color: "#16a34a", fontWeight: 600 }}>{sameTeamWins}W</span>
+                    <span style={{ color: "var(--text-muted)" }}>/</span>
+                    <span style={{ color: "#dc2626", fontWeight: 600 }}>{sameTeamLosses}L</span>
+                  </div>
+                )}
               </div>
-              <div style={{ flex: 1, background: "var(--bg-secondary)", borderRadius: 8, padding: "12px 8px", textAlign: "center" }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--green)" }}>{p2Wins}</div>
+              <div style={{ flex: 1, borderRadius: 8, padding: "12px 8px", textAlign: "center", ...p2BoxStyle }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: p2NumColor }}>{p2Wins}</div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{p2.name} wins</div>
               </div>
             </div>
@@ -1771,9 +1796,11 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
               </div>
             )}
 
-            {/* Match history */}
+            {/* FIX 3: Match history with H2H vs Same Team breakdown */}
             <div style={{ marginTop: 4 }}>
-              <p className="section-label" style={{ marginBottom: 8 }}>Match History ({total} matches)</p>
+              <p className="section-label" style={{ marginBottom: 8 }}>
+                Match History — H2H: {h2hTotal} &nbsp;|&nbsp; Same Team: {sameTeam}
+              </p>
               {relevantMatches.length === 0 ? (
                 <div className="empty"><p>No matches between these players yet.</p></div>
               ) : (
@@ -1801,19 +1828,11 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
                       <div key={m.id} className="match-item">
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 3 }}>
-                            {sameTeamMatch ? (
-                              <>
-                                {renderSide(p1Team, p1TeamWon)}
-                                <span className="text-muted" style={{ fontSize: 10, padding: "1px 5px", background: "var(--bg-secondary)", borderRadius: 4 }}>vs</span>
-                                {renderSide(p2Team, !p1TeamWon)}
-                                <span style={{ fontSize: 10, padding: "1px 6px", background: "#dbeafe", color: "#1d4ed8", borderRadius: 4, fontWeight: 600 }}>same team</span>
-                              </>
-                            ) : (
-                              <>
-                                {renderSide(p1Team, p1TeamWon)}
-                                <span className="text-muted" style={{ fontSize: 10, padding: "1px 5px", background: "var(--bg-secondary)", borderRadius: 4 }}>vs</span>
-                                {renderSide(p2Team, !p1TeamWon)}
-                              </>
+                            {renderSide(p1Team, p1TeamWon)}
+                            <span className="text-muted" style={{ fontSize: 10, padding: "1px 5px", background: "var(--bg-secondary)", borderRadius: 4 }}>vs</span>
+                            {renderSide(p2Team, !p1TeamWon)}
+                            {sameTeamMatch && (
+                              <span style={{ fontSize: 10, padding: "1px 6px", background: "#dbeafe", color: "#1d4ed8", borderRadius: 4, fontWeight: 600 }}>same team</span>
                             )}
                           </div>
                           <p className="text-muted" style={{ fontSize: 11 }}>{formatMatchDateTime(m)}</p>
