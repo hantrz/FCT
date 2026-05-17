@@ -1709,17 +1709,17 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
     const p1Leading = p1Wins > p2Wins;
     const p2Leading = p2Wins > p1Wins;
     const p1BoxStyle = p1Leading
-      ? { background: "#f0fdf4", border: "1px solid #16a34a" }
+      ? { background: "#dcfce7", border: "2px solid #16a34a" }
       : p2Leading
-        ? { background: "#fef2f2", border: "1px solid #dc2626" }
-        : { background: "var(--bg-secondary)", border: "1px solid transparent" };
+        ? { background: "#fee2e2", border: "2px solid #dc2626" }
+        : { background: "#dcfce7", border: "2px solid #16a34a" };
     const p2BoxStyle = p2Leading
-      ? { background: "#f0fdf4", border: "1px solid #16a34a" }
+      ? { background: "#dcfce7", border: "2px solid #16a34a" }
       : p1Leading
-        ? { background: "#fef2f2", border: "1px solid #dc2626" }
-        : { background: "var(--bg-secondary)", border: "1px solid transparent" };
-    const p1NumColor = p1Leading ? "#16a34a" : p2Leading ? "#dc2626" : "var(--text-muted)";
-    const p2NumColor = p2Leading ? "#16a34a" : p1Leading ? "#dc2626" : "var(--text-muted)";
+        ? { background: "#fee2e2", border: "2px solid #dc2626" }
+        : { background: "#dcfce7", border: "2px solid #16a34a" };
+    const p1NumColor = p1Leading ? "#16a34a" : p2Leading ? "#dc2626" : "#16a34a";
+    const p2NumColor = p2Leading ? "#16a34a" : p1Leading ? "#dc2626" : "#16a34a";
 
     return (
       <div>
@@ -1799,7 +1799,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
             {/* FIX 3: Match history with H2H vs Same Team breakdown */}
             <div style={{ marginTop: 4 }}>
               <p className="section-label" style={{ marginBottom: 8 }}>
-                Match History — H2H: {h2hTotal} &nbsp;|&nbsp; Same Team: {sameTeam}
+                Match History — H2H: {h2hTotal} &nbsp;|&nbsp; Same Team: {sameTeam} &nbsp;|&nbsp; Total: {h2hTotal + sameTeam}
               </p>
               {relevantMatches.length === 0 ? (
                 <div className="empty"><p>No matches between these players yet.</p></div>
