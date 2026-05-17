@@ -559,7 +559,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
             }}>
               {[
                 { k: "points", l: "POINTS RULES" },
-                { k: "spin",   l: "SPIN/HIT LOGIC" },
+                { k: "spin",   l: "SPIN/HIT RULES" },
                 { k: "badges", l: "BADGE GUIDE" }
               ].map(t => (
                 <button
