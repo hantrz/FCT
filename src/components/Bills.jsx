@@ -147,6 +147,15 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
       </div>
 
       {/* SECTION C: Payment Leaderboard */}
+      <style>{`
+        @media (max-width: 640px) {
+          .bills-col-times, .bills-col-share, .bills-col-bar { display: none; }
+          .bills-mobile-sub { display: block; }
+        }
+        @media (min-width: 641px) {
+          .bills-mobile-sub { display: none; }
+        }
+      `}</style>
       <div className="table-wrap">
         <table>
           <thead>
@@ -154,9 +163,9 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
               <th style={{ width: 32 }}>No</th>
               <th>Player</th>
               <th style={{ textAlign: "right" }}>Total</th>
-              <th style={{ textAlign: "right" }}>Times</th>
-              <th style={{ textAlign: "right" }}>Share</th>
-              <th style={{ width: 60 }}></th>
+              <th className="bills-col-times" style={{ textAlign: "right" }}>Times</th>
+              <th className="bills-col-share" style={{ textAlign: "right" }}>Share</th>
+              <th className="bills-col-bar" style={{ width: 60 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -166,21 +175,27 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
               const rankColor = idx === 0 ? "#e07b20" : idx <= 2 ? "#1a9e1a" : "var(--text-muted)";
               return (
                 <tr key={player.id}>
-                  <td style={{ fontWeight: 700, fontSize: 13, color: rankColor }}>{idx + 1}</td>
+                  <td style={{ fontWeight: 700, fontSize: 13, color: rankColor, verticalAlign: "top", paddingTop: 11 }}>{idx + 1}</td>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                       <PlayerAvatar player={player} size={26} />
-                      <span style={{ fontWeight: 600, color: isZero ? "var(--danger)" : "var(--text)", fontSize: 13 }}>
+                      <span style={{ fontWeight: 600, color: isZero ? "var(--danger)" : "var(--text)", fontSize: 13, whiteSpace: "nowrap" }}>
                         {player.name}
                       </span>
                     </div>
+                    <div className="bills-mobile-sub" style={{ marginTop: 5, paddingLeft: 33 }}>
+                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{count} times · {share}%</span>
+                      <div style={{ marginTop: 4, height: 5, background: "var(--border)", borderRadius: 5, overflow: "hidden" }}>
+                        <div style={{ width: `${share}%`, height: "100%", background: "linear-gradient(90deg, var(--green), #1dc400)", borderRadius: 5 }} />
+                      </div>
+                    </div>
                   </td>
-                  <td style={{ textAlign: "right", fontWeight: 700, color: isZero ? "var(--danger)" : "var(--green)" }}>
+                  <td style={{ textAlign: "right", fontWeight: 700, color: isZero ? "var(--danger)" : "var(--green)", verticalAlign: "top", paddingTop: 11 }}>
                     ৳{total.toLocaleString()}
                   </td>
-                  <td style={{ textAlign: "right", color: "var(--text-muted)", fontSize: 12 }}>{count}</td>
-                  <td style={{ textAlign: "right", fontSize: 12, color: "var(--text-muted)" }}>{share}%</td>
-                  <td>
+                  <td className="bills-col-times" style={{ textAlign: "right", color: "var(--text-muted)", fontSize: 12 }}>{count}</td>
+                  <td className="bills-col-share" style={{ textAlign: "right", fontSize: 12, color: "var(--text-muted)" }}>{share}%</td>
+                  <td className="bills-col-bar">
                     <div style={{ display: "flex", justifyContent: "flex-end" }}>
                       <div style={{ width: 48, height: 5, background: "var(--border)", borderRadius: 5, overflow: "hidden" }}>
                         <div style={{ width: `${share}%`, height: "100%", background: "linear-gradient(90deg, var(--green), #1dc400)", borderRadius: 5 }} />
