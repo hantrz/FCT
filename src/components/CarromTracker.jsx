@@ -3801,6 +3801,7 @@ export default function CarromTracker() {
             onDeleteBill={deleteBill}
             isLoggedIn={isFirebaseUser}
             isAdmin={isAdmin}
+            loggedInPlayerName={currentUser?.displayName || "Admin"}
           />
         )}
         {null /* chat is rendered as fullscreen overlay below */}

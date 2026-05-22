@@ -19,8 +19,30 @@ function getMonthKey(dateStr) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLoggedIn, isAdmin }) {
+function formatBillTimestamp(ts) {
+  if (!ts) return null;
+  let date;
+  if (typeof ts.toMillis === "function") date = new Date(ts.toMillis());
+  else if (ts.seconds) date = new Date(ts.seconds * 1000);
+  else if (ts instanceof Date) date = ts;
+  else return null;
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const bdOffset = 6 * 60;
+  const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+  const bd = new Date(utc + bdOffset * 60000);
+  const day = bd.getDate();
+  const month = months[bd.getMonth()];
+  const year = bd.getFullYear();
+  let hours = bd.getHours();
+  const minutes = bd.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
+}
+
+export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLoggedIn, isAdmin, loggedInPlayerName }) {
   const [period, setPeriod] = useState("alltime");
+  const [showForm, setShowForm] = useState(false);
   const [formDate, setFormDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [payments, setPayments] = useState({});
   const [saving, setSaving] = useState(false);
@@ -75,9 +97,11 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
           Object.entries(payments).map(([k, v]) => [k, Number(v) || 0])
         ),
         total: formTotal,
+        addedBy: loggedInPlayerName || "Unknown",
       });
       setPayments({});
       setFormDate(new Date().toISOString().slice(0, 10));
+      setShowForm(false);
     } finally {
       setSaving(false);
     }
@@ -175,37 +199,46 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
 
       {/* SECTION D: New Bill Entry */}
       {isLoggedIn && (
-        <div className="card">
-          <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Add Bill Entry</p>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Date</label>
-            <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-            {players.map(p => (
-              <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <PlayerAvatar player={p} size={28} />
-                <span style={{ flex: 1, fontSize: 13, fontWeight: 600, minWidth: 60 }}>{p.name}</span>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={payments[p.name] || ""}
-                  onChange={e => setPayments(prev => ({ ...prev, [p.name]: e.target.value }))}
-                  style={{ width: 90, textAlign: "right" }}
-                />
+        <>
+          <button
+            className={`btn${showForm ? "" : " btn-primary"}`}
+            onClick={() => setShowForm(v => !v)}
+            style={{ width: "100%", fontSize: 14, fontWeight: 700, padding: "10px 16px" }}>
+            {showForm ? "✕ Cancel" : "＋ Add Bill Entry"}
+          </button>
+          {showForm && (
+            <div className="card">
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: 4 }}>Date</label>
+                <input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} />
               </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--border)", paddingTop: 10 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
-              Total: <span style={{ color: "var(--green)", fontWeight: 700, fontSize: 15 }}>৳{formTotal.toLocaleString()}</span>
-            </span>
-            <button className="btn btn-primary" onClick={handleSave} disabled={saving || formTotal === 0}>
-              {saving ? "Saving…" : "Save Bill"}
-            </button>
-          </div>
-        </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                {players.map(p => (
+                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <PlayerAvatar player={p} size={28} />
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, minWidth: 60 }}>{p.name}</span>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={payments[p.name] || ""}
+                      onChange={e => setPayments(prev => ({ ...prev, [p.name]: e.target.value }))}
+                      style={{ width: 90, textAlign: "right" }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>
+                  Total: <span style={{ color: "var(--green)", fontWeight: 700, fontSize: 15 }}>৳{formTotal.toLocaleString()}</span>
+                </span>
+                <button className="btn btn-primary" onClick={handleSave} disabled={saving || formTotal === 0}>
+                  {saving ? "Saving…" : "Save Bill"}
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* SECTION E: Session History */}
@@ -235,6 +268,15 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
                   <div style={{ marginTop: 5, fontSize: 12, color: "var(--text-muted)" }}>
                     Total: <span style={{ fontWeight: 700, color: "var(--text)" }}>৳{Number(bill.total).toLocaleString()}</span>
                   </div>
+                  {(bill.addedBy || bill.createdAt) && (
+                    <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 3 }}>
+                      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.6 }}>
+                        <circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.5" />
+                        <path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                      {[bill.addedBy && `Added by ${bill.addedBy}`, formatBillTimestamp(bill.createdAt)].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
                 </div>
                 {isAdmin && (
                   <button onClick={() => onDeleteBill(bill.id)} style={{
