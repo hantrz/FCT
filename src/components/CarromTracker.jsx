@@ -3638,7 +3638,7 @@ export default function CarromTracker() {
     { k: "players", l: "Players" },
     { k: "stats", l: "Stats" },
     { k: "history", l: "History" },
-    { k: "bills", l: "💰 Bills", requiresLogin: true },
+    { k: "bills", l: "Bills", requiresLogin: true },
     ...(isFirebaseUser ? [{ k: "chat", l: "Chat" }, { k: "profile", l: "Me" }] : []),
   ].filter(t => !t.requiresLogin || isFirebaseUser);
 
