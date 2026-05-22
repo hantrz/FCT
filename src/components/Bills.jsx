@@ -142,8 +142,7 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
         <div className="metric">
           <label>Avg / Session</label>
           <span>{filteredBills.length > 0 ? `৳${Math.round(grandTotal / filteredBills.length).toLocaleString()}` : "৳0"}</span>
-          <span style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 2 }}>per session</span>
-          <span style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginTop: 1, opacity: 0.75 }}>{filteredBills.length} sessions</span>
+          <span style={{ fontSize: 10, color: "var(--text-muted)", display: "block", marginTop: 2, opacity: 0.75 }}>Total {filteredBills.length} session</span>
         </div>
       </div>
 
