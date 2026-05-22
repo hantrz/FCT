@@ -3800,6 +3800,7 @@ export default function CarromTracker() {
             onSaveBill={saveBill}
             onDeleteBill={deleteBill}
             isLoggedIn={isFirebaseUser}
+            isAdmin={isAdmin}
           />
         )}
         {null /* chat is rendered as fullscreen overlay below */}

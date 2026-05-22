@@ -19,7 +19,7 @@ function getMonthKey(dateStr) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLoggedIn }) {
+export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLoggedIn, isAdmin }) {
   const [period, setPeriod] = useState("alltime");
   const [formDate, setFormDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [payments, setPayments] = useState({});
@@ -236,7 +236,7 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
                     Total: <span style={{ fontWeight: 700, color: "var(--text)" }}>৳{Number(bill.total).toLocaleString()}</span>
                   </div>
                 </div>
-                {isLoggedIn && (
+                {isAdmin && (
                   <button onClick={() => onDeleteBill(bill.id)} style={{
                     background: "none", border: "none", cursor: "pointer", fontSize: 18,
                     color: "var(--text-muted)", padding: "2px 6px", fontFamily: "inherit",
