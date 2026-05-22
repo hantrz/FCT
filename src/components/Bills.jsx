@@ -83,7 +83,6 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
     .sort((a, b) => b.total - a.total);
 
   const topPayer = leaderboard.find(r => r.total > 0);
-  const neverPaid = leaderboard.filter(r => r.total === 0);
 
   const formTotal = Object.values(payments).reduce((s, v) => s + (Number(v) || 0), 0);
 
@@ -140,15 +139,10 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
             <span style={{ fontSize: 16 }}>—</span>
           )}
         </div>
-        <div className="metric" style={{ overflow: "hidden" }}>
-          <label>Never Paid ⚠</label>
-          {neverPaid.length > 0 ? (
-            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--danger)", display: "block", lineHeight: 1.4, wordBreak: "break-word" }}>
-              {neverPaid.map(r => r.player.name).join(", ")}
-            </span>
-          ) : (
-            <span style={{ fontSize: 13, color: "var(--green)" }}>All paid ✓</span>
-          )}
+        <div className="metric">
+          <label>Avg / Session</label>
+          <span>{filteredBills.length > 0 ? `৳${Math.round(grandTotal / filteredBills.length).toLocaleString()}` : "৳0"}</span>
+          <span style={{ fontSize: 11, color: "var(--text-muted)", display: "block", marginTop: 2 }}>per session</span>
         </div>
       </div>
 
@@ -157,6 +151,7 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
         <table>
           <thead>
             <tr>
+              <th style={{ width: 32 }}>#</th>
               <th>Player</th>
               <th style={{ textAlign: "right" }}>Total</th>
               <th style={{ textAlign: "right" }}>Times</th>
@@ -165,11 +160,13 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
             </tr>
           </thead>
           <tbody>
-            {leaderboard.map(({ player, total, count }) => {
+            {leaderboard.map(({ player, total, count }, idx) => {
               const share = grandTotal > 0 ? Math.round((total / grandTotal) * 100) : 0;
               const isZero = total === 0;
+              const rankColor = idx === 0 ? "#e07b20" : idx <= 2 ? "#1a9e1a" : "var(--text-muted)";
               return (
                 <tr key={player.id}>
+                  <td style={{ fontWeight: 700, fontSize: 13, color: rankColor }}>#{idx + 1}</td>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                       <PlayerAvatar player={player} size={26} />
