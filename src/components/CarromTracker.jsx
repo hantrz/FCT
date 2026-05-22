@@ -9,6 +9,7 @@ import {
   signInWithEmailAndPassword, signOut, updatePassword, onAuthStateChanged,
 } from "firebase/auth";
 import { db, auth } from "../lib/firebase";
+import Bills from "./Bills";
 
 async function fileToResizedBase64(file, maxSize = 200, quality = 0.8) {
   return new Promise((resolve, reject) => {
@@ -3432,6 +3433,7 @@ export default function CarromTracker() {
   const [tab, setTab] = useState("board");
   const [players, setPlayers] = useState([]);
   const [matches, setMatches] = useState([]);
+  const [bills, setBills] = useState([]);
   const [synced, setSynced] = useState(false);
   const [authState, setAuthState] = useState("loading"); // loading | guest | member | admin | login
   const [currentUser, setCurrentUser] = useState(null); // { uid, displayName, mobile, role, mustChangePassword }
@@ -3487,7 +3489,10 @@ export default function CarromTracker() {
     const unsubM = onSnapshot(query(collection(db, "matches"), orderBy("createdAt", "desc")), snap => {
       setMatches(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
-    return () => { unsubP(); unsubM(); };
+    const unsubB = onSnapshot(query(collection(db, "bills"), orderBy("createdAt", "desc")), snap => {
+      setBills(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => { unsubP(); unsubM(); unsubB(); };
   }, []);
 
   async function handleLogout() {
@@ -3537,6 +3542,13 @@ export default function CarromTracker() {
   async function deleteMatch(id) {
     if (!confirm("Delete this match?")) return;
     await deleteDoc(doc(db, "matches", id));
+  }
+  async function saveBill(data) {
+    await addDoc(collection(db, "bills"), { ...data, createdAt: serverTimestamp() });
+  }
+  async function deleteBill(id) {
+    if (!confirm("Delete this bill entry?")) return;
+    await deleteDoc(doc(db, "bills", id));
   }
 
   async function handleResetPassword(playerName) {
@@ -3613,6 +3625,11 @@ export default function CarromTracker() {
         <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
       </svg>
     ),
+    bills: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
+      </svg>
+    ),
   };
 
   const TABS = [
@@ -3621,12 +3638,14 @@ export default function CarromTracker() {
     { k: "players", l: "Players" },
     { k: "stats", l: "Stats" },
     { k: "history", l: "History" },
+    { k: "bills", l: "💰 Bills", requiresLogin: true },
     ...(isFirebaseUser ? [{ k: "chat", l: "Chat" }, { k: "profile", l: "Me" }] : []),
-  ];
+  ].filter(t => !t.requiresLogin || isFirebaseUser);
 
   if (tab === "match" && !isAdmin && !isMember) setTab("board");
   if (tab === "profile" && !isFirebaseUser) setTab("board");
   if (tab === "chat" && !isFirebaseUser) setTab("board");
+  if (tab === "bills" && !isFirebaseUser) setTab("board");
 
   return (
     <div className="app">
@@ -3774,6 +3793,15 @@ export default function CarromTracker() {
         {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} onResetPassword={isAdmin ? handleResetPassword : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => { setStatsMode("player"); setTab("stats"); }} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} statsMode={statsMode} setStatsMode={setStatsMode} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
+        {tab === "bills" && isFirebaseUser && (
+          <Bills
+            players={players}
+            bills={bills}
+            onSaveBill={saveBill}
+            onDeleteBill={deleteBill}
+            isLoggedIn={isFirebaseUser}
+          />
+        )}
         {null /* chat is rendered as fullscreen overlay below */}
         {tab === "profile" && isFirebaseUser && currentUser && (
           <MyProfile
