@@ -151,7 +151,7 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
         <table>
           <thead>
             <tr>
-              <th style={{ width: 32 }}>#</th>
+              <th style={{ width: 32 }}>No</th>
               <th>Player</th>
               <th style={{ textAlign: "right" }}>Total</th>
               <th style={{ textAlign: "right" }}>Times</th>
@@ -166,7 +166,7 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
               const rankColor = idx === 0 ? "#e07b20" : idx <= 2 ? "#1a9e1a" : "var(--text-muted)";
               return (
                 <tr key={player.id}>
-                  <td style={{ fontWeight: 700, fontSize: 13, color: rankColor }}>#{idx + 1}</td>
+                  <td style={{ fontWeight: 700, fontSize: 13, color: rankColor }}>{idx + 1}</td>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                       <PlayerAvatar player={player} size={26} />
