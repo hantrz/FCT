@@ -11,6 +11,29 @@ import {
 import { db, auth } from "../lib/firebase";
 import Bills from "./Bills";
 
+function getSeasonId(date = new Date()) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1;
+  const pairs = [
+    [1,2,"Jan-Feb"], [3,4,"Mar-Apr"], [5,6,"May-Jun"],
+    [7,8,"Jul-Aug"], [9,10,"Sep-Oct"], [11,12,"Nov-Dec"]
+  ];
+  const pair = pairs.find(([s,e]) => month >= s && month <= e);
+  return `${pair[2]} ${year}`;
+}
+
+function getSeasonDateRange(seasonId) {
+  const monthMap = {
+    "Jan-Feb": [0, 1], "Mar-Apr": [2, 3], "May-Jun": [4, 5],
+    "Jul-Aug": [6, 7], "Sep-Oct": [8, 9], "Nov-Dec": [10, 11]
+  };
+  const [label, year] = seasonId.split(" ");
+  const [startM, endM] = monthMap[label];
+  const y = parseInt(year);
+  return { start: new Date(y, startM, 1), end: new Date(y, endM + 1, 0, 23, 59, 59) };
+}
+
 async function fileToResizedBase64(file, maxSize = 200, quality = 0.8) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -282,6 +305,25 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 600);
   const [tooltip, setTooltip] = useState(null);
   const [guideTab, setGuideTab] = useState("points"); // "badges" | "points" | "spin"
+  const currentSeasonId = getSeasonId(new Date());
+  const [seasonView, setSeasonView] = useState("current"); // "current" | "alltime" | "past"
+  const [selectedPastSeason, setSelectedPastSeason] = useState("");
+  const availableSeasons = (() => {
+    const ids = new Set();
+    matches.forEach(m => { if (m.seasonId) ids.add(m.seasonId); });
+    return Array.from(ids).sort((a, b) => getSeasonDateRange(b).start - getSeasonDateRange(a).start);
+  })();
+  const pastSeasons = availableSeasons.filter(s => s !== currentSeasonId);
+  const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+  const displayMatches = (() => {
+    if (seasonView === "alltime") return matches;
+    if (seasonView === "past") {
+      const target = selectedPastSeason || pastSeasons[0] || currentSeasonId;
+      return matches.filter(m => m.seasonId === target);
+    }
+    return matches.filter(m => m.seasonId === currentSeasonId);
+  })();
   const isDark = typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
   const guideColors = isDark ? {
     cardBg:      "#0f1f17",
@@ -309,9 +351,20 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
-  const raw = computeStats(players, matches);
+  useEffect(() => {
+    if (!showSeasonDropdown) return;
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowSeasonDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showSeasonDropdown]);
+
+  const raw = computeStats(players, displayMatches);
   const stats = raw.map(p => {
-    const badges = calcBadges(p.id, matches);
+    const badges = calcBadges(p.id, displayMatches);
     const points = 10
       + (p.won * 3)
       + (p.lost * -2)
@@ -343,7 +396,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     const monday = new Date(now);
     monday.setDate(now.getDate() + diffToMonday);
     monday.setHours(0, 0, 0, 0);
-    return matches.filter(m => m.createdAt && m.createdAt.toDate() >= monday).length;
+    return displayMatches.filter(m => m.createdAt && m.createdAt.toDate() >= monday).length;
   })();
   const rankClass = i => i === 0 ? "rank-1" : i === 1 ? "rank-2" : i === 2 ? "rank-3" : "text-muted";
   const rankColors = ["#f59e0b", "#9ca3af", "#cd7c41"];
@@ -379,13 +432,110 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
 
   return (
     <div>
+      {/* Season view tabs */}
+      <div style={{ marginBottom: "0.75rem" }}>
+        <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap", alignItems: "center" }}>
+          {/* Tab 1: Current Season */}
+          <button
+            onClick={() => { setSeasonView("current"); setShowSeasonDropdown(false); }}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
+              cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+              background: seasonView === "current" ? "#16a34a" : "var(--bg)",
+              color: seasonView === "current" ? "#ffffff" : "var(--text)",
+              border: `1.5px solid ${seasonView === "current" ? "#16a34a" : "var(--border)"}`,
+            }}
+          >
+            <span className="live-dot" style={{ width: 7, height: 7, borderRadius: "50%", background: seasonView === "current" ? "#ffffff" : "#16a34a", flexShrink: 0 }} />
+            Current Season
+          </button>
+          {/* Tab 2: All Time */}
+          <button
+            onClick={() => { setSeasonView("alltime"); setShowSeasonDropdown(false); }}
+            style={{
+              padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
+              cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+              background: seasonView === "alltime" ? "#16a34a" : "var(--bg)",
+              color: seasonView === "alltime" ? "#ffffff" : "var(--text)",
+              border: `1.5px solid ${seasonView === "alltime" ? "#16a34a" : "var(--border)"}`,
+            }}
+          >All Time</button>
+          {/* Tab 3: Previous Seasons with custom dropdown */}
+          <div ref={dropdownRef} style={{ position: "relative" }}>
+            <button
+              onClick={() => { setSeasonView("past"); setShowSeasonDropdown(prev => !prev); }}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
+                cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+                background: seasonView === "past" ? "#16a34a" : "var(--bg)",
+                color: seasonView === "past" ? "#ffffff" : "var(--text)",
+                border: `1.5px solid ${seasonView === "past" ? "#16a34a" : "var(--border)"}`,
+              }}
+            >
+              Previous Seasons
+              <span style={{ fontSize: 10, display: "inline-block", transform: showSeasonDropdown ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
+            </button>
+            {showSeasonDropdown && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 4px)", left: 0,
+                background: "var(--bg)", borderRadius: 10,
+                border: "1px solid var(--border)",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+                zIndex: 200, minWidth: 160, overflow: "hidden",
+              }}>
+                {pastSeasons.length === 0 ? (
+                  <div style={{ padding: "10px 14px", fontSize: 12, color: "var(--text-muted)" }}>No previous seasons yet</div>
+                ) : pastSeasons.map((s, i) => (
+                  <button key={s}
+                    onClick={() => { setSelectedPastSeason(s); setShowSeasonDropdown(false); }}
+                    style={{
+                      width: "100%", padding: "10px 14px", textAlign: "left",
+                      border: "none", borderBottom: i < pastSeasons.length - 1 ? "1px solid var(--border)" : "none",
+                      background: s === (selectedPastSeason || pastSeasons[0]) ? "var(--bg-secondary)" : "transparent",
+                      color: "var(--text)", fontSize: 13, fontWeight: 500,
+                      cursor: "pointer", fontFamily: "inherit",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary)"}
+                    onMouseLeave={e => e.currentTarget.style.background = s === (selectedPastSeason || pastSeasons[0]) ? "var(--bg-secondary)" : "transparent"}
+                  >{s}</button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Active season header */}
+        {seasonView === "current" && (
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>Season: {currentSeasonId}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#dcfce7", color: "#16a34a", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>
+              <span className="live-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", flexShrink: 0 }} />
+              LIVE
+            </span>
+          </div>
+        )}
+        {seasonView === "alltime" && (
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>All Time Stats</span>
+        )}
+        {seasonView === "past" && (
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+            Season: {selectedPastSeason || pastSeasons[0] || currentSeasonId}
+          </span>
+        )}
+      </div>
       <div className="metrics">
-        <div className="metric"><label>Total Matches</label><span>{matches.length}</span></div>
+        <div className="metric">
+          <label>{seasonView === "alltime" ? "ALL TIME" : seasonView === "current" ? "THIS SEASON" : (selectedPastSeason || pastSeasons[0] || currentSeasonId)}</label>
+          <span>{displayMatches.length}</span>
+        </div>
         <div className="metric"><label>Players</label><span>{players.length}</span></div>
         <div className="metric"><label>This Week</label><span>{thisWeek}</span></div>
       </div>
       {stats.length === 0 ? (
         <div className="empty"><p>No data yet. Add players and record matches!</p></div>
+      ) : displayMatches.length === 0 ? (
+        <div className="empty"><p>No matches played in this season yet.</p></div>
       ) : (
         <>
           {sortPills}
@@ -394,7 +544,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
               {sorted.map((p, i) => {
                 const rankColor = i < 3 ? rankColors[i] : "var(--text-muted)";
                 const ptsColor = i < 3 ? "#f59e0b" : "var(--text)";
-                const badges = calcBadges(p.id, matches);
+                const badges = calcBadges(p.id, displayMatches);
                 return (
                   <div key={p.id} onClick={() => goToPlayer(p.id)} style={{
                     background: "var(--card-bg)", borderRadius: 14,
@@ -483,7 +633,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                 </thead>
                 <tbody>
                   {sorted.map((p, i) => {
-                    const badges = calcBadges(p.id, matches);
+                    const badges = calcBadges(p.id, displayMatches);
                     return (
                     <tr key={p.id} onClick={() => goToPlayer(p.id)} style={{ cursor: "pointer" }}>
                       <td style={{ textAlign: "center" }}>
@@ -3495,6 +3645,26 @@ export default function CarromTracker() {
     return () => { unsubP(); unsubM(); unsubB(); };
   }, []);
 
+  useEffect(() => {
+    if (authState !== "admin") return;
+    async function runSeasonMigration() {
+      const metaSnap = await getDoc(doc(db, "meta", "migration"));
+      if (metaSnap.exists() && metaSnap.data().matchSeasonTagged) return;
+      const matchesSnap = await getDocs(collection(db, "matches"));
+      const updates = [];
+      matchesSnap.docs.forEach(d => {
+        const data = d.data();
+        if (!data.seasonId) {
+          const ts = data.createdAt?.toDate?.() || (data.date ? new Date(data.date) : new Date());
+          updates.push(updateDoc(doc(db, "matches", d.id), { seasonId: getSeasonId(ts) }));
+        }
+      });
+      await Promise.all(updates);
+      await setDoc(doc(db, "meta", "migration"), { matchSeasonTagged: true }, { merge: true });
+    }
+    runSeasonMigration().catch(() => {});
+  }, [authState]);
+
   async function handleLogout() {
     await signOut(auth);
     // onAuthStateChanged clears currentUser and sets authState to "guest"
@@ -3536,7 +3706,7 @@ export default function CarromTracker() {
   }
   async function saveMatch(data) {
     const addedBy = { uid: currentUser?.uid || "admin", name: currentUser?.displayName || "Admin" };
-    await addDoc(collection(db, "matches"), { ...data, addedBy, createdAt: serverTimestamp() });
+    await addDoc(collection(db, "matches"), { ...data, addedBy, seasonId: getSeasonId(new Date()), createdAt: serverTimestamp() });
     setTab("board");
   }
   async function deleteMatch(id) {
@@ -3650,6 +3820,13 @@ export default function CarromTracker() {
   return (
     <div className="app">
       <style>{`
+  @keyframes live-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.75); }
+  }
+  .live-dot {
+    animation: live-pulse 1.5s ease-in-out infinite;
+  }
   @keyframes pop-in {
     0% { transform: scale(0.5); opacity: 0; }
     60% { transform: scale(1.08); }
