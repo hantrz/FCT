@@ -388,6 +388,18 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     }
     return 0;
   });
+  const QUALIFY_THRESHOLD = 5;
+  const qualifiedSorted = sorted.filter(p => p.played >= QUALIFY_THRESHOLD);
+  const unqualifiedSorted = sorted.filter(p => p.played < QUALIFY_THRESHOLD);
+  const qualifyColors = isDark ? {
+    cardBg: "#1c1a12", cardBorder: "#78350f",
+    headerBg: "#451a03", textColor: "#fde68a",
+    subtitleColor: "#fcd34d", needColor: "#fbbf24",
+  } : {
+    cardBg: "#fffbeb", cardBorder: "#fcd34d",
+    headerBg: "#fef3c7", textColor: "#92400e",
+    subtitleColor: "#b45309", needColor: "#d97706",
+  };
 
   const thisWeek = (() => {
     const now = new Date();
@@ -541,7 +553,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
           {sortPills}
           {isMobile ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {sorted.map((p, i) => {
+              {qualifiedSorted.map((p, i) => {
                 const rankColor = i < 3 ? rankColors[i] : "var(--text-muted)";
                 const ptsColor = i < 3 ? "#f59e0b" : "var(--text)";
                 const badges = calcBadges(p.id, displayMatches);
@@ -632,7 +644,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {sorted.map((p, i) => {
+                  {qualifiedSorted.map((p, i) => {
                     const badges = calcBadges(p.id, displayMatches);
                     return (
                     <tr key={p.id} onClick={() => goToPlayer(p.id)} style={{ cursor: "pointer" }}>
@@ -690,6 +702,48 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+          {unqualifiedSorted.length > 0 && (
+            <div style={{
+              marginTop: 16,
+              background: qualifyColors.cardBg,
+              borderRadius: 12,
+              border: `1px solid ${qualifyColors.cardBorder}`,
+              overflow: "hidden",
+            }}>
+              <div style={{
+                padding: "10px 14px",
+                background: qualifyColors.headerBg,
+                borderBottom: `1px solid ${qualifyColors.cardBorder}`,
+              }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: qualifyColors.textColor }}>🏆 Qualify for the Leaderboard</div>
+                <div style={{ fontSize: 11, color: qualifyColors.subtitleColor, marginTop: 2 }}>These players need more matches to appear on the leaderboard</div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {unqualifiedSorted.map((p, i) => (
+                  <div key={p.id} onClick={() => goToPlayer(p.id)} style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 14px",
+                    borderBottom: i < unqualifiedSorted.length - 1 ? `1px solid ${qualifyColors.cardBorder}` : "none",
+                    cursor: onSelectPlayer ? "pointer" : "default",
+                  }}>
+                    <PlayerAvatar player={p} size={34} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: qualifyColors.textColor }}>{p.name}</div>
+                      <div style={{ display: "flex", gap: 5, marginTop: 2 }}>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.played}P</span>
+                        <span style={{ fontSize: 11, color: "#16a34a", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.won}W</span>
+                        <span style={{ fontSize: 11, color: "#dc2626", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.lost}L</span>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.points}PTS</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 11, color: qualifyColors.needColor, fontWeight: 600, textAlign: "right", flexShrink: 0 }}>
+                      Need {QUALIFY_THRESHOLD - p.played} more<br />match{QUALIFY_THRESHOLD - p.played === 1 ? "" : "es"} to qualify
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           <div style={{
