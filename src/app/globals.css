@@ -47,6 +47,16 @@
   }
 }
 
+@media (prefers-color-scheme: light) {
+  .qualify-card { background: #fffbeb !important; border-color: #fcd34d !important; }
+  .qualify-header { background: #fef3c7 !important; border-bottom-color: #fcd34d !important; }
+  .qualify-title { color: #92400e !important; }
+  .qualify-subtitle { color: #b45309 !important; }
+  .qualify-row { border-bottom-color: #fcd34d !important; }
+  .qualify-player-name { color: #92400e !important; }
+  .qualify-need { color: #d97706 !important; }
+}
+
 body {
   font-family: 'Inter', -apple-system, sans-serif;
   background: var(--bg);

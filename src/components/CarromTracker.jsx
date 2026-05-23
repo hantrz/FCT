@@ -705,24 +705,24 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
             </div>
           )}
           {unqualifiedSorted.length > 0 && (
-            <div style={{
+            <div className="qualify-card" style={{
               marginTop: 16,
               background: qualifyColors.cardBg,
               borderRadius: 12,
               border: `1px solid ${qualifyColors.cardBorder}`,
               overflow: "hidden",
             }}>
-              <div style={{
+              <div className="qualify-header" style={{
                 padding: "10px 14px",
                 background: qualifyColors.headerBg,
                 borderBottom: `1px solid ${qualifyColors.cardBorder}`,
               }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: qualifyColors.textColor }}>🏆 Qualify for the Leaderboard</div>
-                <div style={{ fontSize: 11, color: qualifyColors.subtitleColor, marginTop: 2 }}>These players need more matches to appear on the leaderboard</div>
+                <div className="qualify-title" style={{ fontWeight: 700, fontSize: 13, color: qualifyColors.textColor }}>🏆 Qualify for the Leaderboard</div>
+                <div className="qualify-subtitle" style={{ fontSize: 11, color: qualifyColors.subtitleColor, marginTop: 2 }}>These players need more matches to appear on the leaderboard</div>
               </div>
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {unqualifiedSorted.map((p, i) => (
-                  <div key={p.id} onClick={() => goToPlayer(p.id)} style={{
+                  <div key={p.id} className="qualify-row" onClick={() => goToPlayer(p.id)} style={{
                     display: "flex", alignItems: "center", gap: 10,
                     padding: "10px 14px",
                     borderBottom: i < unqualifiedSorted.length - 1 ? `1px solid ${qualifyColors.cardBorder}` : "none",
@@ -730,7 +730,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                   }}>
                     <PlayerAvatar player={p} size={34} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: qualifyColors.textColor }}>{p.name}</div>
+                      <div className="qualify-player-name" style={{ fontWeight: 600, fontSize: 13, color: qualifyColors.textColor }}>{p.name}</div>
                       <div style={{ display: "flex", gap: 5, marginTop: 2 }}>
                         <span style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.played}P</span>
                         <span style={{ fontSize: 11, color: "#16a34a", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.won}W</span>
@@ -738,7 +738,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                         <span style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.points}PTS</span>
                       </div>
                     </div>
-                    <div style={{ fontSize: 11, color: qualifyColors.needColor, fontWeight: 600, textAlign: "right", flexShrink: 0 }}>
+                    <div className="qualify-need" style={{ fontSize: 11, color: qualifyColors.needColor, fontWeight: 600, textAlign: "right", flexShrink: 0 }}>
                       Need {QUALIFY_THRESHOLD - p.played} more<br />match{QUALIFY_THRESHOLD - p.played === 1 ? "" : "es"} to qualify
                     </div>
                   </div>
