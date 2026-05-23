@@ -434,45 +434,28 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     <div>
       {/* Season view tabs */}
       <div style={{ marginBottom: "0.75rem" }}>
-        <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
           {/* Tab 1: Current Season */}
           <button
             onClick={() => { setSeasonView("current"); setShowSeasonDropdown(false); }}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
-              cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-              background: seasonView === "current" ? "#16a34a" : "var(--bg)",
-              color: seasonView === "current" ? "#ffffff" : "var(--text)",
-              border: `1.5px solid ${seasonView === "current" ? "#16a34a" : "var(--border)"}`,
-            }}
+            className={`btn${seasonView === "current" ? " btn-active" : ""}`}
+            style={{ flex: 1, fontSize: 12, padding: "7px 8px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
           >
-            <span className="live-dot" style={{ width: 7, height: 7, borderRadius: "50%", background: seasonView === "current" ? "#ffffff" : "#16a34a", flexShrink: 0 }} />
+            <span className="live-dot" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", flexShrink: 0 }} />
             Current Season
           </button>
           {/* Tab 2: All Time */}
           <button
             onClick={() => { setSeasonView("alltime"); setShowSeasonDropdown(false); }}
-            style={{
-              padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
-              cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-              background: seasonView === "alltime" ? "#16a34a" : "var(--bg)",
-              color: seasonView === "alltime" ? "#ffffff" : "var(--text)",
-              border: `1.5px solid ${seasonView === "alltime" ? "#16a34a" : "var(--border)"}`,
-            }}
+            className={`btn${seasonView === "alltime" ? " btn-active" : ""}`}
+            style={{ flex: 1, fontSize: 12, padding: "7px 8px" }}
           >All Time</button>
           {/* Tab 3: Previous Seasons with custom dropdown */}
-          <div ref={dropdownRef} style={{ position: "relative" }}>
+          <div ref={dropdownRef} style={{ position: "relative", flex: 1 }}>
             <button
               onClick={() => { setSeasonView("past"); setShowSeasonDropdown(prev => !prev); }}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 4,
-                padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
-                cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-                background: seasonView === "past" ? "#16a34a" : "var(--bg)",
-                color: seasonView === "past" ? "#ffffff" : "var(--text)",
-                border: `1.5px solid ${seasonView === "past" ? "#16a34a" : "var(--border)"}`,
-              }}
+              className={`btn${seasonView === "past" ? " btn-active" : ""}`}
+              style={{ width: "100%", fontSize: 12, padding: "7px 8px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}
             >
               Previous Seasons
               <span style={{ fontSize: 10, display: "inline-block", transform: showSeasonDropdown ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
