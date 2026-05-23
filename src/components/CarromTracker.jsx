@@ -438,24 +438,41 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
           {/* Tab 1: Current Season */}
           <button
             onClick={() => { setSeasonView("current"); setShowSeasonDropdown(false); }}
-            className={`btn${seasonView === "current" ? " btn-active" : ""}`}
-            style={{ flex: 1, fontSize: 12, padding: "7px 8px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+            className="btn"
+            style={{
+              flex: 1, fontSize: 12, padding: "7px 8px",
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+              background: seasonView === "current" ? "#16a34a" : "#ffffff",
+              color: seasonView === "current" ? "#ffffff" : "#374151",
+              border: seasonView === "current" ? "1.5px solid #16a34a" : "1.5px solid #d1d5db",
+            }}
           >
-            <span className="live-dot" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", flexShrink: 0 }} />
+            <span className="live-dot" style={{ width: 7, height: 7, borderRadius: "50%", background: seasonView === "current" ? "#ffffff" : "#16a34a", flexShrink: 0 }} />
             Current Season
           </button>
           {/* Tab 2: All Time */}
           <button
             onClick={() => { setSeasonView("alltime"); setShowSeasonDropdown(false); }}
-            className={`btn${seasonView === "alltime" ? " btn-active" : ""}`}
-            style={{ flex: 1, fontSize: 12, padding: "7px 8px" }}
+            className="btn"
+            style={{
+              flex: 1, fontSize: 12, padding: "7px 8px",
+              background: seasonView === "alltime" ? "#16a34a" : "#ffffff",
+              color: seasonView === "alltime" ? "#ffffff" : "#374151",
+              border: seasonView === "alltime" ? "1.5px solid #16a34a" : "1.5px solid #d1d5db",
+            }}
           >All Time</button>
           {/* Tab 3: Previous Seasons with custom dropdown */}
           <div ref={dropdownRef} style={{ position: "relative", flex: 1 }}>
             <button
               onClick={() => { setSeasonView("past"); setShowSeasonDropdown(prev => !prev); }}
-              className={`btn${seasonView === "past" ? " btn-active" : ""}`}
-              style={{ width: "100%", fontSize: 12, padding: "7px 8px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4 }}
+              className="btn"
+              style={{
+                width: "100%", fontSize: 12, padding: "7px 8px",
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
+                background: seasonView === "past" ? "#16a34a" : "#ffffff",
+                color: seasonView === "past" ? "#ffffff" : "#374151",
+                border: seasonView === "past" ? "1.5px solid #16a34a" : "1.5px solid #d1d5db",
+              }}
             >
               Previous Seasons
               <span style={{ fontSize: 10, display: "inline-block", transform: showSeasonDropdown ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
