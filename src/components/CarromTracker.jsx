@@ -365,7 +365,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const raw = computeStats(players, displayMatches);
   const stats = raw.map(p => {
     const badges = calcBadges(p.id, displayMatches);
-    const points = 10
+    const points = 0
       + (p.won * 3)
       + (p.lost * -2)
       + (badges.cleanWins * 2)
@@ -824,7 +824,6 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
               {guideTab === "points" && (
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   {[
-                    { pts: "10",  color: { bg:"#f3f4f6", fg:"#374151", bd:"#d1d5db" }, label: "Base: Starting points for every player" },
                     { pts: "+3",  color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Win: For every match you win" },
                     { pts: "-2",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Loss: For every match you lose" },
                     { pts: "+5",  color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Clean Win: When opponent scores 0" },
@@ -1227,7 +1226,7 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
             const getPoints = (p) => {
               const st = computeStats([p], matches)[0] || { won: 0, lost: 0 };
               const badges = calcBadges(p.id, matches);
-              return 10 + (st.won * 3) + (st.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
+              return (st.won * 3) + (st.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
             };
             return getPoints(b) - getPoints(a);
           }).map((p, i) => {
@@ -1607,7 +1606,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
     const c = PALETTE[idx % PALETTE.length];
     const lbStats = computeStats(players, matches).map(q => {
       const qb = calcBadges(q.id, matches);
-      return { id: q.id, pts: 10 + (q.won * 3) + (q.lost * -2) + (qb.hatTricks * 3) + (qb.lossTricks * -3) + (qb.cleanWins * 2) + (qb.cleanLosses * -3) };
+      return { id: q.id, pts: (q.won * 3) + (q.lost * -2) + (qb.hatTricks * 3) + (qb.lossTricks * -3) + (qb.cleanWins * 2) + (qb.cleanLosses * -3) };
     }).sort((a, b) => b.pts - a.pts);
     const playerRank = lbStats.findIndex(q => q.id === p.id) + 1;
     const playerPts = lbStats.find(q => q.id === p.id)?.pts ?? 0;
@@ -3199,7 +3198,7 @@ function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout }) {
   }
   const meBadges = playerId ? calcBadges(playerId, matches) : { hatTricks: 0, lossTricks: 0, cleanWins: 0, cleanLosses: 0 };
   const totalPoints = playerId
-    ? 10 + (wins * 3) + (losses * -2) + (meBadges.hatTricks * 3) + (meBadges.lossTricks * -3) + (meBadges.cleanWins * 2) + (meBadges.cleanLosses * -3)
+    ? (wins * 3) + (losses * -2) + (meBadges.hatTricks * 3) + (meBadges.lossTricks * -3) + (meBadges.cleanWins * 2) + (meBadges.cleanLosses * -3)
     : 0;
   const played = wins + losses;
   const winRate = played > 0 ? Math.round((wins / played) * 100) : 0;
