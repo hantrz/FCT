@@ -1799,7 +1799,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
     const baseStats = computeStats(players, filtered).filter(s => s.played > 0);
     const stats = baseStats.map(p => {
       const badges = calcBadges(p.id, filtered);
-      const base = dateFilter === "alltime" ? 10 : 0;
+      const base = 0;
       const points = base + (p.won * 3) + (p.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
       return { ...p, points, badges };
     }).sort((a, b) => b.points - a.points || b.winPct - a.winPct);
