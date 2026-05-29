@@ -19,7 +19,9 @@
       "Bash(git restore *)",
       "PowerShell(\\(Get-Content \"K:\\\\FCT\\\\carrom-tracker\\\\src\\\\components\\\\CarromTracker.jsx\" | Measure-Object -Line\\).Lines)",
       "Bash(git diff *)",
-      "Bash(wsl grep *)"
+      "Bash(wsl grep *)",
+      "Bash(git revert *)",
+      "Bash(node *)"
     ]
   }
 }
