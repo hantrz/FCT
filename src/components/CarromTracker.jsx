@@ -596,9 +596,8 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                   LIVE
                 </span>
               </div>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: isUrgent ? "#fef2f2" : "var(--bg-secondary)", border: `1px solid ${isUrgent ? "#fca5a5" : "var(--border)"}`, borderRadius: 999, padding: "2px 10px" }}>
-                <span style={{ fontSize: 10, color: isUrgent ? "#dc2626" : "var(--text-muted)", fontWeight: 600 }}>⏳ Season ending: {countdownText}</span>
-              </div>
+              <span style={{ fontSize: 11, color: isUrgent ? "#dc2626" : "var(--text-muted)", fontWeight: 600 }}>⏳ Season ending: {countdownText}</span>
+              <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 600 }}>· 🌱 Next season coming up</span>
             </div>
           );
         })()}
