@@ -572,20 +572,21 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
           const { end } = getSeasonDateRange(currentSeasonId);
           const now = new Date();
           const msLeft = end - now;
-          const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
-          const hoursLeft = Math.floor(msLeft / (1000 * 60 * 60));
-          const minutesLeft = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
-          const secondsLeft = Math.floor((msLeft % (1000 * 60)) / 1000);
-          const isUrgent = daysLeft <= 7;
+          const totalHours = Math.floor(msLeft / (1000 * 60 * 60));
+          const days = Math.floor(totalHours / 24);
+          const hours = totalHours % 24;
+          const minutes = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((msLeft % (1000 * 60)) / 1000);
+          const isUrgent = days <= 7;
           let countdownText = "";
-          if (daysLeft > 1) {
-            countdownText = `${daysLeft}d left`;
-          } else if (daysLeft === 1) {
-            countdownText = `${hoursLeft}h ${minutesLeft}m left`;
-          } else if (msLeft > 0) {
-            countdownText = `${hoursLeft}h ${minutesLeft}m ${secondsLeft}s left`;
-          } else {
+          if (msLeft <= 0) {
             countdownText = "Ending...";
+          } else if (days > 0) {
+            countdownText = `${days}d : ${String(hours).padStart(2, "0")}h`;
+          } else if (hours > 0) {
+            countdownText = `${hours}h : ${String(minutes).padStart(2, "0")}m`;
+          } else {
+            countdownText = `${minutes}m : ${String(seconds).padStart(2, "0")}s`;
           }
           return (
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -596,8 +597,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                   LIVE
                 </span>
               </div>
-              <span style={{ fontSize: 11, color: isUrgent ? "#dc2626" : "var(--text-muted)", fontWeight: 600 }}>⏳ Season ending: {countdownText}</span>
-              <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 600 }}>· 🌱 Next season coming up</span>
+              <span style={{ fontSize: 11, color: isUrgent ? "#dc2626" : "var(--text-muted)", fontWeight: 600 }}>⏳ Season ending & next season coming up: {countdownText}</span>
             </div>
           );
         })()}
