@@ -14,24 +14,46 @@ import Bills from "./Bills";
 function getSeasonId(date = new Date()) {
   const d = new Date(date);
   const year = d.getFullYear();
-  const month = d.getMonth() + 1;
+  const month = d.getMonth() + 1; // 1-12
+
+  // Season 1: May 2026
+  if (year === 2026 && month === 5) return "May 2026";
+  // Season 2: June 2026
+  if (year === 2026 && month === 6) return "Jun 2026";
+
+  // Season 3 onwards: 2-month pairs starting Jul-Aug 2026
   const pairs = [
-    [1,2,"Jan-Feb"], [3,4,"Mar-Apr"], [5,6,"May-Jun"],
-    [7,8,"Jul-Aug"], [9,10,"Sep-Oct"], [11,12,"Nov-Dec"]
+    [7, 8, "Jul-Aug"], [9, 10, "Sep-Oct"], [11, 12, "Nov-Dec"]
   ];
-  const pair = pairs.find(([s,e]) => month >= s && month <= e);
+  // For years after 2026, full year pairs
+  const fullYearPairs = [
+    [1, 2, "Jan-Feb"], [3, 4, "Mar-Apr"], [5, 6, "May-Jun"],
+    [7, 8, "Jul-Aug"], [9, 10, "Sep-Oct"], [11, 12, "Nov-Dec"]
+  ];
+
+  if (year === 2026) {
+    const pair = pairs.find(([s, e]) => month >= s && month <= e);
+    if (pair) return `${pair[2]} ${year}`;
+  }
+  const pair = fullYearPairs.find(([s, e]) => month >= s && month <= e);
   return `${pair[2]} ${year}`;
 }
 
 function getSeasonDateRange(seasonId) {
+  // Single-month seasons
+  if (seasonId === "May 2026") return { start: new Date(2026, 4, 1), end: new Date(2026, 4, 31, 23, 59, 59) };
+  if (seasonId === "Jun 2026") return { start: new Date(2026, 5, 1), end: new Date(2026, 5, 30, 23, 59, 59) };
+
+  // Two-month seasons
   const monthMap = {
     "Jan-Feb": [0, 1], "Mar-Apr": [2, 3], "May-Jun": [4, 5],
     "Jul-Aug": [6, 7], "Sep-Oct": [8, 9], "Nov-Dec": [10, 11]
   };
-  const [label, year] = seasonId.split(" ");
+  const parts = seasonId.split(" ");
+  const label = parts[0];
+  const year = parseInt(parts[1]);
   const [startM, endM] = monthMap[label];
-  const y = parseInt(year);
-  return { start: new Date(y, startM, 1), end: new Date(y, endM + 1, 0, 23, 59, 59) };
+  return { start: new Date(year, startM, 1), end: new Date(year, endM + 1, 0, 23, 59, 59) };
 }
 
 async function fileToResizedBase64(file, maxSize = 200, quality = 0.8) {
@@ -3690,7 +3712,14 @@ export default function CarromTracker() {
       setSynced(true);
     });
     const unsubM = onSnapshot(query(collection(db, "matches"), orderBy("createdAt", "desc")), snap => {
-      setMatches(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setMatches(snap.docs.map(d => {
+        const m = { id: d.id, ...d.data() };
+        if (m.seasonId === "May-Jun 2026") {
+          const ts = m.createdAt?.toDate?.() || (m.date ? new Date(m.date) : new Date());
+          m.seasonId = (ts.getMonth() + 1) === 5 ? "May 2026" : "Jun 2026";
+        }
+        return m;
+      }));
     });
     const unsubB = onSnapshot(query(collection(db, "bills"), orderBy("createdAt", "desc")), snap => {
       setBills(snap.docs.map(d => ({ id: d.id, ...d.data() })));
