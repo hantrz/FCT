@@ -56,6 +56,23 @@ function getSeasonDateRange(seasonId) {
   return { start: new Date(year, startM, 1), end: new Date(year, endM + 1, 0, 23, 59, 59) };
 }
 
+function getSeasonNumber(seasonId) {
+  if (seasonId === "May 2026") return 1;
+  if (seasonId === "Jun 2026") return 2;
+  const order = ["Jul-Aug", "Sep-Oct", "Nov-Dec", "Jan-Feb", "Mar-Apr", "May-Jun"];
+  const parts = seasonId.split(" ");
+  const label = parts[0];
+  const year = parseInt(parts[1]);
+  const idx = order.indexOf(label);
+  if (idx === -1) return null;
+  if (year === 2026) {
+    if (idx < 3) return 3 + idx;
+    return null;
+  }
+  const yearsAfter2026 = year - 2027;
+  return 6 + (yearsAfter2026 * 6) + idx;
+}
+
 async function fileToResizedBase64(file, maxSize = 200, quality = 0.8) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -338,6 +355,15 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const pastSeasons = availableSeasons.filter(s => s !== currentSeasonId);
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  const [, forceUpdate] = useState(0);
+  useEffect(() => {
+    const { end } = getSeasonDateRange(currentSeasonId);
+    const msLeft = end - new Date();
+    const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+    const interval = daysLeft <= 1 ? 1000 : 60000;
+    const timer = setInterval(() => forceUpdate(n => n + 1), interval);
+    return () => clearInterval(timer);
+  }, [currentSeasonId]);
   const displayMatches = (() => {
     if (seasonView === "alltime") return matches;
     if (seasonView === "past") {
@@ -540,21 +566,48 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
           </div>
         </div>
         {/* Active season header */}
-        {seasonView === "current" && (
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>Season: {currentSeasonId}</span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#dcfce7", color: "#16a34a", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>
-              <span className="live-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", flexShrink: 0 }} />
-              LIVE
-            </span>
-          </div>
-        )}
+        {seasonView === "current" && (() => {
+          const seasonNum = getSeasonNumber(currentSeasonId);
+          const seasonLabel = seasonNum ? `Season ${seasonNum}: ${currentSeasonId}` : `Season: ${currentSeasonId}`;
+          const { end } = getSeasonDateRange(currentSeasonId);
+          const now = new Date();
+          const msLeft = end - now;
+          const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+          const hoursLeft = Math.floor(msLeft / (1000 * 60 * 60));
+          const minutesLeft = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
+          const secondsLeft = Math.floor((msLeft % (1000 * 60)) / 1000);
+          const isUrgent = daysLeft <= 7;
+          let countdownText = "";
+          if (daysLeft > 1) {
+            countdownText = `${daysLeft}d left`;
+          } else if (daysLeft === 1) {
+            countdownText = `${hoursLeft}h ${minutesLeft}m left`;
+          } else if (msLeft > 0) {
+            countdownText = `${hoursLeft}h ${minutesLeft}m ${secondsLeft}s left`;
+          } else {
+            countdownText = "Ending...";
+          }
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{seasonLabel}</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#dcfce7", color: "#16a34a", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>
+                  <span className="live-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", flexShrink: 0 }} />
+                  LIVE
+                </span>
+              </div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: isUrgent ? "#fef2f2" : "var(--bg-secondary)", border: `1px solid ${isUrgent ? "#fca5a5" : "var(--border)"}`, borderRadius: 999, padding: "2px 10px" }}>
+                <span style={{ fontSize: 10, color: isUrgent ? "#dc2626" : "var(--text-muted)", fontWeight: 600 }}>⏳ Season ending: {countdownText}</span>
+              </div>
+            </div>
+          );
+        })()}
         {seasonView === "alltime" && (
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>All Time Stats</span>
         )}
         {seasonView === "past" && (
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
-            Season: {selectedPastSeason || pastSeasons[0] || currentSeasonId}
+            {(() => { const sid = selectedPastSeason || pastSeasons[0] || currentSeasonId; const num = getSeasonNumber(sid); return num ? `Season ${num}: ${sid}` : `Season: ${sid}`; })()}
           </span>
         )}
       </div>
