@@ -365,7 +365,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     matches.forEach(m => { if (m.seasonId) ids.add(m.seasonId); });
     return Array.from(ids).sort((a, b) => getSeasonDateRange(b).start - getSeasonDateRange(a).start);
   })();
-  const pastSeasons = availableSeasons.filter(s => s !== currentSeasonId);
+  const pastSeasons = availableSeasons;
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
   const dropdownRef = useRef(null);
   const [, forceUpdate] = useState(0);
@@ -547,7 +547,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                 border: seasonView === "past" ? "1.5px solid #16a34a" : "1.5px solid #d1d5db",
               }}
             >
-              Previous Seasons
+              All Seasons
               <span style={{ fontSize: 10, display: "inline-block", transform: showSeasonDropdown ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
             </button>
             {showSeasonDropdown && (
@@ -572,7 +572,12 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     }}
                     onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary)"}
                     onMouseLeave={e => e.currentTarget.style.background = s === (selectedPastSeason || pastSeasons[0]) ? "var(--bg-secondary)" : "transparent"}
-                  >{(() => { const num = getSeasonNumber(s); return num === 0 ? `Season 0 (Archive) (${s})` : num !== null ? `Season ${num} (${s})` : s; })()}</button>
+                  >{(() => {
+                    const num = getSeasonNumber(s);
+                    const isLive = s === currentSeasonId;
+                    const label = num === 0 ? `Season 0 (Archive) (${s})` : num !== null ? `Season ${num} (${s})` : s;
+                    return isLive ? `${label} 🟢 LIVE` : label;
+                  })()}</button>
                 ))}
               </div>
             )}
