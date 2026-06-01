@@ -378,7 +378,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     return () => clearInterval(timer);
   }, [currentSeasonId]);
   const displayMatches = (() => {
-    if (seasonView === "alltime") return matches;
+    if (seasonView === "alltime") return matches.filter(m => m.seasonId !== "May 2026");
     if (seasonView === "past") {
       const target = selectedPastSeason || pastSeasons[0] || currentSeasonId;
       return matches.filter(m => m.seasonId === target);
