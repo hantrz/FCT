@@ -3745,11 +3745,7 @@ function Season0Archive({ players = [] }) {
         ))}
       </div>
 
-      <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", marginBottom: 12 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "36px 1fr 44px 44px 44px 56px 72px", padding: "10px 16px", background: "var(--bg-secondary)", borderBottom: "1px solid var(--border)", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.07em", textTransform: "uppercase" }}>
-          <div>#</div><div>PLAYER</div>
-          <div style={{textAlign:"right"}}>P</div><div style={{textAlign:"right"}}>W</div><div style={{textAlign:"right"}}>L</div><div style={{textAlign:"right"}}>PTS</div><div style={{textAlign:"right"}}>WIN%</div>
-        </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
         {[
           { rank: 1, name: "Mr. Zed",        badges: [["4 🔥","fire"]], p:39, w:25, l:14, pts:59,  win:64 },
           { rank: 2, name: "Masud Rana",      badges: [["2 🔥","fire"],["1 💀","loss"]], p:18, w:11, l:7,  pts:22,  win:61 },
@@ -3759,33 +3755,35 @@ function Season0Archive({ players = [] }) {
           { rank: 6, name: "Imran Hossain",   badges: [["1 💀","loss"]], p:18, w:8,  l:10, pts:1,   win:44 },
           { rank: 7, name: "Rashedul Islam",  badges: [["1 💀","loss"]], p:17, w:6,  l:11, pts:-7,  win:35 },
         ].map(({ rank, name, badges, p, w, l, pts, win }) => (
-          <div key={name} style={{ display: "grid", gridTemplateColumns: "36px 1fr 44px 44px 44px 56px 72px", padding: "12px 16px", alignItems: "center", borderBottom: "1px solid var(--border)" }}>
-            <div style={{ fontWeight: 700, color: rank === 1 ? "#d97706" : rank === 2 ? "#9ca3af" : rank === 3 ? "#b45309" : "var(--text-muted)", fontSize: 13 }}>{rank}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {(() => {
-                const pid = getPlayerId(name);
-                return pid
-                  ? <Avatar id={pid} allPlayers={players} size={32} />
-                  : <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#15803d", flexShrink: 0 }}>{name[0]}</div>;
-              })()}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{name}</div>
-                <div style={{ display: "flex", gap: 4, marginTop: 2, flexWrap: "wrap" }}>
-                  {badges.map(([label, type]) => (
-                    <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 3, background: type === "fire" ? "#fff7ed" : "#fef2f2", border: `1px solid ${type === "fire" ? "#fed7aa" : "#fecaca"}`, borderRadius: 999, padding: "1px 6px", fontSize: 10, fontWeight: 700, color: type === "fire" ? "#9a3412" : "#991b1b" }}>{label}</span>
-                  ))}
-                </div>
+          <div key={name} style={{ background: "var(--card-bg)", borderRadius: 16, border: "1px solid var(--border)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: rank === 1 ? "#d97706" : rank === 2 ? "#9ca3af" : rank === 3 ? "#b45309" : "var(--text-muted)", width: 28, textAlign: "center", flexShrink: 0 }}>{rank}</div>
+            {(() => {
+              const pid = getPlayerId(name);
+              return pid
+                ? <Avatar id={pid} allPlayers={players} size={38} />
+                : <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#15803d", flexShrink: 0 }}>{name[0]}</div>;
+            })()}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 15, fontWeight: 700 }}>{name}{rank === 1 ? " 🏆" : ""}</span>
+                {badges.map(([label, type]) => (
+                  <span key={label} style={{ fontSize: 11, borderRadius: 20, padding: "1px 6px", fontWeight: 600, background: type === "fire" ? "#fff7ed" : "#fef2f2", color: type === "fire" ? "#c2410c" : "#991b1b", border: `0.5px solid ${type === "fire" ? "#fed7aa" : "#fecaca"}` }}>{label}</span>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 5, marginTop: 3, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p}P</span>
+                <span style={{ fontSize: 11, color: "#16a34a", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{w}W</span>
+                <span style={{ fontSize: 11, color: "#dc2626", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{l}L</span>
               </div>
             </div>
-            <div style={{ textAlign: "right", fontSize: 13 }}>{p}</div>
-            <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: "#16a34a" }}>{w}</div>
-            <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: "#dc2626" }}>{l}</div>
-            <div style={{ textAlign: "right", fontSize: 13, fontWeight: 800, color: pts < 0 ? "#dc2626" : "#d97706" }}>{pts}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-end" }}>
-              <div style={{ width: 36, height: 6, background: "#e5e7eb", borderRadius: 99, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${win}%`, background: win >= 50 ? "#16a34a" : "#d1d5db", borderRadius: 99 }} />
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: pts < 0 ? "#dc2626" : "#d97706", lineHeight: 1 }}>{pts}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 4, justifyContent: "flex-end" }}>
+                <div style={{ height: 4, borderRadius: 4, background: "var(--border)", width: 48, overflow: "hidden" }}>
+                  <div style={{ height: "100%", borderRadius: 4, background: "#16a34a", width: `${win}%` }} />
+                </div>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{win}%</span>
               </div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: win >= 50 ? "#16a34a" : "var(--text-muted)", width: 34, textAlign: "right" }}>{win}%</div>
             </div>
           </div>
         ))}
