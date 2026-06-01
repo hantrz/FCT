@@ -1475,8 +1475,10 @@ function getMatchBadgeLogs(match, allMatches, players) {
     );
 
     let consecutiveWins = 0;
+    const thisMatchSeason = match.seasonId || null;
     for (let i = playerMatches.length - 1; i >= 0; i--) {
       const m = playerMatches[i];
+      if ((m.seasonId || null) !== thisMatchSeason) break;
       const inTeam1 = (m.team1 || []).includes(playerId);
       const isWin = (inTeam1 && m.winner === "team1") || (!inTeam1 && m.winner === "team2");
       if (isWin) {
@@ -1502,8 +1504,10 @@ function getMatchBadgeLogs(match, allMatches, players) {
     );
 
     let consecutiveLosses = 0;
+    const thisMatchSeasonL = match.seasonId || null;
     for (let i = playerMatches.length - 1; i >= 0; i--) {
       const m = playerMatches[i];
+      if ((m.seasonId || null) !== thisMatchSeasonL) break;
       const inTeam1 = (m.team1 || []).includes(playerId);
       const isLoss = !((inTeam1 && m.winner === "team1") || (!inTeam1 && m.winner === "team2"));
       if (isLoss) {
