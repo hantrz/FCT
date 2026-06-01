@@ -3794,16 +3794,16 @@ function Season0Archive({ players = [] }) {
         ))}
       </div>
 
-      <div style={{ background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 16, padding: "14px 16px", marginBottom: 12 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#d97706", marginBottom: 2 }}>🏅 Qualify for the Leaderboard</div>
-        <div style={{ fontSize: 11, color: "#92400e", marginBottom: 10 }}>These players did not reach the qualification threshold (5 matches) this season</div>
+      <div style={{ background: "var(--qualify-bg, var(--bg-secondary))", border: "1px solid var(--qualify-border, var(--border))", borderRadius: 16, padding: "14px 16px", marginBottom: 12 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--qualify-title, #d97706)", marginBottom: 2 }}>🏅 Qualify for the Leaderboard</div>
+        <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid var(--border)" }}>These players did not reach the qualification threshold (5 matches) this season</div>
         {[
           { name: "Ashik Rahman",  p:1, w:1, l:0, pts:3,  need:4 },
           { name: "Nazmul Haque",  p:1, w:0, l:1, pts:-2, need:4 },
           { name: "Random Man",    p:2, w:0, l:2, pts:-4, need:3 },
           { name: "Riduwan Molla", p:2, w:0, l:2, pts:-4, need:3 },
         ].map(({ name, p, w, l, pts, need }) => (
-          <div key={name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #fde68a" }}>
+          <div key={name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {(() => {
                 const pid = getPlayerId(name);
@@ -3814,13 +3814,14 @@ function Season0Archive({ players = [] }) {
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600 }}>{name}</div>
                 <div style={{ display: "flex", gap: 4, marginTop: 2 }}>
-                  {[[`${p}P`,"#e5e7eb","#374151"],[`${w}W`,"#dcfce7","#15803d"],[`${l}L`,"#fee2e2","#991b1b"],[`${pts}PTS`, "#f3f4f6", pts < 0 ? "#dc2626" : "#374151"]].map(([t,bg,fg]) => (
-                    <span key={t} style={{ fontSize: 10, fontWeight: 600, background: bg, color: fg, padding: "1px 5px", borderRadius: 4 }}>{t}</span>
-                  ))}
+                  <span style={{ fontSize: 10, fontWeight: 600, background: "var(--bg-secondary)", color: "var(--text)", padding: "1px 5px", borderRadius: 4 }}>{p}P</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, background: "var(--green-bg, #dcfce7)", color: "var(--green, #15803d)", padding: "1px 5px", borderRadius: 4 }}>{w}W</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, background: "var(--red-bg, #fee2e2)", color: "var(--red, #991b1b)", padding: "1px 5px", borderRadius: 4 }}>{l}L</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, background: "var(--bg-secondary)", color: pts < 0 ? "var(--red, #dc2626)" : "var(--text)", padding: "1px 5px", borderRadius: 4 }}>{pts}PTS</span>
                 </div>
               </div>
             </div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#b45309", textAlign: "right" }}>Need {need} more matches</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--qualify-title, #d97706)", textAlign: "right" }}>Need {need} more matches</div>
           </div>
         ))}
       </div>
