@@ -639,7 +639,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
             <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>Season 0 (Archive): May 2026</span>
             <span style={{ background: "#f3f4f6", color: "#6b7280", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>📦 ARCHIVED</span>
           </div>
-          <Season0Archive />
+          <Season0Archive players={players} />
         </div>
       ) : stats.length === 0 ? (
         <div className="empty"><p>No data yet. Add players and record matches!</p></div>
@@ -3729,7 +3729,11 @@ function ForcePasswordChange({ currentUser, onComplete }) {
   );
 }
 
-function Season0Archive() {
+function Season0Archive({ players = [] }) {
+  const getPhoto = (name) => {
+    const p = players.find(p => p.name === name || p.displayName === name);
+    return p?.photoURL || p?.photo || null;
+  };
   return (
     <div style={{ fontFamily: "inherit" }}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
@@ -3757,12 +3761,20 @@ function Season0Archive() {
         ].map(({ rank, name, badges, p, w, l, pts, win }) => (
           <div key={name} style={{ display: "grid", gridTemplateColumns: "36px 1fr 44px 44px 44px 56px 72px", padding: "12px 16px", alignItems: "center", borderBottom: "1px solid var(--border)" }}>
             <div style={{ fontWeight: 700, color: rank === 1 ? "#d97706" : rank === 2 ? "#9ca3af" : rank === 3 ? "#b45309" : "var(--text-muted)", fontSize: 13 }}>{rank}</div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{name}</div>
-              <div style={{ display: "flex", gap: 4, marginTop: 2, flexWrap: "wrap" }}>
-                {badges.map(([label, type]) => (
-                  <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 3, background: type === "fire" ? "#fff7ed" : "#fef2f2", border: `1px solid ${type === "fire" ? "#fed7aa" : "#fecaca"}`, borderRadius: 999, padding: "1px 6px", fontSize: 10, fontWeight: 700, color: type === "fire" ? "#9a3412" : "#991b1b" }}>{label}</span>
-                ))}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {(() => {
+                const photo = getPhoto(name);
+                return photo
+                  ? <img src={photo} alt={name} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", border: "2px solid #dcfce7", flexShrink: 0 }} />
+                  : <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #bbf7d0, #4ade80)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#15803d", flexShrink: 0, border: "2px solid #dcfce7" }}>{name[0]}</div>;
+              })()}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{name}</div>
+                <div style={{ display: "flex", gap: 4, marginTop: 2, flexWrap: "wrap" }}>
+                  {badges.map(([label, type]) => (
+                    <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 3, background: type === "fire" ? "#fff7ed" : "#fef2f2", border: `1px solid ${type === "fire" ? "#fed7aa" : "#fecaca"}`, borderRadius: 999, padding: "1px 6px", fontSize: 10, fontWeight: 700, color: type === "fire" ? "#9a3412" : "#991b1b" }}>{label}</span>
+                  ))}
+                </div>
               </div>
             </div>
             <div style={{ textAlign: "right", fontSize: 13 }}>{p}</div>
@@ -3789,12 +3801,20 @@ function Season0Archive() {
           { name: "Riduwan Molla", p:2, w:0, l:2, pts:-4, need:3 },
         ].map(({ name, p, w, l, pts, need }) => (
           <div key={name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #fde68a" }}>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600 }}>{name}</div>
-              <div style={{ display: "flex", gap: 4, marginTop: 2 }}>
-                {[[`${p}P`,"#e5e7eb","#374151"],[`${w}W`,"#dcfce7","#15803d"],[`${l}L`,"#fee2e2","#991b1b"],[`${pts}PTS`, "#f3f4f6", pts < 0 ? "#dc2626" : "#374151"]].map(([t,bg,fg]) => (
-                  <span key={t} style={{ fontSize: 10, fontWeight: 600, background: bg, color: fg, padding: "1px 5px", borderRadius: 4 }}>{t}</span>
-                ))}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {(() => {
+                const photo = getPhoto(name);
+                return photo
+                  ? <img src={photo} alt={name} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", border: "2px solid #fde68a", flexShrink: 0 }} />
+                  : <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #fde68a, #fbbf24)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#92400e", flexShrink: 0, border: "2px solid #fde68a" }}>{name[0]}</div>;
+              })()}
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600 }}>{name}</div>
+                <div style={{ display: "flex", gap: 4, marginTop: 2 }}>
+                  {[[`${p}P`,"#e5e7eb","#374151"],[`${w}W`,"#dcfce7","#15803d"],[`${l}L`,"#fee2e2","#991b1b"],[`${pts}PTS`, "#f3f4f6", pts < 0 ? "#dc2626" : "#374151"]].map(([t,bg,fg]) => (
+                    <span key={t} style={{ fontSize: 10, fontWeight: 600, background: bg, color: fg, padding: "1px 5px", borderRadius: 4 }}>{t}</span>
+                  ))}
+                </div>
               </div>
             </div>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#b45309", textAlign: "right" }}>Need {need} more matches</div>
