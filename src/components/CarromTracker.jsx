@@ -617,20 +617,22 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
         {seasonView === "alltime" && (
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>All Time Stats</span>
         )}
-        {seasonView === "past" && (
+        {seasonView === "past" && (selectedPastSeason || pastSeasons[0] || currentSeasonId) !== "May 2026" && (
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
-            {(() => { const sid = selectedPastSeason || pastSeasons[0] || currentSeasonId; const num = getSeasonNumber(sid); return num !== null ? (num === 0 ? `Season 0 (Archive): ${sid}` : `Season ${num}: ${sid}`) : `Season: ${sid}`; })()}
+            {(() => { const sid = selectedPastSeason || pastSeasons[0] || currentSeasonId; const num = getSeasonNumber(sid); return num !== null ? `Season ${num}: ${sid}` : `Season: ${sid}`; })()}
           </span>
         )}
       </div>
-      <div className="metrics">
-        <div className="metric">
-          <label>{seasonView === "alltime" ? "ALL TIME" : seasonView === "current" ? "THIS SEASON" : (selectedPastSeason || pastSeasons[0] || currentSeasonId)}</label>
-          <span>{displayMatches.length}</span>
+      {!(seasonView === "past" && (selectedPastSeason || pastSeasons[0] || currentSeasonId) === "May 2026") && (
+        <div className="metrics">
+          <div className="metric">
+            <label>{seasonView === "alltime" ? "ALL TIME" : seasonView === "current" ? "THIS SEASON" : (selectedPastSeason || pastSeasons[0] || currentSeasonId)}</label>
+            <span>{displayMatches.length}</span>
+          </div>
+          <div className="metric"><label>Players</label><span>{players.length}</span></div>
+          <div className="metric"><label>This Week</label><span>{thisWeek}</span></div>
         </div>
-        <div className="metric"><label>Players</label><span>{players.length}</span></div>
-        <div className="metric"><label>This Week</label><span>{thisWeek}</span></div>
-      </div>
+      )}
       {seasonView === "past" && (selectedPastSeason || pastSeasons[0]) === "May 2026" ? (
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
