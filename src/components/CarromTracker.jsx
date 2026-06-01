@@ -572,7 +572,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     }}
                     onMouseEnter={e => e.currentTarget.style.background = "var(--bg-secondary)"}
                     onMouseLeave={e => e.currentTarget.style.background = s === (selectedPastSeason || pastSeasons[0]) ? "var(--bg-secondary)" : "transparent"}
-                  >{(() => { const num = getSeasonNumber(s); return num === 0 ? `Season 0 (${s})` : num !== null ? `Season ${num} (${s})` : s; })()}</button>
+                  >{(() => { const num = getSeasonNumber(s); return num === 0 ? `Season 0 (Archive) (${s})` : num !== null ? `Season ${num} (${s})` : s; })()}</button>
                 ))}
               </div>
             )}
@@ -581,7 +581,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
         {/* Active season header */}
         {seasonView === "current" && (() => {
           const seasonNum = getSeasonNumber(currentSeasonId);
-          const seasonLabel = seasonNum !== null ? `Season ${seasonNum}: ${currentSeasonId}` : `Season: ${currentSeasonId}`;
+          const seasonLabel = seasonNum !== null ? (seasonNum === 0 ? `Season 0 (Archive): ${currentSeasonId}` : `Season ${seasonNum}: ${currentSeasonId}`) : `Season: ${currentSeasonId}`;
           const { end } = getSeasonDateRange(currentSeasonId);
           const now = new Date();
           const msLeft = end - now;
@@ -619,7 +619,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
         )}
         {seasonView === "past" && (
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
-            {(() => { const sid = selectedPastSeason || pastSeasons[0] || currentSeasonId; const num = getSeasonNumber(sid); return num !== null ? `Season ${num}: ${sid}` : `Season: ${sid}`; })()}
+            {(() => { const sid = selectedPastSeason || pastSeasons[0] || currentSeasonId; const num = getSeasonNumber(sid); return num !== null ? (num === 0 ? `Season 0 (Archive): ${sid}` : `Season ${num}: ${sid}`) : `Season: ${sid}`; })()}
           </span>
         )}
       </div>
