@@ -181,10 +181,21 @@ function calcBadges(playerId, matches) {
   const pm = [...matches]
     .filter(m => (m.team1 || []).includes(playerId) || (m.team2 || []).includes(playerId))
     .sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
-  let hatTricks = 0, lossTricks = 0, winStreak = 0, lossStreak = 0, cleanWins = 0, cleanLosses = 0;
+
+  let hatTricks = 0, lossTricks = 0, cleanWins = 0, cleanLosses = 0;
+  let winStreak = 0, lossStreak = 0, currentSeason = null;
+
   for (const m of pm) {
+    const matchSeason = m.seasonId || null;
+    if (matchSeason !== currentSeason) {
+      winStreak = 0;
+      lossStreak = 0;
+      currentSeason = matchSeason;
+    }
+
     const inT1 = (m.team1 || []).includes(playerId);
     const isWinner = (inT1 && m.winner === "team1") || (!inT1 && m.winner === "team2");
+
     if (isWinner) {
       winStreak++;
       lossStreak = 0;
