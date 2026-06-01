@@ -631,7 +631,15 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
         <div className="metric"><label>Players</label><span>{players.length}</span></div>
         <div className="metric"><label>This Week</label><span>{thisWeek}</span></div>
       </div>
-      {stats.length === 0 ? (
+      {seasonView === "past" && (selectedPastSeason || pastSeasons[0]) === "May 2026" ? (
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>Season 0 (Archive): May 2026</span>
+            <span style={{ background: "#f3f4f6", color: "#6b7280", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>📦 ARCHIVED</span>
+          </div>
+          <Season0Archive />
+        </div>
+      ) : stats.length === 0 ? (
         <div className="empty"><p>No data yet. Add players and record matches!</p></div>
       ) : displayMatches.length === 0 ? (
         <div className="empty"><p>No matches played in this season yet.</p></div>
@@ -3714,6 +3722,90 @@ function ForcePasswordChange({ currentUser, onComplete }) {
         }}>
           {loading ? "Saving…" : "Set Password & Continue"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+function Season0Archive() {
+  return (
+    <div style={{ fontFamily: "inherit" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
+        {[["THIS SEASON", "44"], ["PLAYERS", "11"], ["STATUS", "📦 Archived"]].map(([label, val]) => (
+          <div key={label} style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 14, padding: "14px 16px" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
+            <div style={{ fontWeight: 800, fontSize: label === "STATUS" ? 13 : 28, color: label === "STATUS" ? "var(--text-muted)" : "var(--text)" }}>{val}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", marginBottom: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "36px 1fr 44px 44px 44px 56px 72px", padding: "10px 16px", background: "var(--bg-secondary)", borderBottom: "1px solid var(--border)", fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.07em", textTransform: "uppercase" }}>
+          <div>#</div><div>PLAYER</div>
+          <div style={{textAlign:"right"}}>P</div><div style={{textAlign:"right"}}>W</div><div style={{textAlign:"right"}}>L</div><div style={{textAlign:"right"}}>PTS</div><div style={{textAlign:"right"}}>WIN%</div>
+        </div>
+        {[
+          { rank: 1, name: "Mr. Zed",        badges: [["4 🔥","fire"]], p:39, w:25, l:14, pts:59,  win:64 },
+          { rank: 2, name: "Masud Rana",      badges: [["2 🔥","fire"],["1 💀","loss"]], p:18, w:11, l:7,  pts:22,  win:61 },
+          { rank: 3, name: "Suvas Bin Monir", badges: [["1 🔥","fire"],["1 💀","loss"]], p:22, w:11, l:11, pts:11,  win:50 },
+          { rank: 4, name: "Sabiul Haque",    badges: [["2 🔥","fire"],["3 💀","loss"]], p:27, w:13, l:14, pts:8,   win:48 },
+          { rank: 5, name: "Firoz Hassan",    badges: [["2 🔥","fire"],["4 💀","loss"]], p:29, w:13, l:16, pts:1,   win:45 },
+          { rank: 6, name: "Imran Hossain",   badges: [["1 💀","loss"]], p:18, w:8,  l:10, pts:1,   win:44 },
+          { rank: 7, name: "Rashedul Islam",  badges: [["1 💀","loss"]], p:17, w:6,  l:11, pts:-7,  win:35 },
+        ].map(({ rank, name, badges, p, w, l, pts, win }) => (
+          <div key={name} style={{ display: "grid", gridTemplateColumns: "36px 1fr 44px 44px 44px 56px 72px", padding: "12px 16px", alignItems: "center", borderBottom: "1px solid var(--border)" }}>
+            <div style={{ fontWeight: 700, color: rank === 1 ? "#d97706" : rank === 2 ? "#9ca3af" : rank === 3 ? "#b45309" : "var(--text-muted)", fontSize: 13 }}>{rank}</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{name}</div>
+              <div style={{ display: "flex", gap: 4, marginTop: 2, flexWrap: "wrap" }}>
+                {badges.map(([label, type]) => (
+                  <span key={label} style={{ display: "inline-flex", alignItems: "center", gap: 3, background: type === "fire" ? "#fff7ed" : "#fef2f2", border: `1px solid ${type === "fire" ? "#fed7aa" : "#fecaca"}`, borderRadius: 999, padding: "1px 6px", fontSize: 10, fontWeight: 700, color: type === "fire" ? "#9a3412" : "#991b1b" }}>{label}</span>
+                ))}
+              </div>
+            </div>
+            <div style={{ textAlign: "right", fontSize: 13 }}>{p}</div>
+            <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: "#16a34a" }}>{w}</div>
+            <div style={{ textAlign: "right", fontSize: 13, fontWeight: 700, color: "#dc2626" }}>{l}</div>
+            <div style={{ textAlign: "right", fontSize: 13, fontWeight: 800, color: pts < 0 ? "#dc2626" : "#d97706" }}>{pts}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-end" }}>
+              <div style={{ width: 36, height: 6, background: "#e5e7eb", borderRadius: 99, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${win}%`, background: win >= 50 ? "#16a34a" : "#d1d5db", borderRadius: 99 }} />
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: win >= 50 ? "#16a34a" : "var(--text-muted)", width: 34, textAlign: "right" }}>{win}%</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: "#fef3c7", border: "1px solid #fde68a", borderRadius: 16, padding: "14px 16px", marginBottom: 12 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#d97706", marginBottom: 2 }}>🏅 Qualify for the Leaderboard</div>
+        <div style={{ fontSize: 11, color: "#92400e", marginBottom: 10 }}>These players did not reach the qualification threshold (5 matches) this season</div>
+        {[
+          { name: "Ashik Rahman",  p:1, w:1, l:0, pts:3,  need:4 },
+          { name: "Nazmul Haque",  p:1, w:0, l:1, pts:-2, need:4 },
+          { name: "Random Man",    p:2, w:0, l:2, pts:-4, need:3 },
+          { name: "Riduwan Molla", p:2, w:0, l:2, pts:-4, need:3 },
+        ].map(({ name, p, w, l, pts, need }) => (
+          <div key={name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #fde68a" }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600 }}>{name}</div>
+              <div style={{ display: "flex", gap: 4, marginTop: 2 }}>
+                {[[`${p}P`,"#e5e7eb","#374151"],[`${w}W`,"#dcfce7","#15803d"],[`${l}L`,"#fee2e2","#991b1b"],[`${pts}PTS`, "#f3f4f6", pts < 0 ? "#dc2626" : "#374151"]].map(([t,bg,fg]) => (
+                  <span key={t} style={{ fontSize: 10, fontWeight: 600, background: bg, color: fg, padding: "1px 5px", borderRadius: 4 }}>{t}</span>
+                ))}
+              </div>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#b45309", textAlign: "right" }}>Need {need} more matches</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 16px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+        <span style={{ fontSize: 18 }}>📦</span>
+        <div style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.6 }}>
+          <strong style={{ color: "var(--text)" }}>Season 0 — Testing & Archive</strong><br />
+          This was the first trial season of Carrom Tracker (May 2026). Results are preserved for reference. Official rankings begin from Season 1 (Jun–Jul 2026).
+        </div>
       </div>
     </div>
   );
