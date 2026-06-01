@@ -372,9 +372,9 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [seasonView, setSeasonView] = useState("current"); // "current" | "alltime" | "past"
   const [selectedPastSeason, setSelectedPastSeason] = useState("");
   const availableSeasons = (() => {
-    const ids = new Set();
-    matches.forEach(m => { if (m.seasonId) ids.add(m.seasonId); });
-    return Array.from(ids).sort((a, b) => getSeasonDateRange(b).start - getSeasonDateRange(a).start);
+    const fromMatches = Array.from(new Set(matches.map(m => m.seasonId).filter(Boolean)));
+    if (!fromMatches.includes("May 2026")) fromMatches.push("May 2026");
+    return fromMatches.sort((a, b) => getSeasonDateRange(b).start - getSeasonDateRange(a).start);
   })();
   const pastSeasons = availableSeasons;
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
