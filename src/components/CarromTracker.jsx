@@ -57,8 +57,8 @@ function getSeasonDateRange(seasonId) {
 }
 
 function getSeasonNumber(seasonId) {
-  if (seasonId === "May 2026") return 1;
-  if (seasonId === "Jun 2026") return 2;
+  if (seasonId === "May 2026") return 0;
+  if (seasonId === "Jun 2026") return 1;
   const order = ["Jul-Aug", "Sep-Oct", "Nov-Dec", "Jan-Feb", "Mar-Apr", "May-Jun"];
   const parts = seasonId.split(" ");
   const label = parts[0];
@@ -66,11 +66,11 @@ function getSeasonNumber(seasonId) {
   const idx = order.indexOf(label);
   if (idx === -1) return null;
   if (year === 2026) {
-    if (idx < 3) return 3 + idx;
+    if (idx < 3) return 2 + idx; // Jul-Aug=2, Sep-Oct=3, Nov-Dec=4
     return null;
   }
   const yearsAfter2026 = year - 2027;
-  return 6 + (yearsAfter2026 * 6) + idx;
+  return 5 + (yearsAfter2026 * 6) + idx;
 }
 
 async function fileToResizedBase64(file, maxSize = 200, quality = 0.8) {
@@ -568,7 +568,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
         {/* Active season header */}
         {seasonView === "current" && (() => {
           const seasonNum = getSeasonNumber(currentSeasonId);
-          const seasonLabel = seasonNum ? `Season ${seasonNum}: ${currentSeasonId}` : `Season: ${currentSeasonId}`;
+          const seasonLabel = seasonNum !== null ? (seasonNum === 0 ? `Season 0 (Archive): ${currentSeasonId}` : `Season ${seasonNum}: ${currentSeasonId}`) : `Season: ${currentSeasonId}`;
           const { end } = getSeasonDateRange(currentSeasonId);
           const now = new Date();
           const msLeft = end - now;
@@ -606,7 +606,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
         )}
         {seasonView === "past" && (
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
-            {(() => { const sid = selectedPastSeason || pastSeasons[0] || currentSeasonId; const num = getSeasonNumber(sid); return num ? `Season ${num}: ${sid}` : `Season: ${sid}`; })()}
+            {(() => { const sid = selectedPastSeason || pastSeasons[0] || currentSeasonId; const num = getSeasonNumber(sid); return num !== null ? (num === 0 ? `Season 0 (Archive): ${sid}` : `Season ${num}: ${sid}`) : `Season: ${sid}`; })()}
           </span>
         )}
       </div>
