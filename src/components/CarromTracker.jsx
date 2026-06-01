@@ -14,40 +14,41 @@ import Bills from "./Bills";
 function getSeasonId(date = new Date()) {
   const d = new Date(date);
   const year = d.getFullYear();
-  const month = d.getMonth() + 1; // 1-12
-
-  // Season 1: May 2026
+  const month = d.getMonth() + 1;
   if (year === 2026 && month === 5) return "May 2026";
-  // Season 2: June 2026
-  if (year === 2026 && month === 6) return "Jun 2026";
-
-  // Season 3 onwards: 2-month pairs starting Jul-Aug 2026
   const pairs = [
-    [7, 8, "Jul-Aug"], [9, 10, "Sep-Oct"], [11, 12, "Nov-Dec"]
+    [6,7,"Jun-Jul"], [8,9,"Aug-Sep"], [10,11,"Oct-Nov"]
   ];
-  // For years after 2026, full year pairs
   const fullYearPairs = [
-    [1, 2, "Jan-Feb"], [3, 4, "Mar-Apr"], [5, 6, "May-Jun"],
-    [7, 8, "Jul-Aug"], [9, 10, "Sep-Oct"], [11, 12, "Nov-Dec"]
+    [2,3,"Feb-Mar"], [4,5,"Apr-May"], [6,7,"Jun-Jul"],
+    [8,9,"Aug-Sep"], [10,11,"Oct-Nov"]
   ];
-
+  const decJanCheck = (month === 12 || month === 1);
+  if (decJanCheck) {
+    const y = month === 12 ? year : year - 1;
+    return `Dec-Jan ${y}-${String(y+1).slice(-2)}`;
+  }
   if (year === 2026) {
-    const pair = pairs.find(([s, e]) => month >= s && month <= e);
+    const pair = pairs.find(([s,e]) => month >= s && month <= e);
     if (pair) return `${pair[2]} ${year}`;
   }
-  const pair = fullYearPairs.find(([s, e]) => month >= s && month <= e);
-  return `${pair[2]} ${year}`;
+  const pair = fullYearPairs.find(([s,e]) => month >= s && month <= e);
+  if (pair) return `${pair[2]} ${year}`;
+  return `${year}`;
 }
 
 function getSeasonDateRange(seasonId) {
-  // Single-month seasons
   if (seasonId === "May 2026") return { start: new Date(2026, 4, 1), end: new Date(2026, 4, 31, 23, 59, 59) };
-  if (seasonId === "Jun 2026") return { start: new Date(2026, 5, 1), end: new Date(2026, 5, 30, 23, 59, 59) };
-
-  // Two-month seasons
+  if (seasonId.startsWith("Dec-Jan")) {
+    const parts = seasonId.split(" ");
+    const years = parts[1].split("-");
+    const y1 = parseInt(years[0]);
+    const y2 = 2000 + parseInt(years[1]);
+    return { start: new Date(y1, 11, 1), end: new Date(y2, 0, 31, 23, 59, 59) };
+  }
   const monthMap = {
-    "Jan-Feb": [0, 1], "Mar-Apr": [2, 3], "May-Jun": [4, 5],
-    "Jul-Aug": [6, 7], "Sep-Oct": [8, 9], "Nov-Dec": [10, 11]
+    "Jun-Jul": [5, 6], "Aug-Sep": [7, 8], "Oct-Nov": [9, 10],
+    "Feb-Mar": [1, 2], "Apr-May": [3, 4]
   };
   const parts = seasonId.split(" ");
   const label = parts[0];
@@ -58,19 +59,31 @@ function getSeasonDateRange(seasonId) {
 
 function getSeasonNumber(seasonId) {
   if (seasonId === "May 2026") return 0;
-  if (seasonId === "Jun 2026") return 1;
-  const order = ["Jul-Aug", "Sep-Oct", "Nov-Dec", "Jan-Feb", "Mar-Apr", "May-Jun"];
+  if (seasonId === "Jun-Jul 2026") return 1;
+  if (seasonId === "Aug-Sep 2026") return 2;
+  if (seasonId === "Oct-Nov 2026") return 3;
+  if (seasonId === "Dec-Jan 2026-27") return 4;
+  const order = ["Feb-Mar", "Apr-May", "Jun-Jul", "Aug-Sep", "Oct-Nov"];
+  const decJanPattern = /^Dec-Jan (\d{4})-(\d{2})$/;
+  const decJanMatch = seasonId.match(decJanPattern);
+  if (decJanMatch) {
+    const y1 = parseInt(decJanMatch[1]);
+    if (y1 < 2026) return null;
+    const yearsAfter2026 = y1 - 2026;
+    return 4 + (yearsAfter2026 * 6);
+  }
   const parts = seasonId.split(" ");
   const label = parts[0];
   const year = parseInt(parts[1]);
+  if (isNaN(year)) return null;
   const idx = order.indexOf(label);
   if (idx === -1) return null;
-  if (year === 2026) {
-    if (idx < 3) return 2 + idx; // Jul-Aug=2, Sep-Oct=3, Nov-Dec=4
-    return null;
+  if (year === 2027) return 5 + idx;
+  if (year > 2027) {
+    const yearsAfter2027 = year - 2027;
+    return 5 + (yearsAfter2027 * 6) + idx;
   }
-  const yearsAfter2026 = year - 2027;
-  return 5 + (yearsAfter2026 * 6) + idx;
+  return null;
 }
 
 async function fileToResizedBase64(file, maxSize = 200, quality = 0.8) {
@@ -3768,8 +3781,9 @@ export default function CarromTracker() {
         const m = { id: d.id, ...d.data() };
         if (m.seasonId === "May-Jun 2026") {
           const ts = m.createdAt?.toDate?.() || (m.date ? new Date(m.date) : new Date());
-          m.seasonId = (ts.getMonth() + 1) === 5 ? "May 2026" : "Jun 2026";
+          m.seasonId = (ts.getMonth() + 1) === 5 ? "May 2026" : "Jun-Jul 2026";
         }
+        if (m.seasonId === "Jun 2026") m.seasonId = "Jun-Jul 2026";
         return m;
       }));
     });
