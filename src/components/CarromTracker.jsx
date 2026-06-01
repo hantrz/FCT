@@ -3730,9 +3730,9 @@ function ForcePasswordChange({ currentUser, onComplete }) {
 }
 
 function Season0Archive({ players = [] }) {
-  const getPhoto = (name) => {
-    const p = players.find(p => p.name === name || p.displayName === name);
-    return p?.photoURL || p?.photo || null;
+  const getPlayerId = (name) => {
+    const p = players.find(pl => pl.name === name || pl.displayName === name);
+    return p?.id || null;
   };
   return (
     <div style={{ fontFamily: "inherit" }}>
@@ -3763,10 +3763,10 @@ function Season0Archive({ players = [] }) {
             <div style={{ fontWeight: 700, color: rank === 1 ? "#d97706" : rank === 2 ? "#9ca3af" : rank === 3 ? "#b45309" : "var(--text-muted)", fontSize: 13 }}>{rank}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {(() => {
-                const photo = getPhoto(name);
-                return photo
-                  ? <img src={photo} alt={name} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", border: "2px solid #dcfce7", flexShrink: 0 }} />
-                  : <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #bbf7d0, #4ade80)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#15803d", flexShrink: 0, border: "2px solid #dcfce7" }}>{name[0]}</div>;
+                const pid = getPlayerId(name);
+                return pid
+                  ? <Avatar id={pid} allPlayers={players} size={32} />
+                  : <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#15803d", flexShrink: 0 }}>{name[0]}</div>;
               })()}
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{name}</div>
@@ -3803,10 +3803,10 @@ function Season0Archive({ players = [] }) {
           <div key={name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #fde68a" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {(() => {
-                const photo = getPhoto(name);
-                return photo
-                  ? <img src={photo} alt={name} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", border: "2px solid #fde68a", flexShrink: 0 }} />
-                  : <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #fde68a, #fbbf24)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#92400e", flexShrink: 0, border: "2px solid #fde68a" }}>{name[0]}</div>;
+                const pid = getPlayerId(name);
+                return pid
+                  ? <Avatar id={pid} allPlayers={players} size={32} />
+                  : <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#15803d", flexShrink: 0 }}>{name[0]}</div>;
               })()}
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600 }}>{name}</div>
