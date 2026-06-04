@@ -402,14 +402,16 @@ function ChampionCards({ matches, players, currentSeasonId }) {
 
   const cardData = [
     { champion: currentChampion, label: "Current Season", gradient: "linear-gradient(135deg,#15803d,#16a34a)", shadow: "rgba(22,163,74,0.3)", live: true, seasonLabel: currentSeasonId },
-    { champion: lastChampion,    label: "Last Season",    gradient: "linear-gradient(135deg,#92400e,#d97706)", shadow: "rgba(217,119,6,0.3)",   live: false, icon: "👑", seasonLabel: lastSeasonId||"—" },
-    { champion: allTimeChampion, label: "All Time",       gradient: "linear-gradient(135deg,#4c1d95,#7c3aed)", shadow: "rgba(124,58,237,0.3)",  live: false, icon: "🎯", seasonLabel: "All Seasons" },
+    ...(lastChampion ? [{ champion: lastChampion, label: "Last Season", gradient: "linear-gradient(135deg,#92400e,#d97706)", shadow: "rgba(217,119,6,0.3)", live: false, icon: "👑", seasonLabel: lastSeasonId||"—" }] : []),
+    { champion: allTimeChampion, label: "All Time", gradient: "linear-gradient(135deg,#4c1d95,#7c3aed)", shadow: "rgba(124,58,237,0.3)", live: false, icon: "🎯", seasonLabel: "All Seasons" },
   ];
 
+  const visibleCards = cardData.filter(c => c.champion !== null || c.label === "Current Season");
+
   return (
-    <div style={{ display:"flex", gap:10, marginBottom:14 }}>
-      {cardData.map(({ champion, label, gradient, shadow, live, icon, seasonLabel }) => (
-        <div key={label} style={{ borderRadius:18, padding:16, background:gradient, boxShadow:`0 4px 20px ${shadow}`, display:"flex", flexDirection:"column", gap:10, flex:1, minWidth:0, overflow:"hidden", position:"relative" }}>
+    <div style={{ display:"flex", gap:10, marginBottom:14, overflowX:"auto", scrollSnapType:"x mandatory", WebkitOverflowScrolling:"touch", paddingBottom:4 }}>
+      {visibleCards.map(({ champion, label, gradient, shadow, live, icon, seasonLabel }) => (
+        <div key={label} style={{ borderRadius:18, padding:16, background:gradient, boxShadow:`0 4px 20px ${shadow}`, display:"flex", flexDirection:"column", gap:10, flex:"0 0 auto", width:"calc(min(260px, 80vw))", scrollSnapAlign:"start", overflow:"hidden", position:"relative" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:"50%", background:"linear-gradient(180deg,rgba(255,255,255,0.12),transparent)", borderRadius:"18px 18px 0 0", pointerEvents:"none" }} />
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <span style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.7)", letterSpacing:"0.1em", textTransform:"uppercase", fontFamily:"monospace" }}>{label}</span>
