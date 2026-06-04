@@ -245,7 +245,7 @@ function calcChampion(seasonMatches, players) {
   const top = Object.keys(stats).sort((a,b) => pts(b)-pts(a))[0];
   if (!top) return null;
   const pl = players.find(p => p.id === top);
-  const photo = pl?.photoURL || pl?.photo || pl?.avatar || null;
+  const photo = pl?.imageUrl || null;
   return { name: pl?.name||pl?.displayName||"Unknown", photo, pts: pts(top), p: stats[top].p, w: stats[top].w, l: stats[top].l, winPct: Math.round(stats[top].w/stats[top].p*100) };
 }
 
@@ -394,7 +394,7 @@ function ChampionCards({ matches, players, currentSeasonId }) {
   let lastChampion = null;
   if (lastSeasonId === "May 2026") {
     const pl = players.find(p => p.name === "Mr. Zed" || p.displayName === "Mr. Zed");
-    lastChampion = { name: "Mr. Zed", photo: pl?.photoURL||pl?.photo||pl?.avatar||null, pts:59, p:39, w:25, l:14, winPct:64 };
+    lastChampion = { name: "Mr. Zed", photo: pl?.imageUrl||null, pts:59, p:39, w:25, l:14, winPct:64 };
   } else {
     lastChampion = calcChampion(matches.filter(m => m.seasonId === lastSeasonId), players);
   }
