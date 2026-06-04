@@ -362,6 +362,121 @@ function PlayerSelect({ players, value, onChange, placeholder = "Select player",
   );
 }
 
+function ChampionCards({ matches, players, currentSeasonId, allTimeMatches }) {
+  const getSeasonChampion = (seasonMatches) => {
+    if (!seasonMatches || seasonMatches.length === 0) return null;
+    const stats = {};
+    seasonMatches.forEach(m => {
+      const winner = m.winner === "team1" ? m.team1 : m.team2;
+      const loser = m.winner === "team1" ? m.team2 : m.team1;
+      [...(winner||[]), ...(loser||[])].forEach(pid => {
+        if (!stats[pid]) stats[pid] = { p:0, w:0, l:0 };
+        stats[pid].p++;
+      });
+      (winner||[]).forEach(pid => { if(stats[pid]) stats[pid].w++; });
+      (loser||[]).forEach(pid => { if(stats[pid]) stats[pid].l++; });
+    });
+    const badges = {};
+    Object.keys(stats).forEach(pid => {
+      badges[pid] = calcBadges(pid, seasonMatches);
+    });
+    const pts = (pid) => (stats[pid].w*3) + (stats[pid].l*-2) + (badges[pid]?.hatTricks*3||0) + (badges[pid]?.lossTricks*-3||0) + (badges[pid]?.cleanWins*2||0) + (badges[pid]?.cleanLosses*-3||0);
+    const sorted = Object.keys(stats).sort((a,b) => pts(b)-pts(a));
+    if (!sorted.length) return null;
+    const pid = sorted[0];
+    const p = players.find(pl => pl.id === pid);
+    return { id: pid, name: p?.name || p?.displayName || "Unknown", photo: p?.photoURL || null, pts: pts(pid), p: stats[pid].p, w: stats[pid].w, l: stats[pid].l, winPct: stats[pid].p > 0 ? Math.round(stats[pid].w/stats[pid].p*100) : 0 };
+  };
+
+  // Season 0 (Archive) static champion
+  const season0Champion = { name: "Mr. Zed", pts: 59, p: 39, w: 25, l: 14, winPct: 64, isStatic: true };
+
+  const currentChampion = getSeasonChampion(matches.filter(m => m.seasonId === currentSeasonId));
+
+  // Last season = most recent past season
+  const pastSeasonIds = Array.from(new Set(allTimeMatches.map(m => m.seasonId).filter(Boolean)))
+    .filter(s => s !== currentSeasonId)
+    .sort((a,b) => getSeasonDateRange(b).start - getSeasonDateRange(a).start);
+  const lastSeasonId = pastSeasonIds[0] || null;
+  const lastSeasonMatches = lastSeasonId ? allTimeMatches.filter(m => m.seasonId === lastSeasonId) : [];
+  const lastChampion = lastSeasonId === "May 2026" ? (() => {
+    const p = players.find(pl => pl.name === "Mr. Zed" || pl.displayName === "Mr. Zed");
+    return { ...season0Champion, id: p?.id, photo: p?.photoURL || null };
+  })() : getSeasonChampion(lastSeasonMatches);
+
+  const allTimeChampion = getSeasonChampion(allTimeMatches);
+
+  const avatarStyle = { width: 44, height: 44, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.4)", flexShrink: 0, objectFit: "cover" };
+  const avatarFallback = (name, size=44) => (
+    <div style={{ width: size, height: size, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size*0.4, fontWeight: 800, color: "white", flexShrink: 0, border: "2px solid rgba(255,255,255,0.4)" }}>
+      {(name||"?")[0]}
+    </div>
+  );
+
+  const renderCard = (champion, type) => {
+    const configs = {
+      current: { label: "Current Season", gradient: "linear-gradient(135deg, #15803d 0%, #16a34a 100%)", shadow: "rgba(22,163,74,0.3)", icon: null, live: true, season: currentSeasonId },
+      last:    { label: "Last Season",    gradient: "linear-gradient(135deg, #92400e 0%, #d97706 100%)", shadow: "rgba(217,119,6,0.3)",   icon: "👑", live: false, season: lastSeasonId },
+      alltime: { label: "All Time",       gradient: "linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%)", shadow: "rgba(124,58,237,0.3)",  icon: "🎯", live: false, season: "All Seasons" },
+    };
+    const cfg = configs[type];
+    const isEmpty = !champion;
+
+    return (
+      <div style={{ borderRadius: 18, padding: 16, background: cfg.gradient, boxShadow: `0 4px 20px ${cfg.shadow}`, display: "flex", flexDirection: "column", gap: 10, position: "relative", overflow: "hidden", flex: 1, minWidth: 0 }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50%", background: "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%)", borderRadius: "18px 18px 0 0", pointerEvents: "none" }} />
+        {/* Top row */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "monospace" }}>{cfg.label}</span>
+          {cfg.live ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.2)", borderRadius: 999, padding: "2px 8px", fontSize: 9, fontWeight: 700, color: "white" }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", flexShrink: 0 }} />LIVE
+            </span>
+          ) : <span style={{ fontSize: 18 }}>{cfg.icon}</span>}
+        </div>
+        {/* Player */}
+        {isEmpty ? (
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", textAlign: "center", padding: "8px 0" }}>No matches yet</div>
+        ) : (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {champion.photo ? <img src={champion.photo} alt={champion.name} style={avatarStyle} /> : avatarFallback(champion.name)}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 800, fontSize: 15, color: "white", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{champion.name}</div>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.65)", marginTop: 1 }}>{cfg.season}</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontWeight: 800, fontSize: 26, color: "white", lineHeight: 1 }}>{champion.pts}</div>
+                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "monospace" }}>PTS</div>
+              </div>
+            </div>
+            {/* Stats bottom */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 10 }}>
+              {[["Played", champion.p], ["Wins", champion.w], ["Loss", champion.l], ["Win%", `${champion.winPct}%`]].map(([lbl, val], i, arr) => (
+                <React.Fragment key={lbl}>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>{val}</div>
+                    <div style={{ fontSize: 9, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{lbl}</div>
+                  </div>
+                  {i < arr.length-1 && <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.2)" }} />}
+                </React.Fragment>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+      {renderCard(currentChampion, "current")}
+      {renderCard(lastChampion, "last")}
+      {renderCard(allTimeChampion, "alltime")}
+    </div>
+  );
+}
+
 // ── Leaderboard ───────────────────────────────────────────────────────────────
 function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [sortBy, setSortBy] = useState("points");
@@ -639,6 +754,14 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
           </span>
         )}
       </div>
+      {seasonView === "current" && (
+        <ChampionCards
+          matches={matches}
+          players={players}
+          currentSeasonId={currentSeasonId}
+          allTimeMatches={matches}
+        />
+      )}
       {!(seasonView === "past" && (selectedPastSeason || pastSeasons[0] || currentSeasonId) === "May 2026") && (
         <div className="metrics">
           <div className="metric">
