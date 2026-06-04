@@ -245,7 +245,8 @@ function calcChampion(seasonMatches, players) {
   const top = Object.keys(stats).sort((a,b) => pts(b)-pts(a))[0];
   if (!top) return null;
   const pl = players.find(p => p.id === top);
-  return { name: pl?.name||pl?.displayName||"Unknown", photo: pl?.photoURL||null, pts: pts(top), p: stats[top].p, w: stats[top].w, l: stats[top].l, winPct: Math.round(stats[top].w/stats[top].p*100) };
+  const photo = pl?.photoURL || pl?.photo || pl?.avatar || null;
+  return { name: pl?.name||pl?.displayName||"Unknown", photo, pts: pts(top), p: stats[top].p, w: stats[top].w, l: stats[top].l, winPct: Math.round(stats[top].w/stats[top].p*100) };
 }
 
 function PlayerAvatar({ player, size = 40 }) {
@@ -393,7 +394,7 @@ function ChampionCards({ matches, players, currentSeasonId }) {
   let lastChampion = null;
   if (lastSeasonId === "May 2026") {
     const pl = players.find(p => p.name === "Mr. Zed" || p.displayName === "Mr. Zed");
-    lastChampion = { name: "Mr. Zed", photo: pl?.photoURL||null, pts:59, p:39, w:25, l:14, winPct:64 };
+    lastChampion = { name: "Mr. Zed", photo: pl?.photoURL||pl?.photo||pl?.avatar||null, pts:59, p:39, w:25, l:14, winPct:64 };
   } else {
     lastChampion = calcChampion(matches.filter(m => m.seasonId === lastSeasonId), players);
   }
@@ -413,7 +414,7 @@ function ChampionCards({ matches, players, currentSeasonId }) {
       {visibleCards.map(({ champion, label, gradient, shadow, live, icon, seasonLabel }) => (
         <div key={label} style={{ borderRadius:18, padding:16, background:gradient, boxShadow:`0 4px 20px ${shadow}`, display:"flex", flexDirection:"column", gap:10, flex:"0 0 auto", width:"calc(min(260px, 80vw))", scrollSnapAlign:"start", overflow:"hidden", position:"relative" }}>
           <div style={{ position:"absolute", top:0, left:0, right:0, height:"50%", background:"linear-gradient(180deg,rgba(255,255,255,0.12),transparent)", borderRadius:"18px 18px 0 0", pointerEvents:"none" }} />
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", minHeight:22 }}>
             <span style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.7)", letterSpacing:"0.1em", textTransform:"uppercase", fontFamily:"monospace" }}>{label}</span>
             {live
               ? <span style={{ display:"inline-flex", alignItems:"center", gap:4, background:"rgba(255,255,255,0.2)", borderRadius:999, padding:"2px 8px", fontSize:9, fontWeight:700, color:"white" }}><span style={{ width:5, height:5, borderRadius:"50%", background:"#4ade80", flexShrink:0, display:"inline-block" }} />LIVE</span>
