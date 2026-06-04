@@ -464,6 +464,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 600);
   const [tooltip, setTooltip] = useState(null);
   const [guideTab, setGuideTab] = useState("points"); // "badges" | "points" | "spin"
+  const [showChampions, setShowChampions] = useState(false);
   const currentSeasonId = getSeasonId(new Date());
   const [seasonView, setSeasonView] = useState("current"); // "current" | "alltime" | "past"
   const [selectedPastSeason, setSelectedPastSeason] = useState("");
@@ -736,7 +737,15 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
         )}
       </div>
       {seasonView === "current" && (
-        <ChampionCards matches={matches} players={players} currentSeasonId={currentSeasonId} />
+        <div style={{ marginBottom: 14 }}>
+          <button
+            onClick={() => setShowChampions(v => !v)}
+            style={{ display:"inline-flex", alignItems:"center", gap:6, background:"none", border:"1px solid var(--border)", borderRadius:999, padding:"4px 12px", fontSize:12, fontWeight:700, color:"var(--text)", cursor:"pointer", marginBottom: showChampions ? 10 : 0 }}
+          >
+            🏆 Champions {showChampions ? "▲" : "▼"}
+          </button>
+          {showChampions && <ChampionCards matches={matches} players={players} currentSeasonId={currentSeasonId} />}
+        </div>
       )}
       {!(seasonView === "past" && (selectedPastSeason || pastSeasons[0] || currentSeasonId) === "May 2026") && (
         <div className="metrics">
