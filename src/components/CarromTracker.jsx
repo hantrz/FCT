@@ -228,6 +228,26 @@ function generatePlayerDescription(played, wins, losses, winRate, hatTricks, cle
   return `Building experience with every game — the wins will come.`;
 }
 
+function calcChampion(seasonMatches, players) {
+  if (!seasonMatches || seasonMatches.length === 0) return null;
+  const stats = {};
+  seasonMatches.forEach(m => {
+    const winner = m.winner === "team1" ? (m.team1||[]) : (m.team2||[]);
+    const loser  = m.winner === "team1" ? (m.team2||[]) : (m.team1||[]);
+    [...winner, ...loser].forEach(pid => { if (!stats[pid]) stats[pid] = {p:0,w:0,l:0}; stats[pid].p++; });
+    winner.forEach(pid => stats[pid] && stats[pid].w++);
+    loser.forEach(pid  => stats[pid] && stats[pid].l++);
+  });
+  const pts = (pid) => {
+    const b = calcBadges(pid, seasonMatches);
+    return (stats[pid].w*3)+(stats[pid].l*-2)+(b.hatTricks*3)+(b.lossTricks*-3)+(b.cleanWins*2)+(b.cleanLosses*-3);
+  };
+  const top = Object.keys(stats).sort((a,b) => pts(b)-pts(a))[0];
+  if (!top) return null;
+  const pl = players.find(p => p.id === top);
+  return { name: pl?.name||pl?.displayName||"Unknown", photo: pl?.photoURL||null, pts: pts(top), p: stats[top].p, w: stats[top].w, l: stats[top].l, winPct: Math.round(stats[top].w/stats[top].p*100) };
+}
+
 function PlayerAvatar({ player, size = 40 }) {
   if (player?.imageUrl) {
     return (
@@ -358,6 +378,79 @@ function PlayerSelect({ players, value, onChange, placeholder = "Select player",
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function ChampionCards({ matches, players, currentSeasonId }) {
+  const currentChampion = calcChampion(matches.filter(m => m.seasonId === currentSeasonId), players);
+
+  const pastIds = Array.from(new Set(matches.map(m => m.seasonId).filter(Boolean)))
+    .filter(s => s !== currentSeasonId)
+    .sort((a,b) => getSeasonDateRange(b).start - getSeasonDateRange(a).start);
+  const lastSeasonId = pastIds[0] || null;
+
+  let lastChampion = null;
+  if (lastSeasonId === "May 2026") {
+    const pl = players.find(p => p.name === "Mr. Zed" || p.displayName === "Mr. Zed");
+    lastChampion = { name: "Mr. Zed", photo: pl?.photoURL||null, pts:59, p:39, w:25, l:14, winPct:64 };
+  } else {
+    lastChampion = calcChampion(matches.filter(m => m.seasonId === lastSeasonId), players);
+  }
+
+  const allTimeChampion = calcChampion(matches, players);
+
+  const cardData = [
+    { champion: currentChampion, label: "Current Season", gradient: "linear-gradient(135deg,#15803d,#16a34a)", shadow: "rgba(22,163,74,0.3)", live: true, seasonLabel: currentSeasonId },
+    { champion: lastChampion,    label: "Last Season",    gradient: "linear-gradient(135deg,#92400e,#d97706)", shadow: "rgba(217,119,6,0.3)",   live: false, icon: "👑", seasonLabel: lastSeasonId||"—" },
+    { champion: allTimeChampion, label: "All Time",       gradient: "linear-gradient(135deg,#4c1d95,#7c3aed)", shadow: "rgba(124,58,237,0.3)",  live: false, icon: "🎯", seasonLabel: "All Seasons" },
+  ];
+
+  return (
+    <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+      {cardData.map(({ champion, label, gradient, shadow, live, icon, seasonLabel }) => (
+        <div key={label} style={{ borderRadius:18, padding:16, background:gradient, boxShadow:`0 4px 20px ${shadow}`, display:"flex", flexDirection:"column", gap:10, flex:1, minWidth:0, overflow:"hidden", position:"relative" }}>
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:"50%", background:"linear-gradient(180deg,rgba(255,255,255,0.12),transparent)", borderRadius:"18px 18px 0 0", pointerEvents:"none" }} />
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <span style={{ fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.7)", letterSpacing:"0.1em", textTransform:"uppercase", fontFamily:"monospace" }}>{label}</span>
+            {live
+              ? <span style={{ display:"inline-flex", alignItems:"center", gap:4, background:"rgba(255,255,255,0.2)", borderRadius:999, padding:"2px 8px", fontSize:9, fontWeight:700, color:"white" }}><span style={{ width:5, height:5, borderRadius:"50%", background:"#4ade80", flexShrink:0, display:"inline-block" }} />LIVE</span>
+              : <span style={{ fontSize:18 }}>{icon}</span>
+            }
+          </div>
+          {!champion ? (
+            <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", textAlign:"center", padding:"8px 0" }}>No matches yet</div>
+          ) : (
+            <>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                {champion.photo
+                  ? <img src={champion.photo} alt={champion.name} style={{ width:44, height:44, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.4)", flexShrink:0, objectFit:"cover" }} />
+                  : <div style={{ width:44, height:44, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:800, color:"white", flexShrink:0, border:"2px solid rgba(255,255,255,0.4)" }}>{(champion.name||"?")[0]}</div>
+                }
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontWeight:800, fontSize:15, color:"white", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{champion.name}</div>
+                  <div style={{ fontSize:10, color:"rgba(255,255,255,0.65)", marginTop:1 }}>{seasonLabel}</div>
+                </div>
+                <div style={{ textAlign:"right", flexShrink:0 }}>
+                  <div style={{ fontWeight:800, fontSize:26, color:"white", lineHeight:1 }}>{champion.pts}</div>
+                  <div style={{ fontSize:9, color:"rgba(255,255,255,0.6)", letterSpacing:"0.08em", textTransform:"uppercase", fontFamily:"monospace" }}>PTS</div>
+                </div>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-around", borderTop:"1px solid rgba(255,255,255,0.15)", paddingTop:10 }}>
+                {[["Played",champion.p],["Wins",champion.w],["Loss",champion.l],["Win%",`${champion.winPct}%`]].map(([lbl,val], i, arr) => (
+                  <div key={lbl} style={{ display:"flex", alignItems:"center" }}>
+                    <div style={{ textAlign:"center" }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:"white" }}>{val}</div>
+                      <div style={{ fontSize:9, color:"rgba(255,255,255,0.55)", textTransform:"uppercase", letterSpacing:"0.06em" }}>{lbl}</div>
+                    </div>
+                    {i < arr.length-1 && <div style={{ width:1, height:24, background:"rgba(255,255,255,0.2)", marginLeft:10 }} />}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -639,6 +732,9 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
           </span>
         )}
       </div>
+      {seasonView === "current" && (
+        <ChampionCards matches={matches} players={players} currentSeasonId={currentSeasonId} />
+      )}
       {!(seasonView === "past" && (selectedPastSeason || pastSeasons[0] || currentSeasonId) === "May 2026") && (
         <div className="metrics">
           <div className="metric">
