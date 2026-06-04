@@ -1707,10 +1707,10 @@ function History({ players, matches, onDelete, isAdmin }) {
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 3 }}>
                 {renderTeam(w1 ? m.team1 : m.team2, true)}
                 {(m.winnerScore !== undefined && m.winnerScore !== null && m.winnerScore !== "") || (m.loserScore !== undefined && m.loserScore !== null && m.loserScore !== "") ? (
-                  <span style={{ display:"inline-flex", alignItems:"center", gap:5, background:"var(--bg-secondary)", border:"1px solid var(--border)", borderRadius:8, padding:"1px 8px", margin:"0 4px", fontSize:12, fontWeight:800, flexShrink:0 }}>
-                    <span style={{ color:"#16a34a" }}>{m.winnerScore}</span>
-                    <span style={{ color:"var(--text-muted)", fontWeight:400, fontSize:11 }}>vs</span>
-                    <span style={{ color:"#dc2626" }}>{m.loserScore}</span>
+                  <span style={{ display:"inline-flex", alignItems:"center", gap:6, background:"linear-gradient(90deg, #dcfce7, #fee2e2)", borderRadius:999, padding:"3px 12px", margin:"0 4px", fontWeight:800, fontSize:13, flexShrink:0 }}>
+                    <span style={{ color:"#15803d" }}>{m.winnerScore}</span>
+                    <span style={{ color:"#9ca3af", fontWeight:400 }}>–</span>
+                    <span style={{ color:"#b91c1c" }}>{m.loserScore}</span>
                   </span>
                 ) : <span style={{ color:"var(--text-muted)", fontSize:12, margin:"0 4px" }}>vs</span>}
                 {renderTeam(w1 ? m.team2 : m.team1, false)}
