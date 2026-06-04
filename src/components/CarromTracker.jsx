@@ -1705,9 +1705,11 @@ function History({ players, matches, onDelete, isAdmin }) {
           <div key={m.id} className="match-item">
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 3 }}>
-                {renderTeam(m.team1, w1)}
-                <span className="text-muted" style={{ fontSize: 10, padding: "1px 5px", background: "var(--bg-secondary)", borderRadius: 4 }}>vs</span>
-                {renderTeam(m.team2, !w1)}
+                {renderTeam(w1 ? m.team1 : m.team2, true)}
+                {m.winnerScore !== undefined && m.winnerScore !== null && m.winnerScore !== "" ? <span style={{ fontSize:12, fontWeight:700, color:"#16a34a", margin:"0 2px" }}>{m.winnerScore}</span> : null}
+                <span style={{ color:"var(--text-muted)", fontSize:12 }}>vs</span>
+                {m.loserScore !== undefined && m.loserScore !== null && m.loserScore !== "" ? <span style={{ fontSize:12, fontWeight:700, color:"#dc2626", margin:"0 2px" }}>{m.loserScore}</span> : null}
+                {renderTeam(w1 ? m.team2 : m.team1, false)}
               </div>
               <p className="text-muted" style={{ fontSize: 11 }}>{formatMatchDateTime(m)} · {m.type || "2v2"}</p>
               <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2, display: "flex", alignItems: "center", gap: 3 }}>
