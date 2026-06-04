@@ -1706,9 +1706,13 @@ function History({ players, matches, onDelete, isAdmin }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 3 }}>
                 {renderTeam(w1 ? m.team1 : m.team2, true)}
-                {m.winnerScore !== undefined && m.winnerScore !== null && m.winnerScore !== "" ? <span style={{ fontSize:12, fontWeight:700, color:"#16a34a", margin:"0 2px" }}>{m.winnerScore}</span> : null}
-                <span style={{ color:"var(--text-muted)", fontSize:12 }}>vs</span>
-                {m.loserScore !== undefined && m.loserScore !== null && m.loserScore !== "" ? <span style={{ fontSize:12, fontWeight:700, color:"#dc2626", margin:"0 2px" }}>{m.loserScore}</span> : null}
+                {(m.winnerScore !== undefined && m.winnerScore !== null && m.winnerScore !== "") || (m.loserScore !== undefined && m.loserScore !== null && m.loserScore !== "") ? (
+                  <span style={{ display:"inline-flex", alignItems:"center", gap:5, background:"var(--bg-secondary)", border:"1px solid var(--border)", borderRadius:8, padding:"1px 8px", margin:"0 4px", fontSize:12, fontWeight:800, flexShrink:0 }}>
+                    <span style={{ color:"#16a34a" }}>{m.winnerScore}</span>
+                    <span style={{ color:"var(--text-muted)", fontWeight:400, fontSize:11 }}>vs</span>
+                    <span style={{ color:"#dc2626" }}>{m.loserScore}</span>
+                  </span>
+                ) : <span style={{ color:"var(--text-muted)", fontSize:12, margin:"0 4px" }}>vs</span>}
                 {renderTeam(w1 ? m.team2 : m.team1, false)}
               </div>
               <p className="text-muted" style={{ fontSize: 11 }}>{formatMatchDateTime(m)} · {m.type || "2v2"}</p>
