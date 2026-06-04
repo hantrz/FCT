@@ -742,7 +742,8 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
             onClick={() => setShowChampions(v => !v)}
             style={{ display:"inline-flex", alignItems:"center", gap:6, background:"none", border:"1px solid var(--border)", borderRadius:999, padding:"4px 12px", fontSize:12, fontWeight:700, color:"var(--text)", cursor:"pointer", marginBottom: showChampions ? 10 : 0 }}
           >
-            🏆 Champions {showChampions ? "▲" : "▼"}
+            <span>👑 Who's Leading?</span>
+            <span style={{ fontSize:14, opacity: showChampions ? 1 : 0.4, color: showChampions ? "#16a34a" : "inherit", transition:"opacity 0.2s, color 0.2s" }}>👁️</span>
           </button>
           {showChampions && <ChampionCards matches={matches} players={players} currentSeasonId={currentSeasonId} />}
         </div>
