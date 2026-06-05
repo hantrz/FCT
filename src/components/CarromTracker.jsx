@@ -2540,7 +2540,7 @@ function getStrikeFirstPlayer(matches, selectedPlayers) {
 }
 
 // ── Team Spin ─────────────────────────────────────────────────────────────────
-function TeamSpin({ players, matches, onClose, currentUser }) {
+function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
   const [selected, setSelected] = useState([]);
   const [spinning, setSpinning] = useState(false);
   const [teams, setTeams] = useState(null);
@@ -2550,6 +2550,7 @@ function TeamSpin({ players, matches, onClose, currentUser }) {
   const [strikeFirst, setStrikeFirst] = useState(null);
   const [particles, setParticles] = useState([]);
   const [showResult, setShowResult] = useState(false);
+  const [showStartConfirm, setShowStartConfirm] = useState(false);
   const strikeBoxRef = useRef(null);
   const audioCtxRef = useRef(null);
 
@@ -3066,7 +3067,7 @@ function TeamSpin({ players, matches, onClose, currentUser }) {
 
             {currentUser && (
               <button
-                onClick={handleStartMatch}
+                onClick={() => setShowStartConfirm(true)}
                 style={{
                   marginTop: 16, width: "100%",
                   padding: "12px", borderRadius: 10, border: "none",
@@ -3092,6 +3093,64 @@ function TeamSpin({ players, matches, onClose, currentUser }) {
             </button>
           </div>
         </div>
+
+        {showStartConfirm && (
+          <div
+            onClick={() => setShowStartConfirm(false)}
+            style={{
+              position: "fixed", inset: 0,
+              background: "rgba(0,0,0,0.55)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              zIndex: 1200, padding: 24,
+              backdropFilter: "blur(4px)",
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: "#ffffff", borderRadius: 16, padding: "28px 24px",
+                maxWidth: 340, width: "100%", textAlign: "center",
+                boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
+              }}
+            >
+              <div style={{ fontSize: 36, marginBottom: 12 }}>▶️</div>
+              <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 800, color: "#1a1a1a" }}>
+                Start this match?
+              </h3>
+              <p style={{ margin: "0 0 20px", fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
+                {teams?.teamA.map(p => p.name).join(" & ")} <b>vs</b> {teams?.teamB.map(p => p.name).join(" & ")}
+              </p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => setShowStartConfirm(false)}
+                  style={{
+                    flex: 1, padding: "11px", borderRadius: 10,
+                    border: "1.5px solid #d1d5db", background: "#ffffff",
+                    color: "#374151", fontWeight: 600, fontSize: 14,
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    await handleStartMatch();
+                    setShowStartConfirm(false);
+                    onMatchStarted();
+                  }}
+                  style={{
+                    flex: 1, padding: "11px", borderRadius: 10,
+                    border: "none", background: "#1a9e1a",
+                    color: "white", fontWeight: 700, fontSize: 14,
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       )}
     </div>
   );
@@ -4510,7 +4569,7 @@ export default function CarromTracker() {
           <Chat currentUser={currentUser} onUnreadChange={setChatUnread} isActive={chatOpen} />
         </div>
       )}
-      {showSpin && <TeamSpin players={players} matches={matches} onClose={() => setShowSpin(false)} currentUser={currentUser} />}
+      {showSpin && <TeamSpin players={players} matches={matches} onClose={() => setShowSpin(false)} currentUser={currentUser} onMatchStarted={() => { setShowSpin(false); setTab("board"); }} />}
       {toast && (
         <div style={{
           position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)",
