@@ -1782,7 +1782,7 @@ function History({ players, matches, onDelete, isAdmin, runningMatch, onEnterRes
                 ) : <span style={{ color:"var(--text-muted)", fontSize:12, margin:"0 4px" }}>vs</span>}
                 {renderTeam(w1 ? m.team2 : m.team1, false)}
               </div>
-              <p className="text-muted" style={{ fontSize: 11 }}>{formatMatchDateTime(m)} · {m.type || "2v2"}</p>
+              <p className="text-muted" style={{ fontSize: 11 }}>{formatMatchDateTime(m)} · {m.type || "2v2"}{m.durationSeconds != null ? ` · ${m.durationSeconds >= 3600 ? `${Math.floor(m.durationSeconds / 3600)}h ${Math.floor((m.durationSeconds % 3600) / 60)}m` : `${Math.floor(m.durationSeconds / 60)}m ${m.durationSeconds % 60}s`}` : ""}</p>
               <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2, display: "flex", alignItems: "center", gap: 3 }}>
                 <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.6 }}>
                   <circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.5" />
@@ -4281,9 +4281,17 @@ export default function CarromTracker() {
   }
   async function saveMatch(data) {
     const addedBy = { uid: currentUser?.uid || "admin", name: currentUser?.displayName || "Admin" };
-    await addDoc(collection(db, "matches"), { ...data, addedBy, seasonId: getSeasonId(new Date()), createdAt: serverTimestamp() });
     const runningMatchQuery = query(collection(db, "matches_running"), where("status", "==", "running"));
     const runningSnap = await getDocs(runningMatchQuery);
+    let durationSeconds = null;
+    if (!runningSnap.empty) {
+      const t = runningSnap.docs[0].data().startedAt;
+      const startMs = typeof t?.toMillis === "function" ? t.toMillis() : (t?.seconds ? t.seconds * 1000 : null);
+      if (startMs !== null) durationSeconds = Math.floor((Date.now() - startMs) / 1000);
+    }
+    const matchDoc = { ...data, addedBy, seasonId: getSeasonId(new Date()), createdAt: serverTimestamp() };
+    if (durationSeconds !== null) matchDoc.durationSeconds = durationSeconds;
+    await addDoc(collection(db, "matches"), matchDoc);
     for (const runningDoc of runningSnap.docs) {
       await updateDoc(doc(db, "matches_running", runningDoc.id), { status: "completed" });
     }
