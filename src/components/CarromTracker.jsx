@@ -1693,6 +1693,23 @@ function formatMatchDateTime(match) {
 // ── History ───────────────────────────────────────────────────────────────────
 function History({ players, matches, onDelete, isAdmin, runningMatch, onEnterResult }) {
   const getName = id => players.find(p => p.id === id)?.name || "?";
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!runningMatch?.startedAt) { setElapsed(0); return; }
+    const t = runningMatch.startedAt;
+    const startMs = typeof t?.toMillis === "function" ? t.toMillis() : (t?.seconds ? t.seconds * 1000 : Date.now());
+    const tick = () => setElapsed(Math.floor((Date.now() - startMs) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [runningMatch]);
+
+  const formatElapsed = (secs) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1707,6 +1724,7 @@ function History({ players, matches, onDelete, isAdmin, runningMatch, onEnterRes
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#fee2e2", color: "#dc2626", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>
               🔴 Running
             </span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#dc2626" }}>⏱ {formatElapsed(elapsed)}</span>
           </div>
           <div style={{ fontSize: 13, marginBottom: 10 }}>
             <span style={{ fontWeight: 600, color: "#14a800" }}>
