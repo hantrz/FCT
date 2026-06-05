@@ -1690,68 +1690,18 @@ function formatMatchDateTime(match) {
   return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
 }
 
+function formatElapsed(secs) {
+  const m = Math.floor(secs / 60).toString().padStart(2, "0");
+  const s = (secs % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
 // ── History ───────────────────────────────────────────────────────────────────
-function History({ players, matches, onDelete, isAdmin, runningMatch, onEnterResult }) {
+function History({ players, matches, onDelete, isAdmin }) {
   const getName = id => players.find(p => p.id === id)?.name || "?";
-  const [elapsed, setElapsed] = useState(0);
-
-  useEffect(() => {
-    if (!runningMatch?.startedAt) { setElapsed(0); return; }
-    const t = runningMatch.startedAt;
-    const startMs = typeof t?.toMillis === "function" ? t.toMillis() : (t?.seconds ? t.seconds * 1000 : Date.now());
-    const tick = () => setElapsed(Math.floor((Date.now() - startMs) / 1000));
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [runningMatch]);
-
-  const formatElapsed = (secs) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, "0");
-    const s = (secs % 60).toString().padStart(2, "0");
-    return `${m}:${s}`;
-  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {runningMatch && (
-        <div style={{
-          background: "var(--card-bg)", borderRadius: 14,
-          border: "1.5px solid #dc2626", padding: "12px 14px",
-          marginBottom: 4,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 700 }}>Running Match</span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#fee2e2", color: "#dc2626", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>
-              🔴 Running
-            </span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: "#dc2626" }}>⏱ {formatElapsed(elapsed)}</span>
-          </div>
-          <div style={{ fontSize: 13, marginBottom: 10 }}>
-            <span style={{ fontWeight: 600, color: "#14a800" }}>
-              {(runningMatch.teamANames || []).map((name, i) => (
-                <span key={i}>{i > 0 ? " & " : ""}{name === runningMatch.strikerName ? "🎯 " : ""}{name}</span>
-              ))}
-            </span>
-            <span style={{ color: "var(--text-muted)", margin: "0 8px" }}>vs</span>
-            <span style={{ fontWeight: 600, color: "#D4A017" }}>
-              {(runningMatch.teamBNames || []).map((name, i) => (
-                <span key={i}>{i > 0 ? " & " : ""}{name === runningMatch.strikerName ? "🎯 " : ""}{name}</span>
-              ))}
-            </span>
-          </div>
-          <button
-            onClick={() => onEnterResult(runningMatch)}
-            style={{
-              padding: "8px 16px", borderRadius: 8, border: "none",
-              background: "#16a34a", color: "white",
-              fontWeight: 600, fontSize: 13, cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-          >
-            Enter Result
-          </button>
-        </div>
-      )}
       {!matches.length ? (
         <div className="empty"><p>No matches recorded yet.</p></div>
       ) : matches.map(m => {
@@ -4157,6 +4107,7 @@ export default function CarromTracker() {
   const [chatUnread, setChatUnread] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [runningMatch, setRunningMatch] = useState(null);
+  const [runningElapsed, setRunningElapsed] = useState(0);
   const [prefilledTeams, setPrefilledTeams] = useState(null);
 
   useEffect(() => {
@@ -4239,6 +4190,16 @@ export default function CarromTracker() {
     }
     runSeasonMigration().catch(() => {});
   }, [authState]);
+
+  useEffect(() => {
+    if (!runningMatch?.startedAt) { setRunningElapsed(0); return; }
+    const t = runningMatch.startedAt;
+    const startMs = typeof t?.toMillis === "function" ? t.toMillis() : (t?.seconds ? t.seconds * 1000 : Date.now());
+    const tick = () => setRunningElapsed(Math.floor((Date.now() - startMs) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [runningMatch]);
 
   async function handleLogout() {
     await signOut(auth);
@@ -4476,6 +4437,19 @@ export default function CarromTracker() {
       border: 0.5px solid rgba(255, 255, 255, 0.2);
     }
   }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.15; }
+  }
+  .running-dot {
+    animation: blink 1s ease-in-out infinite;
+  }
+  @media (prefers-color-scheme: dark) {
+    .running-banner {
+      background: #2a211e !important;
+      border-bottom-color: #5a3530 !important;
+    }
+  }
 `}</style>
       <div className="app-header" style={{ position: "relative" }}>
         <div className="header-top" style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 140 }}>
@@ -4558,12 +4532,55 @@ export default function CarromTracker() {
         )}
       </div>
 
+      {runningMatch && currentUser && (
+        <div className="running-banner" style={{
+          background: "#fff7f2",
+          borderLeft: "4px solid #e8503a",
+          borderBottom: "1px solid #f0bcb0",
+          padding: "12px 16px",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>Running Match</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#fde2e2", color: "#c0392b", fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 10 }}>
+              <span className="running-dot" style={{ width: 7, height: 7, borderRadius: "50%", background: "#e8503a", flexShrink: 0, display: "inline-block" }} />
+              Running
+            </span>
+            <span style={{ color: "#9a6a4f", fontSize: 12, fontWeight: 600 }}>⏱ {formatElapsed(runningElapsed)}</span>
+            <button
+              onClick={() => handleEnterResult(runningMatch)}
+              style={{
+                marginLeft: "auto", background: "#1a9e1a", color: "white",
+                fontSize: 12, fontWeight: 600, padding: "7px 14px",
+                borderRadius: 20, border: "none", cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              Enter Result →
+            </button>
+          </div>
+          <div style={{ height: 1, background: "#f3d9d1", margin: "10px 0" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 13, fontWeight: 600 }}>
+            <span style={{ color: "#1a9e1a" }}>
+              {(runningMatch.teamANames || []).map((name, i) => (
+                <span key={i}>{i > 0 ? " & " : ""}{name === runningMatch.strikerName ? "🎯 " : ""}{name}</span>
+              ))}
+            </span>
+            <span style={{ color: "#9ca3af", fontWeight: 500 }}>vs</span>
+            <span style={{ color: "#d97706" }}>
+              {(runningMatch.teamBNames || []).map((name, i) => (
+                <span key={i}>{i > 0 ? " & " : ""}{name === runningMatch.strikerName ? "🎯 " : ""}{name}</span>
+              ))}
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="content">
         {tab === "board" && <Leaderboard players={players} matches={matches} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => { setStatsMode("player"); setTab("stats"); }} />}
         {tab === "match" && (isAdmin || isMember) && <NewMatch players={players} onSave={saveMatch} prefilled={prefilledTeams} />}
         {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} onResetPassword={isAdmin ? handleResetPassword : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => { setStatsMode("player"); setTab("stats"); }} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} statsMode={statsMode} setStatsMode={setStatsMode} />}
-        {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} runningMatch={runningMatch} onEnterResult={handleEnterResult} />}
+        {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
         {tab === "bills" && isFirebaseUser && (
           <Bills
             players={players}
