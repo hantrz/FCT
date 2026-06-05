@@ -1710,11 +1710,15 @@ function History({ players, matches, onDelete, isAdmin, runningMatch, onEnterRes
           </div>
           <div style={{ fontSize: 13, marginBottom: 10 }}>
             <span style={{ fontWeight: 600, color: "#14a800" }}>
-              {(runningMatch.teamANames || []).join(" & ")}
+              {(runningMatch.teamANames || []).map((name, i) => (
+                <span key={i}>{i > 0 ? " & " : ""}{name === runningMatch.strikerName ? "🎯 " : ""}{name}</span>
+              ))}
             </span>
             <span style={{ color: "var(--text-muted)", margin: "0 8px" }}>vs</span>
             <span style={{ fontWeight: 600, color: "#D4A017" }}>
-              {(runningMatch.teamBNames || []).join(" & ")}
+              {(runningMatch.teamBNames || []).map((name, i) => (
+                <span key={i}>{i > 0 ? " & " : ""}{name === runningMatch.strikerName ? "🎯 " : ""}{name}</span>
+              ))}
             </span>
           </div>
           <button
@@ -2801,6 +2805,7 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
       teamB: teams.teamB.map(p => p.id),
       teamANames: teams.teamA.map(p => p.name),
       teamBNames: teams.teamB.map(p => p.name),
+      strikerName: strikeFirst?.name || null,
       startedBy: currentUser.uid,
       startedAt: serverTimestamp(),
       status: "running",
