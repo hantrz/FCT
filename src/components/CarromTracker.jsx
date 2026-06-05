@@ -4552,7 +4552,7 @@ export default function CarromTracker() {
               <span className="running-dot" style={{ width: 7, height: 7, borderRadius: "50%", background: "#e8503a", flexShrink: 0, display: "inline-block" }} />
               Running
             </span>
-            <span style={{ color: "#9a6a4f", fontSize: 12, fontWeight: 600 }}>⏱ {formatElapsed(runningElapsed)}</span>
+            <span style={{ color: "#dc2626", fontSize: 12, fontWeight: 600 }}>⏱ {formatElapsed(runningElapsed)}</span>
             <button
               onClick={() => handleEnterResult(runningMatch)}
               style={{
