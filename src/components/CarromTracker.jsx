@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
   collection, addDoc, deleteDoc, doc, getDoc, getDocs, updateDoc, setDoc,
-  onSnapshot, query, orderBy, serverTimestamp, deleteField, limit,
+  onSnapshot, query, orderBy, serverTimestamp, deleteField, limit, where,
 } from "firebase/firestore";
 import {
   signInWithEmailAndPassword, signOut, updatePassword, onAuthStateChanged,
@@ -1188,7 +1188,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
 }
 
 // ── New Match ─────────────────────────────────────────────────────────────────
-function NewMatch({ players, onSave }) {
+function NewMatch({ players, onSave, prefilled }) {
   const [fmt, setFmt] = useState("1v1");
   const [t1, setT1] = useState([""]);
   const [t2, setT2] = useState([""]);
@@ -1196,6 +1196,17 @@ function NewMatch({ players, onSave }) {
   const [saving, setSaving] = useState(false);
   const [winnerScore, setWinnerScore] = useState("");
   const [loserScore, setLoserScore] = useState("");
+
+  useEffect(() => {
+    if (!prefilled) return;
+    const newFmt = (prefilled.team1?.length === 2 || prefilled.team2?.length === 2) ? "2v2" : "1v1";
+    setFmt(newFmt);
+    setT1(prefilled.team1 || [""]);
+    setT2(prefilled.team2 || [""]);
+    setWinner(null);
+    setWinnerScore("");
+    setLoserScore("");
+  }, [prefilled]);
 
   function changeFmt(f) { setFmt(f); setT1(f === "1v1" ? [""] : ["", ""]); setT2(f === "1v1" ? [""] : ["", ""]); setWinner(null); setWinnerScore(""); setLoserScore(""); }
   function setSlot(team, idx, val) {
@@ -1680,14 +1691,48 @@ function formatMatchDateTime(match) {
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
-function History({ players, matches, onDelete, isAdmin }) {
+function History({ players, matches, onDelete, isAdmin, runningMatch, onEnterResult }) {
   const getName = id => players.find(p => p.id === id)?.name || "?";
-
-  if (!matches.length) return <div className="empty"><p>No matches recorded yet.</p></div>;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {matches.map(m => {
+      {runningMatch && (
+        <div style={{
+          background: "var(--card-bg)", borderRadius: 14,
+          border: "1.5px solid #dc2626", padding: "12px 14px",
+          marginBottom: 4,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 700 }}>Running Match</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#fee2e2", color: "#dc2626", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999 }}>
+              🔴 Running
+            </span>
+          </div>
+          <div style={{ fontSize: 13, marginBottom: 10 }}>
+            <span style={{ fontWeight: 600, color: "#14a800" }}>
+              {(runningMatch.teamANames || []).join(" & ")}
+            </span>
+            <span style={{ color: "var(--text-muted)", margin: "0 8px" }}>vs</span>
+            <span style={{ fontWeight: 600, color: "#D4A017" }}>
+              {(runningMatch.teamBNames || []).join(" & ")}
+            </span>
+          </div>
+          <button
+            onClick={() => onEnterResult(runningMatch)}
+            style={{
+              padding: "8px 16px", borderRadius: 8, border: "none",
+              background: "#16a34a", color: "white",
+              fontWeight: 600, fontSize: 13, cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            Enter Result
+          </button>
+        </div>
+      )}
+      {!matches.length ? (
+        <div className="empty"><p>No matches recorded yet.</p></div>
+      ) : matches.map(m => {
         const w1 = m.winner === "team1";
         const renderTeam = (ids, won) => (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexWrap: "wrap", fontSize: 13, fontWeight: won ? 700 : 400, color: won ? "var(--green)" : "var(--text-muted)" }}>
@@ -2495,7 +2540,7 @@ function getStrikeFirstPlayer(matches, selectedPlayers) {
 }
 
 // ── Team Spin ─────────────────────────────────────────────────────────────────
-function TeamSpin({ players, matches, onClose }) {
+function TeamSpin({ players, matches, onClose, currentUser }) {
   const [selected, setSelected] = useState([]);
   const [spinning, setSpinning] = useState(false);
   const [teams, setTeams] = useState(null);
@@ -2742,6 +2787,23 @@ function TeamSpin({ players, matches, onClose }) {
     setStrikeFirst(null);
     setParticles([]);
     setShowResult(false);
+  };
+
+  const handleStartMatch = async () => {
+    if (!currentUser || !teams) return;
+    const snap = await getDocs(query(collection(db, "matches_running"), where("status", "==", "running")));
+    for (const d of snap.docs) {
+      await updateDoc(doc(db, "matches_running", d.id), { status: "cancelled" });
+    }
+    await addDoc(collection(db, "matches_running"), {
+      teamA: teams.teamA.map(p => p.id),
+      teamB: teams.teamB.map(p => p.id),
+      teamANames: teams.teamA.map(p => p.name),
+      teamBNames: teams.teamB.map(p => p.name),
+      startedBy: currentUser.uid,
+      startedAt: serverTimestamp(),
+      status: "running",
+    });
   };
 
   return (
@@ -3002,10 +3064,24 @@ function TeamSpin({ players, matches, onClose }) {
               </div>
             )}
 
+            {currentUser && (
+              <button
+                onClick={handleStartMatch}
+                style={{
+                  marginTop: 16, width: "100%",
+                  padding: "12px", borderRadius: 10, border: "none",
+                  background: "#1a9e1a",
+                  color: "white", fontWeight: 700, fontSize: 15,
+                  cursor: "pointer", fontFamily: "inherit",
+                }}
+              >
+                ▶ Start Match
+              </button>
+            )}
             <button
               onClick={() => setShowResult(false)}
               style={{
-                marginTop: 16, width: "100%",
+                marginTop: currentUser ? 8 : 16, width: "100%",
                 padding: "12px", borderRadius: 10, border: "none",
                 background: "linear-gradient(135deg, #f59e0b, #ef4444)",
                 color: "white", fontWeight: 700, fontSize: 15,
@@ -3896,7 +3972,7 @@ function Season0Archive({ players = [] }) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
         {[
-          { rank: 1, name: "Mr. Zed",        badges: [["4 🔥","fire"]], p:39, w:25, l:14, pts:59,  win:64 },
+          { rank: 1, name: "Mr. Zed",        badges: [["4 🔥","fire"]], p:39, w:25, l:14, pts:56,  win:64 },
           { rank: 2, name: "Masud Rana",      badges: [["2 🔥","fire"],["1 💀","loss"]], p:18, w:11, l:7,  pts:22,  win:61 },
           { rank: 3, name: "Suvas Bin Monir", badges: [["1 🔥","fire"],["1 💀","loss"]], p:22, w:11, l:11, pts:11,  win:50 },
           { rank: 4, name: "Sabiul Haque",    badges: [["2 🔥","fire"],["3 💀","loss"]], p:27, w:13, l:14, pts:8,   win:48 },
@@ -3996,6 +4072,8 @@ export default function CarromTracker() {
   const [toast, setToast] = useState(null);
   const [chatUnread, setChatUnread] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [runningMatch, setRunningMatch] = useState(null);
+  const [prefilledTeams, setPrefilledTeams] = useState(null);
 
   useEffect(() => {
     if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
@@ -4052,7 +4130,10 @@ export default function CarromTracker() {
     const unsubB = onSnapshot(query(collection(db, "bills"), orderBy("createdAt", "desc")), snap => {
       setBills(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
-    return () => { unsubP(); unsubM(); unsubB(); };
+    const unsubR = onSnapshot(query(collection(db, "matches_running"), where("status", "==", "running")), snap => {
+      setRunningMatch(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() });
+    });
+    return () => { unsubP(); unsubM(); unsubB(); unsubR(); };
   }, []);
 
   useEffect(() => {
@@ -4117,7 +4198,13 @@ export default function CarromTracker() {
   async function saveMatch(data) {
     const addedBy = { uid: currentUser?.uid || "admin", name: currentUser?.displayName || "Admin" };
     await addDoc(collection(db, "matches"), { ...data, addedBy, seasonId: getSeasonId(new Date()), createdAt: serverTimestamp() });
+    setPrefilledTeams(null);
     setTab("board");
+  }
+
+  function handleEnterResult(runningMatchData) {
+    setPrefilledTeams({ team1: runningMatchData.teamA, team2: runningMatchData.teamB });
+    setTab("match");
   }
   async function deleteMatch(id) {
     if (!confirm("Delete this match?")) return;
@@ -4376,10 +4463,10 @@ export default function CarromTracker() {
 
       <div className="content">
         {tab === "board" && <Leaderboard players={players} matches={matches} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => { setStatsMode("player"); setTab("stats"); }} />}
-        {tab === "match" && (isAdmin || isMember) && <NewMatch players={players} onSave={saveMatch} />}
+        {tab === "match" && (isAdmin || isMember) && <NewMatch players={players} onSave={saveMatch} prefilled={prefilledTeams} />}
         {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} onResetPassword={isAdmin ? handleResetPassword : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => { setStatsMode("player"); setTab("stats"); }} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} statsMode={statsMode} setStatsMode={setStatsMode} />}
-        {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
+        {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} runningMatch={runningMatch} onEnterResult={handleEnterResult} />}
         {tab === "bills" && isFirebaseUser && (
           <Bills
             players={players}
@@ -4423,7 +4510,7 @@ export default function CarromTracker() {
           <Chat currentUser={currentUser} onUnreadChange={setChatUnread} isActive={chatOpen} />
         </div>
       )}
-      {showSpin && <TeamSpin players={players} matches={matches} onClose={() => setShowSpin(false)} />}
+      {showSpin && <TeamSpin players={players} matches={matches} onClose={() => setShowSpin(false)} currentUser={currentUser} />}
       {toast && (
         <div style={{
           position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)",
