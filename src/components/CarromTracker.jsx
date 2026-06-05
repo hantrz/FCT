@@ -1732,7 +1732,18 @@ function History({ players, matches, onDelete, isAdmin }) {
                 ) : <span style={{ color:"var(--text-muted)", fontSize:12, margin:"0 4px" }}>vs</span>}
                 {renderTeam(w1 ? m.team2 : m.team1, false)}
               </div>
-              <p className="text-muted" style={{ fontSize: 11 }}>{formatMatchDateTime(m)} · {m.type || "2v2"}{m.durationSeconds != null ? ` · ${m.durationSeconds >= 3600 ? `${Math.floor(m.durationSeconds / 3600)}h ${Math.floor((m.durationSeconds % 3600) / 60)}m` : `${Math.floor(m.durationSeconds / 60)}m ${m.durationSeconds % 60}s`}` : ""}</p>
+              <p className="text-muted" style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                <span>{formatMatchDateTime(m)} · {m.type || "2v2"}</span>
+                {m.durationSeconds != null && (
+                  <>
+                    <span>·</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(26,158,26,0.10)", color: "#15803d", borderRadius: 8, padding: "2px 8px", fontSize: 12, fontWeight: 600 }}>
+                      <span style={{ fontWeight: 500, opacity: 0.85 }}>⏱ Played</span>
+                      {m.durationSeconds >= 3600 ? `${Math.floor(m.durationSeconds / 3600)}h ${Math.floor((m.durationSeconds % 3600) / 60)}m` : `${Math.floor(m.durationSeconds / 60)}m ${m.durationSeconds % 60}s`}
+                    </span>
+                  </>
+                )}
+              </p>
               <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2, display: "flex", alignItems: "center", gap: 3 }}>
                 <svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, opacity: 0.6 }}>
                   <circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.5" />
