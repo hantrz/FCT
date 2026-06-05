@@ -2931,6 +2931,7 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
       </div>
 
       {showResult && (
+        <>
         <div
           onClick={() => setShowResult(false)}
           style={{
@@ -3151,6 +3152,7 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
             </div>
           </div>
         )}
+        </>
       )}
     </div>
   );
