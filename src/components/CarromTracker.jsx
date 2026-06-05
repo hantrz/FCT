@@ -4562,7 +4562,7 @@ export default function CarromTracker() {
                 fontFamily: "inherit",
               }}
             >
-              Enter Result +
+              <span style={{ fontSize: 16, fontWeight: 700, lineHeight: 1 }}>+</span><span style={{ marginLeft: 6 }}>Enter Result</span>
             </button>
           </div>
           <div style={{ height: 1, background: "#f3d9d1", margin: "10px 0" }} />
