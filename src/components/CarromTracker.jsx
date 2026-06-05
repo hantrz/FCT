@@ -4109,6 +4109,13 @@ export default function CarromTracker() {
   const [runningMatch, setRunningMatch] = useState(null);
   const [runningElapsed, setRunningElapsed] = useState(0);
   const [prefilledTeams, setPrefilledTeams] = useState(null);
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   useEffect(() => {
     if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
@@ -4561,15 +4568,17 @@ export default function CarromTracker() {
           <div style={{ height: 1, background: "#f3d9d1", margin: "10px 0" }} />
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 13, fontWeight: 600 }}>
             <span style={{ color: "#1a9e1a" }}>
-              {(runningMatch.teamANames || []).map((name, i) => (
-                <span key={i}>{i > 0 ? " & " : ""}{name === runningMatch.strikerName ? "🎯 " : ""}{name}</span>
-              ))}
+              {(runningMatch.teamANames || []).map((name, i) => {
+                const display = isMobile && name !== "Mr. Zed" ? name.split(" ")[0] : name;
+                return <span key={i}>{i > 0 ? " & " : ""}{name === runningMatch.strikerName ? "🎯 " : ""}{display}</span>;
+              })}
             </span>
             <span style={{ color: "#9ca3af", fontWeight: 500 }}>vs</span>
             <span style={{ color: "#d97706" }}>
-              {(runningMatch.teamBNames || []).map((name, i) => (
-                <span key={i}>{i > 0 ? " & " : ""}{name === runningMatch.strikerName ? "🎯 " : ""}{name}</span>
-              ))}
+              {(runningMatch.teamBNames || []).map((name, i) => {
+                const display = isMobile && name !== "Mr. Zed" ? name.split(" ")[0] : name;
+                return <span key={i}>{i > 0 ? " & " : ""}{name === runningMatch.strikerName ? "🎯 " : ""}{display}</span>;
+              })}
             </span>
           </div>
         </div>
