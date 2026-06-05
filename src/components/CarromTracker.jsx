@@ -1737,7 +1737,7 @@ function History({ players, matches, onDelete, isAdmin }) {
                 {m.durationSeconds != null && (
                   <>
                     <span>·</span>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(26,158,26,0.10)", color: "#15803d", borderRadius: 8, padding: "2px 8px", fontSize: 12, fontWeight: 600 }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(217,119,6,0.12)", color: "#b45309", borderRadius: 8, padding: "2px 8px", fontSize: 12, fontWeight: 600 }}>
                       <span style={{ fontWeight: 500, opacity: 0.85 }}>⏱ Played</span>
                       {m.durationSeconds >= 3600 ? `${Math.floor(m.durationSeconds / 3600)}h ${Math.floor((m.durationSeconds % 3600) / 60)}m` : `${Math.floor(m.durationSeconds / 60)}m ${m.durationSeconds % 60}s`}
                     </span>
