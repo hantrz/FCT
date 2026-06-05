@@ -4264,9 +4264,10 @@ export default function CarromTracker() {
   async function saveMatch(data) {
     const addedBy = { uid: currentUser?.uid || "admin", name: currentUser?.displayName || "Admin" };
     await addDoc(collection(db, "matches"), { ...data, addedBy, seasonId: getSeasonId(new Date()), createdAt: serverTimestamp() });
-    const runningSnap = await getDocs(query(collection(db, "matches_running"), where("status", "==", "running")));
-    for (const d of runningSnap.docs) {
-      await updateDoc(doc(db, "matches_running", d.id), { status: "completed" });
+    const runningMatchQuery = query(collection(db, "matches_running"), where("status", "==", "running"));
+    const runningSnap = await getDocs(runningMatchQuery);
+    for (const runningDoc of runningSnap.docs) {
+      await updateDoc(doc(db, "matches_running", runningDoc.id), { status: "completed" });
     }
     setPrefilledTeams(null);
     setTab("board");
