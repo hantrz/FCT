@@ -572,12 +572,15 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
 
   const thisWeek = (() => {
     const now = new Date();
-    const dayOfWeek = now.getDay();
-    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + diffToMonday);
-    monday.setHours(0, 0, 0, 0);
-    return displayMatches.filter(m => m.createdAt && m.createdAt.toDate() >= monday).length;
+    const bstNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (6 * 60 * 60000));
+    const dayOfWeek = bstNow.getDay();
+    const diffToFriday = -(((dayOfWeek - 5) + 7) % 7);
+    const friday = new Date(bstNow);
+    friday.setDate(bstNow.getDate() + diffToFriday);
+    friday.setHours(0, 0, 0, 0);
+    // convert BST midnight back to UTC for comparison against UTC-anchored timestamps
+    const fridayUTC = new Date(friday.getTime() - (6 * 60 * 60000));
+    return displayMatches.filter(m => m.createdAt && m.createdAt.toDate() >= fridayUTC).length;
   })();
   const rankClass = i => i === 0 ? "rank-1" : i === 1 ? "rank-2" : i === 2 ? "rank-3" : "text-muted";
   const rankColors = ["#f59e0b", "#9ca3af", "#cd7c41"];
@@ -1820,14 +1823,17 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
       });
     }
     if (dateFilter === "weekly") {
-      const dayOfWeek = now.getDay();
-      const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() + diffToMonday);
+      const bstNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (6 * 60 * 60000));
+      const dayOfWeek = bstNow.getDay();
+      const diffToFriday = -(((dayOfWeek - 5) + 7) % 7);
+      const startOfWeek = new Date(bstNow);
+      startOfWeek.setDate(bstNow.getDate() + diffToFriday);
       startOfWeek.setHours(0, 0, 0, 0);
+      // convert BST midnight back to UTC for comparison against UTC-anchored timestamps
+      const startOfWeekUTC = new Date(startOfWeek.getTime() - (6 * 60 * 60000));
       return ms.filter(m => {
         if (!m.createdAt) return false;
-        return m.createdAt.toDate() >= startOfWeek;
+        return m.createdAt.toDate() >= startOfWeekUTC;
       });
     }
     return ms.filter(m => {
