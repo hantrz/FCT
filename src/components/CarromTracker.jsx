@@ -1700,23 +1700,74 @@ function formatElapsed(secs) {
 // ── History ───────────────────────────────────────────────────────────────────
 function History({ players, matches, onDelete, isAdmin }) {
   const getName = id => players.find(p => p.id === id)?.name || "?";
+  const [filterPlayer, setFilterPlayer] = useState("");
+  const [orderBy, setOrderBy] = useState("default");
+
+  const ctrlStyle = {
+    border: "1px solid var(--border)", borderRadius: 8,
+    background: "var(--bg)", color: "var(--text)",
+    fontFamily: "inherit", fontSize: 13, padding: "5px 8px",
+    cursor: "pointer", outline: "none", flex: 1, minWidth: 0,
+  };
+
+  let filtered = filterPlayer
+    ? matches.filter(m => (m.team1 || []).includes(filterPlayer) || (m.team2 || []).includes(filterPlayer))
+    : matches;
+
+  if (orderBy !== "default") {
+    filtered = [...filtered].sort((a, b) => {
+      const tsA = a.createdAt?.toMillis?.() ?? (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0);
+      const tsB = b.createdAt?.toMillis?.() ?? (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0);
+      if (orderBy === "oldest") return tsA - tsB;
+      if (orderBy === "newest") return tsB - tsA;
+      if (orderBy === "lowest-time")  return (a.durationSeconds ?? Infinity) - (b.durationSeconds ?? Infinity);
+      if (orderBy === "highest-time") return (b.durationSeconds ?? -1) - (a.durationSeconds ?? -1);
+      if (orderBy === "highest-point-win") return (b.winnerScore ?? -1) - (a.winnerScore ?? -1);
+      const diffA = Math.abs((a.winnerScore ?? 0) - (a.loserScore ?? 0));
+      const diffB = Math.abs((b.winnerScore ?? 0) - (b.loserScore ?? 0));
+      if (orderBy === "highest-point-diff") return diffB - diffA;
+      if (orderBy === "lowest-point-diff")  return diffA - diffB;
+      return 0;
+    });
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {!matches.length ? (
-        <div className="empty"><p>No matches recorded yet.</p></div>
-      ) : matches.map(m => {
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <select value={filterPlayer} onChange={e => setFilterPlayer(e.target.value)} style={ctrlStyle}>
+          <option value="">All Players</option>
+          {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        <select value={orderBy} onChange={e => setOrderBy(e.target.value)} style={ctrlStyle}>
+          <option value="default">Default order</option>
+          <option value="oldest">Oldest first</option>
+          <option value="newest">Newest first</option>
+          <option value="lowest-time">Lowest time first</option>
+          <option value="highest-time">Highest time first</option>
+          <option value="highest-point-win">Highest point win</option>
+          <option value="highest-point-diff">Highest point diff</option>
+          <option value="lowest-point-diff">Lowest point diff</option>
+        </select>
+      </div>
+      {!filtered.length ? (
+        <div className="empty"><p>{matches.length ? "No matches for this player." : "No matches recorded yet."}</p></div>
+      ) : filtered.map(m => {
         const w1 = m.winner === "team1";
         const renderTeam = (ids, won) => (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexWrap: "wrap", fontSize: 13, fontWeight: won ? 700 : 400, color: won ? "var(--green)" : "var(--text-muted)" }}>
             {won && "★ "}
-            {ids.map((id, i) => (
-              <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
-                {i > 0 && <span style={{ margin: "0 2px", opacity: 0.5 }}>&</span>}
-                <PlayerAvatar player={players.find(p => p.id === id)} size={22} />
-                <span>{getName(id)}</span>
-              </span>
-            ))}
+            {ids.map((id, i) => {
+              const name = getName(id);
+              const isStriker = m.strikerName && name === m.strikerName;
+              return (
+                <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                  {i > 0 && <span style={{ margin: "0 2px", opacity: 0.5 }}>&</span>}
+                  {isStriker && <span style={{ fontSize: 13 }}>🥏</span>}
+                  <PlayerAvatar player={players.find(p => p.id === id)} size={22} />
+                  <span>{name}</span>
+                </span>
+              );
+            })}
           </span>
         );
         return (
@@ -4267,13 +4318,17 @@ export default function CarromTracker() {
     const runningMatchQuery = query(collection(db, "matches_running"), where("status", "==", "running"));
     const runningSnap = await getDocs(runningMatchQuery);
     let durationSeconds = null;
+    let strikerName = undefined;
     if (!runningSnap.empty) {
-      const t = runningSnap.docs[0].data().startedAt;
+      const runningData = runningSnap.docs[0].data();
+      const t = runningData.startedAt;
       const startMs = typeof t?.toMillis === "function" ? t.toMillis() : (t?.seconds ? t.seconds * 1000 : null);
       if (startMs !== null) durationSeconds = Math.floor((Date.now() - startMs) / 1000);
+      if (runningData.strikerName) strikerName = runningData.strikerName;
     }
     const matchDoc = { ...data, addedBy, seasonId: getSeasonId(new Date()), createdAt: serverTimestamp() };
     if (durationSeconds !== null) matchDoc.durationSeconds = durationSeconds;
+    if (strikerName !== undefined) matchDoc.strikerName = strikerName;
     await addDoc(collection(db, "matches"), matchDoc);
     for (const runningDoc of runningSnap.docs) {
       await updateDoc(doc(db, "matches_running", runningDoc.id), { status: "completed" });
