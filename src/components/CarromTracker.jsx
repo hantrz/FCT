@@ -1725,8 +1725,10 @@ function History({ players, matches, onDelete, isAdmin }) {
   const ctrlStyle = {
     border: "1px solid var(--border)", borderRadius: 8,
     background: "var(--bg)", color: "var(--text)",
-    fontFamily: "inherit", fontSize: 13, padding: "5px 8px",
-    cursor: "pointer", outline: "none", flex: 1, minWidth: 0,
+    fontFamily: "inherit", fontSize: 13, padding: "5px 8px", paddingRight: 26,
+    cursor: "pointer", outline: "none", flex: 1, minWidth: 0, width: "100%",
+    appearance: "none", WebkitAppearance: "none", MozAppearance: "none",
+    position: "relative",
   };
 
   let filtered = filterPlayer
@@ -1753,20 +1755,26 @@ function History({ players, matches, onDelete, isAdmin }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <select value={filterPlayer} onChange={e => setFilterPlayer(e.target.value)} style={ctrlStyle}>
-          <option value="">All Players</option>
-          {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <select value={orderBy} onChange={e => setOrderBy(e.target.value)} style={ctrlStyle}>
-          <option value="default">Default order</option>
-          <option value="oldest">Oldest first</option>
-          <option value="newest">Newest first</option>
-          <option value="lowest-time">Lowest time first</option>
-          <option value="highest-time">Highest time first</option>
-          <option value="highest-point-win">Highest point win</option>
-          <option value="highest-point-diff">Highest point diff</option>
-          <option value="lowest-point-diff">Lowest point diff</option>
-        </select>
+        <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex" }}>
+          <select value={filterPlayer} onChange={e => setFilterPlayer(e.target.value)} style={ctrlStyle}>
+            <option value="">All Players</option>
+            {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 10, color: "var(--text-muted)", pointerEvents: "none" }}>▼</span>
+        </div>
+        <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex" }}>
+          <select value={orderBy} onChange={e => setOrderBy(e.target.value)} style={ctrlStyle}>
+            <option value="default">Default order</option>
+            <option value="oldest">Oldest first</option>
+            <option value="newest">Newest first</option>
+            <option value="lowest-time">Lowest time first</option>
+            <option value="highest-time">Highest time first</option>
+            <option value="highest-point-win">Highest point win</option>
+            <option value="highest-point-diff">Highest point diff</option>
+            <option value="lowest-point-diff">Lowest point diff</option>
+          </select>
+          <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 10, color: "var(--text-muted)", pointerEvents: "none" }}>▼</span>
+        </div>
       </div>
       {!filtered.length ? (
         <div className="empty"><p>{matches.length ? "No matches for this player." : "No matches recorded yet."}</p></div>
