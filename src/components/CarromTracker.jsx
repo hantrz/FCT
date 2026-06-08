@@ -2056,6 +2056,24 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
           <div className="metric"><label>MAX WIN STREAK</label><span style={{ fontSize: 20, color: "var(--green)" }}>{maxWinStreak}W</span></div>
           <div className="metric"><label>MAX LOSS STREAK</label><span style={{ fontSize: 20, color: "var(--danger)" }}>{maxLossStreak}L</span></div>
         </div>
+        {(() => {
+          const partnerEntries = Object.entries(partners).map(([pid, pt]) => ({ pid, ...pt, winPct: Math.round((pt.won / pt.played) * 100) }));
+          const bestPartnerEntry = partnerEntries.sort((a, b) => b.winPct - a.winPct || b.won - a.won)[0] || null;
+          return bestPartnerEntry ? (
+            <div className="card" style={{ marginBottom: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Avatar id={bestPartnerEntry.pid} allPlayers={players} size={34} />
+                <div>
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 2px" }}>Best Partner</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>
+                    {getName(bestPartnerEntry.pid)}{" "}
+                    <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 400 }}>({bestPartnerEntry.won} wins together)</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null;
+        })()}
         {Object.keys(opponents).length > 0 && (
           <div className="card" style={{ marginBottom: "1rem" }}>
             <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>vs Opponents</p>
@@ -2093,6 +2111,53 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
             ))}
           </div>
         )}
+        <div className="card" style={{ marginBottom: "1rem" }}>
+          <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 10 }}>Recent Matches</p>
+          {(() => {
+            const recent = [...pm].sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)).slice(0, 10);
+            if (recent.length === 0) return <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center", padding: "8px 0" }}>No matches yet.</p>;
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {recent.map(m => {
+                  const w1 = m.winner === "team1";
+                  const inT1 = m.team1.includes(p.id);
+                  const won = (inT1 && w1) || (!inT1 && !w1);
+                  const date = m.createdAt?.toDate
+                    ? m.createdAt.toDate().toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+                    : "—";
+                  const hasScore = m.winnerScore != null || m.loserScore != null;
+                  const scoreStr = hasScore ? ` · ${m.winnerScore ?? "?"}–${m.loserScore ?? "?"}` : "";
+                  const renderTeam = ids => ids.map(id => getName(id)).join(" & ");
+                  return (
+                    <div key={m.id} className="match-item">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, marginBottom: 2, display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+                          <span style={{ fontWeight: w1 ? 700 : 400, color: w1 ? "var(--green)" : "var(--text-muted)" }}>
+                            {w1 ? "★ " : ""}{renderTeam(m.team1)}
+                          </span>
+                          <span style={{ fontSize: 10, color: "var(--text-muted)", padding: "1px 4px", background: "var(--bg-secondary)", borderRadius: 4 }}>vs</span>
+                          <span style={{ fontWeight: !w1 ? 700 : 400, color: !w1 ? "var(--green)" : "var(--text-muted)" }}>
+                            {!w1 ? "★ " : ""}{renderTeam(m.team2)}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>
+                          {date}{scoreStr} · {m.type}
+                        </p>
+                      </div>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 12, flexShrink: 0,
+                        background: won ? "rgba(20,168,0,0.12)" : "rgba(220,38,38,0.1)",
+                        color: won ? "var(--green)" : "#dc2626",
+                      }}>
+                        {won ? "Win" : "Loss"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
       </div>
     );
   }
