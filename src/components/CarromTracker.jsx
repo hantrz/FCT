@@ -4309,7 +4309,13 @@ export default function CarromTracker() {
   const [runningElapsed, setRunningElapsed] = useState(0);
   const [prefilledTeams, setPrefilledTeams] = useState(null);
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 768);
-  const [viewAsMember, setViewAsMember] = useState(false);
+  const [viewAsMember, setViewAsMember] = useState(() => {
+    try { return sessionStorage.getItem("fct_viewAsMember") === "1"; } catch { return false; }
+  });
+
+  useEffect(() => {
+    try { sessionStorage.setItem("fct_viewAsMember", viewAsMember ? "1" : "0"); } catch {}
+  }, [viewAsMember]);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth <= 768);
@@ -4718,7 +4724,7 @@ export default function CarromTracker() {
         <div className="status-bar">
           <span className={`sync-dot ${synced ? "live" : "loading"}`} />
           {synced ? "Live sync active" : "Connecting..."}
-          {(isAdmin || isMember) && <span style={{ marginLeft: 8, background: isAdmin ? "rgba(212,160,23,0.3)" : "rgba(37,99,235,0.3)", color: isAdmin ? "#fef3c7" : "#dbeafe", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10 }}>{isAdmin ? "Admin" : (currentUser?.displayName || "Member")}</span>}
+          {(isAdmin || isMemberEffective) && <span style={{ marginLeft: 8, background: isAdmin ? "rgba(212,160,23,0.3)" : "rgba(37,99,235,0.3)", color: isAdmin ? "#fef3c7" : "#dbeafe", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10 }}>{isAdmin ? "Admin" : "Member"}</span>}
         </div>
       </div>
 
