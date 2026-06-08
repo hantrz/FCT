@@ -4309,6 +4309,7 @@ export default function CarromTracker() {
   const [runningElapsed, setRunningElapsed] = useState(0);
   const [prefilledTeams, setPrefilledTeams] = useState(null);
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 768);
+  const [viewAsMember, setViewAsMember] = useState(false);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth <= 768);
@@ -4517,7 +4518,6 @@ export default function CarromTracker() {
   if (authState === "login") return <LoginScreen />;
 
   const realIsAdmin = authState === "admin";
-  const [viewAsMember, setViewAsMember] = useState(false);
   const isAdmin = realIsAdmin && !viewAsMember;
   const isMember = authState === "member";
   const isMemberEffective = isMember || (realIsAdmin && viewAsMember);
