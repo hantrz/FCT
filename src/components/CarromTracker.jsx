@@ -3705,7 +3705,7 @@ function ProfileAvatar({ displayName, matchedPlayer, size = 72 }) {
   );
 }
 
-function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout, realIsAdmin, viewAsMember, onToggleViewMode }) {
+function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout }) {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(currentUser.displayName);
   const [savingName, setSavingName] = useState(false);
@@ -3815,21 +3815,6 @@ function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout, real
           Member since {memberSince}
         </p>
       </div>
-      {realIsAdmin && (
-        <button
-          onClick={onToggleViewMode}
-          style={{
-            width: "100%", padding: "10px", borderRadius: 8, marginBottom: "1rem",
-            background: viewAsMember ? "rgba(37,99,235,0.12)" : "rgba(212,160,23,0.12)",
-            color: viewAsMember ? "#1d4ed8" : "#b45309",
-            border: `1px solid ${viewAsMember ? "rgba(37,99,235,0.3)" : "rgba(212,160,23,0.3)"}`,
-            fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-          }}
-        >
-          {viewAsMember ? "👤 Viewing as Member — tap for Admin Mode" : "🛡️ Admin Mode — tap to view as Member"}
-        </button>
-      )}
-
       {/* Stats */}
       <div className="card" style={{ marginBottom: "1rem" }}>
         <p style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>My Stats</p>
@@ -4567,7 +4552,7 @@ export default function CarromTracker() {
       </svg>
     ),
     profile: isFirebaseUser ? (
-      <ProfileAvatar displayName={currentUser.displayName} matchedPlayer={meMatched} size={isMobile ? 33 : 25} />
+      <ProfileAvatar displayName={currentUser.displayName} matchedPlayer={meMatched} size={isMobile ? 30 : 25} />
     ) : (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
@@ -4724,7 +4709,11 @@ export default function CarromTracker() {
         <div className="status-bar">
           <span className={`sync-dot ${synced ? "live" : "loading"}`} />
           {synced ? "Live sync active" : "Connecting..."}
-          {(isAdmin || isMemberEffective) && <span style={{ marginLeft: 8, background: isAdmin ? "rgba(212,160,23,0.3)" : "rgba(37,99,235,0.3)", color: isAdmin ? "#fef3c7" : "#dbeafe", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10 }}>{isAdmin ? "Admin" : "Member"}</span>}
+          {(isAdmin || isMemberEffective) && (realIsAdmin ? (
+            <span onClick={() => setViewAsMember(v => !v)} title="Tap to switch Admin / Member view" style={{ marginLeft: 8, background: isAdmin ? "rgba(212,160,23,0.3)" : "rgba(37,99,235,0.3)", color: isAdmin ? "#fef3c7" : "#dbeafe", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10, cursor: "pointer" }}>{isAdmin ? "Admin" : "Member"}</span>
+          ) : (
+            <span style={{ marginLeft: 8, background: "rgba(37,99,235,0.3)", color: "#dbeafe", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10 }}>Member</span>
+          ))}
         </div>
       </div>
 
@@ -4825,9 +4814,6 @@ export default function CarromTracker() {
             matches={matches}
             onNameUpdate={name => setCurrentUser(prev => ({ ...prev, displayName: name }))}
             onLogout={handleLogout}
-            realIsAdmin={realIsAdmin}
-            viewAsMember={viewAsMember}
-            onToggleViewMode={() => setViewAsMember(v => !v)}
           />
         )}
       </div>
