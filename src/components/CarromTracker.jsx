@@ -4507,6 +4507,8 @@ export default function CarromTracker() {
   // Firebase-auth users (Mr. Zed = admin, others = member) get chat + profile tabs
   const isFirebaseUser = !!currentUser;
 
+  const meMatched = currentUser ? players.find(p => p.name.toLowerCase() === currentUser.displayName.toLowerCase()) : null;
+
   const TAB_ICONS = {
     board: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -4541,7 +4543,9 @@ export default function CarromTracker() {
         <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
       </svg>
     ),
-    profile: (
+    profile: isFirebaseUser ? (
+      <ProfileAvatar displayName={currentUser.displayName} matchedPlayer={meMatched} size={22} />
+    ) : (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
       </svg>
