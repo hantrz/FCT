@@ -3705,7 +3705,7 @@ function ProfileAvatar({ displayName, matchedPlayer, size = 72 }) {
   );
 }
 
-function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout }) {
+function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout, realIsAdmin, viewAsMember, onToggleViewMode }) {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(currentUser.displayName);
   const [savingName, setSavingName] = useState(false);
@@ -3815,6 +3815,20 @@ function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout }) {
           Member since {memberSince}
         </p>
       </div>
+      {realIsAdmin && (
+        <button
+          onClick={onToggleViewMode}
+          style={{
+            width: "100%", padding: "10px", borderRadius: 8, marginBottom: "1rem",
+            background: viewAsMember ? "rgba(37,99,235,0.12)" : "rgba(212,160,23,0.12)",
+            color: viewAsMember ? "#1d4ed8" : "#b45309",
+            border: `1px solid ${viewAsMember ? "rgba(37,99,235,0.3)" : "rgba(212,160,23,0.3)"}`,
+            fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+          }}
+        >
+          {viewAsMember ? "👤 Viewing as Member — tap for Admin Mode" : "🛡️ Admin Mode — tap to view as Member"}
+        </button>
+      )}
 
       {/* Stats */}
       <div className="card" style={{ marginBottom: "1rem" }}>
@@ -4502,8 +4516,11 @@ export default function CarromTracker() {
   if (authState === "loading") return null;
   if (authState === "login") return <LoginScreen />;
 
-  const isAdmin = authState === "admin";
+  const realIsAdmin = authState === "admin";
+  const [viewAsMember, setViewAsMember] = useState(false);
+  const isAdmin = realIsAdmin && !viewAsMember;
   const isMember = authState === "member";
+  const isMemberEffective = isMember || (realIsAdmin && viewAsMember);
   // Firebase-auth users (Mr. Zed = admin, others = member) get chat + profile tabs
   const isFirebaseUser = !!currentUser;
 
@@ -4559,7 +4576,7 @@ export default function CarromTracker() {
 
   const TABS = [
     { k: "board", l: "Leaderboard" },
-    ...((isAdmin || isMember) ? [{ k: "match", l: "New Match" }] : []),
+    ...((isAdmin || isMemberEffective) ? [{ k: "match", l: "New Match" }] : []),
     { k: "players", l: "Players" },
     { k: "stats", l: "Stats" },
     { k: "history", l: "History" },
@@ -4567,7 +4584,7 @@ export default function CarromTracker() {
     ...(isFirebaseUser ? [{ k: "chat", l: "Chat" }, { k: "profile", l: "Me" }] : []),
   ].filter(t => !t.requiresLogin || isFirebaseUser);
 
-  if (tab === "match" && !isAdmin && !isMember) setTab("board");
+  if (tab === "match" && !isAdmin && !isMemberEffective) setTab("board");
   if (tab === "profile" && !isFirebaseUser) setTab("board");
   if (tab === "chat" && !isFirebaseUser) setTab("board");
   if (tab === "bills" && !isFirebaseUser) setTab("board");
@@ -4779,7 +4796,7 @@ export default function CarromTracker() {
 
       <div className="content">
         {tab === "board" && <Leaderboard players={players} matches={matches} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => { setStatsMode("player"); setTab("stats"); }} />}
-        {tab === "match" && (isAdmin || isMember) && <NewMatch players={players} onSave={saveMatch} prefilled={prefilledTeams} />}
+        {tab === "match" && (isAdmin || isMemberEffective) && <NewMatch players={players} onSave={saveMatch} prefilled={prefilledTeams} />}
         {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} onResetPassword={isAdmin ? handleResetPassword : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => { setStatsMode("player"); setTab("stats"); }} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} statsMode={statsMode} setStatsMode={setStatsMode} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
@@ -4802,6 +4819,9 @@ export default function CarromTracker() {
             matches={matches}
             onNameUpdate={name => setCurrentUser(prev => ({ ...prev, displayName: name }))}
             onLogout={handleLogout}
+            realIsAdmin={realIsAdmin}
+            viewAsMember={viewAsMember}
+            onToggleViewMode={() => setViewAsMember(v => !v)}
           />
         )}
       </div>
