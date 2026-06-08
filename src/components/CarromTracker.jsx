@@ -3655,16 +3655,16 @@ function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout }) {
     : [];
 
   let wins = 0, losses = 0;
-  const partnerWins = {};
+  const partnerStats = {};
   for (const m of myMatches) {
     const inT1 = m.team1.includes(playerId);
     const won = (inT1 && m.winner === "team1") || (!inT1 && m.winner === "team2");
-    if (won) {
-      wins++;
-      const partners = (inT1 ? m.team1 : m.team2).filter(id => id !== playerId);
-      for (const pid of partners) partnerWins[pid] = (partnerWins[pid] || 0) + 1;
-    } else {
-      losses++;
+    if (won) wins++; else losses++;
+    const partners = (inT1 ? m.team1 : m.team2).filter(id => id !== playerId);
+    for (const pid of partners) {
+      if (!partnerStats[pid]) partnerStats[pid] = { played: 0, won: 0 };
+      partnerStats[pid].played++;
+      if (won) partnerStats[pid].won++;
     }
   }
   const meBadges = playerId ? calcBadges(playerId, matches) : { hatTricks: 0, lossTricks: 0, cleanWins: 0, cleanLosses: 0 };
@@ -3675,8 +3675,13 @@ function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout }) {
   const winRate = played > 0 ? Math.round((wins / played) * 100) : 0;
 
   let bestPartnerId = null, bestPartnerWins = 0;
-  for (const [pid, w] of Object.entries(partnerWins)) {
-    if (w > bestPartnerWins) { bestPartnerWins = w; bestPartnerId = pid; }
+  const partnerEntries = Object.entries(partnerStats).map(([pid, s]) => ({
+    pid, played: s.played, won: s.won, winPct: Math.round(s.won / s.played * 100),
+  }));
+  partnerEntries.sort((a, b) => b.winPct - a.winPct || b.won - a.won);
+  if (partnerEntries.length > 0) {
+    bestPartnerId = partnerEntries[0].pid;
+    bestPartnerWins = partnerEntries[0].won;
   }
   const bestPartner = bestPartnerId ? players.find(p => p.id === bestPartnerId) : null;
 
