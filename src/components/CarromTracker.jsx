@@ -746,14 +746,11 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
             <span style={{ fontSize:14, opacity: showChampions ? 1 : 0.4, color: showChampions ? "#16a34a" : "inherit", transition:"opacity 0.2s, color 0.2s" }}>👁️</span>
           </button>
           <div style={{
-            display: "grid",
-            gridTemplateRows: showChampions ? "1fr" : "0fr",
-            transition: "grid-template-rows 0.35s cubic-bezier(0.4,0,0.2,1)",
-            overflowY: "hidden",
-            overflowX: "clip"
+            maxHeight: showChampions ? "600px" : "0",
+            overflow: showChampions ? "visible" : "hidden",
+            transition: "max-height 0.35s cubic-bezier(0.4,0,0.2,1)",
           }}>
             <div style={{
-              minHeight: 0,
               opacity: showChampions ? 1 : 0,
               transform: showChampions ? "translateY(0)" : "translateY(-8px)",
               transition: "opacity 0.3s ease, transform 0.35s cubic-bezier(0.4,0,0.2,1)"
