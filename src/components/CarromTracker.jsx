@@ -1979,7 +1979,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
     return (
       <div>
         <div className="card" style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: 14 }}>
-          <PlayerAvatar player={p} size={56} />
+          <PlayerAvatar player={p} size={isMobile ? 84 : 112} />
           <div>
             <p style={{ fontSize: 17, fontWeight: 800, fontFamily: "'Sora', sans-serif" }}>{p.name}</p>
             <p className="text-muted" style={{ fontSize: 12 }}>
@@ -1987,9 +1987,10 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
             </p>
             {(() => {
               const b = calcBadges(p.id, matches);
-              return (b.hatTricks > 0 || b.cleanWins > 0 || b.cleanLosses > 0) ? (
+              return (b.hatTricks > 0 || b.lossTricks > 0 || b.cleanWins > 0 || b.cleanLosses > 0) ? (
                 <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:6 }}>
                   {b.hatTricks > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }}>{b.hatTricks} 🔥</span>}
+                  {b.lossTricks > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fef2f2", color:"#b91c1c", border:"0.5px solid #fca5a5" }}>{b.lossTricks} 😢</span>}
                   {b.cleanWins > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }}>{b.cleanWins} 💎</span>}
                   {b.cleanLosses > 0 && <span className="clean-loss-badge" style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600 }}>{b.cleanLosses} 💀</span>}
                 </div>
