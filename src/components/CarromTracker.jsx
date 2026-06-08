@@ -749,7 +749,8 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
             display: "grid",
             gridTemplateRows: showChampions ? "1fr" : "0fr",
             transition: "grid-template-rows 0.35s cubic-bezier(0.4,0,0.2,1)",
-            overflow: "hidden"
+            overflowY: "hidden",
+            overflowX: "clip"
           }}>
             <div style={{
               minHeight: 0,
