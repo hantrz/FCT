@@ -458,6 +458,8 @@ function ChampionCards({ matches, players, currentSeasonId }) {
   );
 }
 
+const QUALIFY_THRESHOLD = 5;
+
 // ── Leaderboard ───────────────────────────────────────────────────────────────
 function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [sortBy, setSortBy] = useState("points");
@@ -557,7 +559,6 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     }
     return 0;
   });
-  const QUALIFY_THRESHOLD = 5;
   const qualifiedSorted = sorted.filter(p => p.played >= QUALIFY_THRESHOLD);
   const unqualifiedSorted = sorted.filter(p => p.played < QUALIFY_THRESHOLD);
   const qualifyColors = isDark ? {
@@ -1939,12 +1940,21 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
     }
     const idx = players.findIndex(x => x.id === p.id);
     const c = PALETTE[idx % PALETTE.length];
-    const lbStats = computeStats(players, matches).map(q => {
-      const qb = calcBadges(q.id, matches);
-      return { id: q.id, pts: (q.won * 3) + (q.lost * -2) + (qb.hatTricks * 3) + (qb.lossTricks * -3) + (qb.cleanWins * 2) + (qb.cleanLosses * -3) };
-    }).sort((a, b) => b.pts - a.pts);
-    const playerRank = lbStats.findIndex(q => q.id === p.id) + 1;
-    const playerPts = lbStats.find(q => q.id === p.id)?.pts ?? 0;
+    function buildRankedList(matchSubset) {
+      return computeStats(players, matchSubset).map(q => {
+        const qb = calcBadges(q.id, matchSubset);
+        return { id: q.id, pts: (q.won * 3) + (q.lost * -2) + (qb.hatTricks * 3) + (qb.lossTricks * -3) + (qb.cleanWins * 2) + (qb.cleanLosses * -3), played: q.played };
+      }).filter(q => q.played >= QUALIFY_THRESHOLD).sort((a, b) => b.pts - a.pts);
+    }
+    const currentSeasonId = getSeasonId(new Date());
+    const csRanked = buildRankedList(matches.filter(m => m.seasonId === currentSeasonId));
+    const atRanked = buildRankedList(matches.filter(m => m.seasonId !== "May 2026"));
+    const csEntry = csRanked.find(q => q.id === p.id);
+    const atEntry = atRanked.find(q => q.id === p.id);
+    const csRank = csEntry ? csRanked.indexOf(csEntry) + 1 : null;
+    const csPts  = csEntry?.pts ?? 0;
+    const atRank = atEntry ? atRanked.indexOf(atEntry) + 1 : null;
+    const atPts  = atEntry?.pts ?? 0;
 
     return (
       <div>
@@ -1965,9 +1975,21 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
                 </div>
               ) : null;
             })()}
-            <div style={{ display: "flex", gap: 10, marginTop: 6, marginBottom: 6 }}>
-              <span style={{ background: "#fef9c3", color: "#92400e", border: "1px solid #fde68a", borderRadius: 20, padding: "3px 10px", fontSize: 13, fontWeight: 700 }}>🏆 Rank #{playerRank}</span>
-              <span style={{ background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0", borderRadius: 20, padding: "3px 10px", fontSize: 13, fontWeight: 700 }}>✦ {playerPts} pts</span>
+            <div style={{ display: "flex", gap: 12, marginTop: 6, marginBottom: 6, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <span style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Current Season</span>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <span style={{ background: "#fef9c3", color: "#92400e", border: "1px solid #fde68a", borderRadius: 20, padding: "3px 10px", fontSize: 13, fontWeight: 700 }}>{csRank ? `🏆 Rank #${csRank}` : "Unranked"}</span>
+                  <span style={{ background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0", borderRadius: 20, padding: "3px 10px", fontSize: 13, fontWeight: 700 }}>✦ {csPts} pts</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <span style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>All Time</span>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <span style={{ background: "#fef9c3", color: "#92400e", border: "1px solid #fde68a", borderRadius: 20, padding: "3px 10px", fontSize: 13, fontWeight: 700 }}>{atRank ? `🏆 Rank #${atRank}` : "Unranked"}</span>
+                  <span style={{ background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0", borderRadius: 20, padding: "3px 10px", fontSize: 13, fontWeight: 700 }}>✦ {atPts} pts</span>
+                </div>
+              </div>
             </div>
             {(() => {
               const playerMatches = matches.filter(m => {
