@@ -1702,6 +1702,12 @@ function History({ players, matches, onDelete, isAdmin }) {
   const getName = id => players.find(p => p.id === id)?.name || "?";
   const [filterPlayer, setFilterPlayer] = useState("");
   const [orderBy, setOrderBy] = useState("default");
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 600);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= 600);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   const ctrlStyle = {
     border: "1px solid var(--border)", borderRadius: 8,
@@ -1760,9 +1766,9 @@ function History({ players, matches, onDelete, isAdmin }) {
               const name = getName(id);
               const isStriker = m.strikerName && name === m.strikerName;
               return (
-                <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: 3, whiteSpace: "nowrap", flexShrink: 0 }}>
                   {i > 0 && <span style={{ margin: "0 2px", opacity: 0.5 }}>&</span>}
-                  {isStriker && <span style={{ fontSize: 13 }}>🥏</span>}
+                  {isStriker && <span style={{ fontSize: isMobile ? 10 : 13, lineHeight: 1, display: "inline-flex", alignItems: "center" }}>🥏</span>}
                   <PlayerAvatar player={players.find(p => p.id === id)} size={22} />
                   <span>{name}</span>
                 </span>
