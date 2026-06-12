@@ -36,10 +36,15 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
   const [editingId, setEditingId] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
+  const [copyTextId, setCopyTextId] = useState(null);
+
+  function buildShareText(n) {
+    const cleanBody = (n.content || "").replace(/\*\*/g, "");
+    return `📰 ${n.title}\n\n${cleanBody}\n\n— via FCT (Friends' Carrom Tracker)\nhttps://fct.fnfschool.com`;
+  }
 
   async function handleShare(n) {
-    const cleanBody = (n.content || "").replace(/\*\*/g, "");
-    const shareText = `📰 ${n.title}\n\n${cleanBody}\n\n— via FCT (Friends' Carrom Tracker)\nhttps://fct.fnfschool.com`;
+    const shareText = buildShareText(n);
     if (navigator.share) {
       try {
         await navigator.share({ title: n.title, text: shareText });
@@ -52,9 +57,19 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
         setCopiedId(n.id);
         setTimeout(() => setCopiedId(c => (c === n.id ? null : c)), 2000);
       } catch (err) {
-        // clipboard blocked — last-resort fallback
         window.prompt("Copy this news:", shareText);
       }
+    }
+  }
+
+  async function handleCopyText(n) {
+    const shareText = buildShareText(n);
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopyTextId(n.id);
+      setTimeout(() => setCopyTextId(c => (c === n.id ? null : c)), 2000);
+    } catch (err) {
+      window.prompt("Copy this news:", shareText);
     }
   }
   const [generating, setGenerating] = useState(false);
@@ -139,7 +154,20 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
               <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.75, margin: 0, whiteSpace: "pre-wrap", ...(isExpanded ? {} : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }) }}>{renderRich(n.content)}</p>
               <div style={{ display: "flex", alignItems: "center", gap: 14, paddingTop: 6 }}>
                 <button onClick={() => setExpandedId(isExpanded ? null : n.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#14a800", fontSize: 13, fontWeight: 600, padding: 0 }}>{isExpanded ? "Show less ↑" : "Read more ↓"}</button>
-                <button onClick={() => handleShare(n)} style={{ background: "none", border: "none", cursor: "pointer", color: copiedId === n.id ? "#14a800" : "var(--text-muted)", fontSize: 13, fontWeight: 600, padding: 0, display: "inline-flex", alignItems: "center", gap: 5, marginLeft: "auto" }}>
+                <button onClick={() => handleCopyText(n)} style={{ background: "none", border: "none", cursor: "pointer", color: copyTextId === n.id ? "#14a800" : "var(--text-muted)", fontSize: 13, fontWeight: 600, padding: 0, display: "inline-flex", alignItems: "center", gap: 5, marginLeft: "auto" }}>
+                  {copyTextId === n.id ? (
+                    <>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                      Copy
+                    </>
+                  )}
+                </button>
+                <button onClick={() => handleShare(n)} style={{ background: "none", border: "none", cursor: "pointer", color: copiedId === n.id ? "#14a800" : "var(--text-muted)", fontSize: 13, fontWeight: 600, padding: 0, display: "inline-flex", alignItems: "center", gap: 5 }}>
                   {copiedId === n.id ? (
                     <>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
