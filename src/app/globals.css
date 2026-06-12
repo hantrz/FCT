@@ -503,9 +503,15 @@ input:focus, select:focus {
 
 @media (max-width: 768px) {
   .tab-label { display: none; }
-  .tab-btn { padding: 10px 14px; gap: 0; margin-left: 0 !important; }
+  .tab-btn {
+    padding: 10px 14px;
+    gap: 0;
+    margin-left: 0 !important;
+    align-self: stretch;
+    align-items: center;
+  }
   .tabs { display: contents; }
-  .tabs-wrap { justify-content: space-evenly; padding: 0; }
+  .tabs-wrap { justify-content: space-evenly; padding: 0; align-items: stretch; }
 }
 
 @media (max-width: 480px) {
