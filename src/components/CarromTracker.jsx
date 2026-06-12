@@ -3706,7 +3706,7 @@ function ProfileAvatar({ displayName, matchedPlayer, size = 72 }) {
   );
 }
 
-function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout }) {
+function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout, showChatEntry, chatUnread, onOpenChat }) {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(currentUser.displayName);
   const [savingName, setSavingName] = useState(false);
@@ -3914,6 +3914,26 @@ function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout }) {
           </div>
         )}
       </div>
+
+      {/* Chat entry (mobile only) */}
+      {showChatEntry && (
+        <button onClick={onOpenChat} style={{
+          width: "100%", padding: "13px", borderRadius: 8,
+          background: "var(--bg-card)", color: "var(--text)",
+          border: "1px solid var(--border)", cursor: "pointer",
+          fontSize: 14, fontWeight: 700, fontFamily: "inherit",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          gap: 8, marginBottom: "0.75rem", position: "relative",
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+          </svg>
+          Open Chat
+          {chatUnread && (
+            <span style={{ position: "absolute", top: 10, right: 14, width: 8, height: 8, background: "#dc2626", borderRadius: "50%" }} />
+          )}
+        </button>
+      )}
 
       {/* Logout */}
       <button onClick={onLogout} style={{
@@ -4690,7 +4710,7 @@ export default function CarromTracker() {
     { k: "history", l: "History" },
     { k: "news", l: "News" },
     { k: "bills", l: "Bills", requiresLogin: true },
-    ...(isFirebaseUser ? [{ k: "chat", l: "Chat" }, { k: "profile", l: "Me" }] : []),
+    ...(isFirebaseUser ? [...(isMobile ? [] : [{ k: "chat", l: "Chat" }]), { k: "profile", l: "Me" }] : []),
   ].filter(t => !t.requiresLogin || isFirebaseUser);
 
   if (tab === "match" && !isAdmin && !isMemberEffective) setTab("board");
@@ -4943,6 +4963,9 @@ export default function CarromTracker() {
             matches={matches}
             onNameUpdate={name => setCurrentUser(prev => ({ ...prev, displayName: name }))}
             onLogout={handleLogout}
+            showChatEntry={isMobile}
+            chatUnread={chatUnread}
+            onOpenChat={() => setChatOpen(true)}
           />
         )}
       </div>
