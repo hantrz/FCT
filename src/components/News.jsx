@@ -77,16 +77,16 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
   const [form, setForm] = useState({
     sessionType: "Sunday",
     sessionDate: defaultSessionDate || new Date().toISOString().split("T")[0],
-    adminNote: "", title: "", content: "",
+    adminNote: "", title: "", content: "", language: "English",
   });
 
   function openEditor(item = null) {
     if (item) {
-      setForm({ sessionType: item.sessionType || "Sunday", sessionDate: item.sessionDate || defaultSessionDate, adminNote: "", title: item.title || "", content: item.content || "" });
+      setForm({ sessionType: item.sessionType || "Sunday", sessionDate: item.sessionDate || defaultSessionDate, adminNote: "", title: item.title || "", content: item.content || "", language: "English" });
       setEditingId(item.id);
     } else {
       const d = defaultSessionDate || new Date().toISOString().split("T")[0];
-      setForm({ sessionType: dayToSessionType(d), sessionDate: d, adminNote: "", title: "", content: "" });
+      setForm({ sessionType: dayToSessionType(d), sessionDate: d, adminNote: "", title: "", content: "", language: "English" });
       setEditingId(null);
     }
     setAiError(""); setEditorOpen(true);
@@ -99,7 +99,7 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
       if (!data || data.empty) { setAiError("No matches found for this date. Pick a date when games were actually played."); setGenerating(false); return; }
       const res = await fetch("/api/generateNews", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionType: form.sessionType, sessionDate: formatDisplayDate(form.sessionDate), seasonId: data.seasonId, adminNote: form.adminNote, sessionData: data }),
+        body: JSON.stringify({ sessionType: form.sessionType, sessionDate: formatDisplayDate(form.sessionDate), seasonId: data.seasonId, adminNote: form.adminNote, sessionData: data, language: form.language }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Generation failed");
@@ -219,7 +219,24 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
             </div>
 
             <div style={{ background: "rgba(20,168,0,0.05)", border: "1px solid rgba(20,168,0,0.2)", borderRadius: 10, padding: 14, marginBottom: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#14a800", marginBottom: 4 }}>✨ AI Match Report</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#14a800" }}>✨ AI Match Report</span>
+                <div style={{ display: "inline-flex", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: 2 }}>
+                  {["English", "বাংলা"].map(langOpt => (
+                    <button
+                      key={langOpt}
+                      onClick={() => setForm(f => ({ ...f, language: langOpt }))}
+                      style={{
+                        border: "none", cursor: "pointer", borderRadius: 6,
+                        padding: "5px 12px", fontSize: 12, fontWeight: 700,
+                        fontFamily: "inherit",
+                        background: form.language === langOpt ? "#14a800" : "transparent",
+                        color: form.language === langOpt ? "#fff" : "var(--text-muted)",
+                      }}
+                    >{langOpt}</button>
+                  ))}
+                </div>
+              </div>
               <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10, lineHeight: 1.5 }}>The app reads that day's matches and the leaderboard automatically — no screenshots needed. Add an optional note below if you want something special mentioned.</div>
               <textarea placeholder="Optional note for the AI (e.g. 'It was Imran's birthday', 'we played in the rain')…" value={form.adminNote} onChange={e => setForm(f => ({ ...f, adminNote: e.target.value }))} rows={2} style={{ ...inp, resize: "vertical", marginBottom: 10, lineHeight: 1.5 }} />
               <button onClick={handleGenerate} disabled={generating} style={{ background: generating ? "#9ca3af" : "#14a800", color: "#fff", border: "none", borderRadius: 7, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: generating ? "not-allowed" : "pointer" }}>{generating ? "⏳ Reading the scoreboard…" : "✨ Generate Article"}</button>

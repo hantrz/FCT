@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 
-function buildPrompt({ sessionType, sessionDate, seasonId, adminNote, sessionData }) {
+function buildPrompt({ sessionType, sessionDate, seasonId, adminNote, sessionData, language }) {
+  const isBangla = language === "বাংলা" || language === "Bangla" || language === "bn";
+
+  const langRules = isBangla
+    ? `LANGUAGE: Write the ENTIRE report in natural, conversational Bangla (Bengali). EXCEPTIONS that must stay in English: every player name (e.g. Mr. Zed, Firoz Hassan), all numbers, points, percentages, scores and ranks (e.g. +24, 6-0, 60%, #1, #3 to #2). Everything else, the headline, intro, banter, duo lines, closing, must be in Bangla. Keep the playful roasting tone but in Bangla. Use Bangla naturally, do not transliterate English sentences. Example line style: "**Mr. Zed** আজ একাই পুরো টেবিল শাসন করেছে, 6 ম্যাচে 6 জয়, +24 পয়েন্ট নিয়ে #1 এ অটল।"`
+    : `LANGUAGE: Write the entire report in English.`;
+
   return `You are the staff writer for FCT (Friends' Carrom Tracker), the internal app of a Bangladeshi friend group who play carrom every Friday and Sunday. Write a fun, witty match report for one session. These are close friends, so the tone is playful banter and light-hearted roasting, never actually mean.
+
+${langRules}
 
 SESSION: ${sessionType} session, ${sessionDate}
 SEASON: ${seasonId}
@@ -20,8 +28,8 @@ How to read the data:
 
 FORMATTING RULES (follow strictly):
 - In the BODY, wrap every player name and every duo pair in double asterisks for bold, exactly like **Mr. Zed** or **Firoz & Imran**. Every single time a name appears, bold it.
-- NEVER use em dashes or en dashes (the long dash or the short dash). Use a period, comma, or colon instead.
-- The HEADLINE (line 1) must be plain text with NO asterisks and NO dashes.
+- NEVER use em dashes or en dashes (the long dash or the short dash). Use a period, comma, or colon instead. For score lines use a hyphen like 6-0.
+- The HEADLINE (line 1) must be plain text with NO asterisks.
 - No other markdown: no headers, no bullet points, no numbered lists.
 
 Write the report in this EXACT structure:
@@ -30,7 +38,7 @@ Line 1: A catchy, punchy HEADLINE built around the single biggest story of the d
 (blank line)
 A 2 to 3 sentence intro setting the scene.
 (blank line)
-Then ONE line per player who played, in the given order. Each line starts with the player's name in bold (**Name**), then a witty one-liner that naturally works in their played/won/lost, win%, dayPoints (write it with a + or - sign), and rank movement. Rank movement ONLY for players with non-null ranks: phrase as "climbed from #3 to #2", "slipped from #2 to #4", "holds #1", or for newlyQualified players "debuts at #3". For unranked players, skip rank entirely and just cover their day.
+Then ONE line per player who played, in the given order. Each line starts with the player's name in bold (**Name**), then a witty one-liner that naturally works in their played/won/lost, win%, dayPoints (write it with a + or - sign), and rank movement. Rank movement ONLY for players with non-null ranks: phrase it like "climbed from #3 to #2", "slipped from #2 to #4", "holds #1", or for newlyQualified players "debuts at #3" (use the Bangla equivalent phrasing if writing in Bangla, but keep the #numbers in English). For unranked players, skip rank entirely and just cover their day.
 (blank line)
 🤝 Best Duo of the Day: name the bestDuo pair in bold with a one-liner on their chemistry (they won that many together). Skip this whole line if bestDuo is null.
 (blank line)
@@ -38,7 +46,7 @@ Then ONE line per player who played, in the given order. Each line starts with t
 (blank line)
 A short fun CLOSING line looking ahead to the next session.
 
-Output: headline on line 1, then a blank line, then the body. English only. Keep it tight, around 200 to 280 words total.`;
+Output: headline on line 1, then a blank line, then the body. Keep it tight, around 200 to 280 words total.`;
 }
 
 export async function POST(req) {
