@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
 function buildPrompt({ sessionType, sessionDate, seasonId, adminNote, sessionData }) {
-  return `You are the staff writer for FCT (Friends' Carrom Tracker), the internal app of a Bangladeshi friend group who play carrom every Friday and Sunday. Write a fun, witty match report for one session. These are close friends — the tone is playful banter and light-hearted roasting, never actually mean.
+  return `You are the staff writer for FCT (Friends' Carrom Tracker), the internal app of a Bangladeshi friend group who play carrom every Friday and Sunday. Write a fun, witty match report for one session. These are close friends, so the tone is playful banter and light-hearted roasting, never actually mean.
 
 SESSION: ${sessionType} session, ${sessionDate}
 SEASON: ${seasonId}
 ${adminNote ? `EDITOR NOTE (weave this in naturally somewhere): ${adminNote}` : ""}
 
-DATA (already computed — use these numbers exactly, never invent any):
+DATA (already computed, use these numbers exactly, never invent any):
 ${JSON.stringify(sessionData, null, 2)}
 
 How to read the data:
@@ -18,21 +18,27 @@ How to read the data:
 - "players" is already sorted best-to-worst by dayPoints.
 - "bestDuo"/"cursedDuo" may be null if no 2-player pair repeated.
 
-Write the report in this EXACT structure as plain text (NO markdown, no bold, no bullets, no asterisks):
+FORMATTING RULES (follow strictly):
+- In the BODY, wrap every player name and every duo pair in double asterisks for bold, exactly like **Mr. Zed** or **Firoz & Imran**. Every single time a name appears, bold it.
+- NEVER use em dashes or en dashes (the long dash or the short dash). Use a period, comma, or colon instead.
+- The HEADLINE (line 1) must be plain text with NO asterisks and NO dashes.
+- No other markdown: no headers, no bullet points, no numbered lists.
 
-Line 1: A catchy, punchy HEADLINE built around the single biggest story of the day — usually the top performer, but if someone had a spectacularly bad day make that the angle instead.
+Write the report in this EXACT structure:
+
+Line 1: A catchy, punchy HEADLINE built around the single biggest story of the day, usually the top performer, but if someone had a spectacularly bad day make that the angle instead.
 (blank line)
-A 2-3 sentence intro setting the scene.
+A 2 to 3 sentence intro setting the scene.
 (blank line)
-Then ONE line per player who played, in the given order. Each line starts with the player's name, then a witty one-liner that naturally works in their played/won/lost, win%, dayPoints (write it with a + or - sign), and rank movement. Rank movement ONLY for players with non-null ranks: phrase as "climbed from #3 to #2", "slipped from #2 to #4", "holds #1", or for newlyQualified players "debuts at #3". For unranked players, skip rank entirely and just cover their day.
+Then ONE line per player who played, in the given order. Each line starts with the player's name in bold (**Name**), then a witty one-liner that naturally works in their played/won/lost, win%, dayPoints (write it with a + or - sign), and rank movement. Rank movement ONLY for players with non-null ranks: phrase as "climbed from #3 to #2", "slipped from #2 to #4", "holds #1", or for newlyQualified players "debuts at #3". For unranked players, skip rank entirely and just cover their day.
 (blank line)
-🤝 Best Duo of the Day: name the bestDuo pair with a one-liner on their chemistry (they won that many together). Skip this whole line if bestDuo is null.
+🤝 Best Duo of the Day: name the bestDuo pair in bold with a one-liner on their chemistry (they won that many together). Skip this whole line if bestDuo is null.
 (blank line)
-💔 Most Cursed Duo: name the cursedDuo pair with a one-liner roasting the partnership (they lost that many together). Skip this whole line if cursedDuo is null.
+💔 Most Cursed Duo: name the cursedDuo pair in bold with a one-liner roasting the partnership (they lost that many together). Skip this whole line if cursedDuo is null.
 (blank line)
 A short fun CLOSING line looking ahead to the next session.
 
-Output: headline on line 1, then a blank line, then the body. English only. Keep it tight — around 200-280 words total. No markdown symbols anywhere.`;
+Output: headline on line 1, then a blank line, then the body. English only. Keep it tight, around 200 to 280 words total.`;
 }
 
 export async function POST(req) {

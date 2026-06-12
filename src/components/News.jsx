@@ -21,6 +21,15 @@ function isRecent(n) {
   if (!p) return false;
   return (Date.now() - p.getTime()) / 86400000 < 3;
 }
+// Renders **text** as real bold; leaves everything else (incl. newlines) as-is.
+function renderRich(text) {
+  if (!text) return null;
+  return text.split(/\*\*/).map((part, i) =>
+    i % 2 === 1
+      ? <strong key={i} style={{ color: "var(--text)", fontWeight: 700 }}>{part}</strong>
+      : part
+  );
+}
 
 export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, getSessionData, defaultSessionDate }) {
   const [editorOpen, setEditorOpen] = useState(false);
@@ -105,7 +114,7 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
               <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", margin: "0 0 10px 0", lineHeight: 1.45 }}>{n.title}</h3>
             </div>
             <div style={{ padding: "0 16px 14px 16px" }}>
-              <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.75, margin: 0, whiteSpace: "pre-wrap", ...(isExpanded ? {} : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }) }}>{n.content}</p>
+              <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.75, margin: 0, whiteSpace: "pre-wrap", ...(isExpanded ? {} : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }) }}>{renderRich(n.content)}</p>
               <button onClick={() => setExpandedId(isExpanded ? null : n.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#14a800", fontSize: 13, fontWeight: 600, padding: "6px 0 0 0", display: "block" }}>{isExpanded ? "Show less ↑" : "Read more ↓"}</button>
             </div>
             {isAdmin && (
