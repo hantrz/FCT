@@ -37,17 +37,36 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
   const [expandedId, setExpandedId] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
   const [copyTextId, setCopyTextId] = useState(null);
+  const [langView, setLangView] = useState({}); // { [newsId]: "en" | "bn" }
+  const [translating, setTranslating] = useState(false);
+
+  // Returns the title/content for the language the reader is currently viewing.
+  function viewOf(n) {
+    const hasBoth = n.title_en && n.title_bn;
+    if (!hasBoth) {
+      // Old single-language news: fall back to legacy fields.
+      return { title: n.title || n.title_en || n.title_bn || "", body: n.content || n.content_en || n.content_bn || "", hasToggle: false, lang: "en" };
+    }
+    const v = langView[n.id] || (n.primaryLang === "bn" ? "bn" : "en");
+    return {
+      title: v === "bn" ? n.title_bn : n.title_en,
+      body: v === "bn" ? n.content_bn : n.content_en,
+      hasToggle: true,
+      lang: v,
+    };
+  }
 
   function buildShareText(n) {
-    const cleanBody = (n.content || "").replace(/\*\*/g, "");
-    return `📰 ${n.title}\n\n${cleanBody}\n\n— via FCT (Friends' Carrom Tracker)\nhttps://fct.fnfschool.com`;
+    const v = viewOf(n);
+    const cleanBody = (v.body || "").replace(/\*\*/g, "");
+    return `📰 ${v.title}\n\n${cleanBody}\n\n— via FCT (Friends' Carrom Tracker)\nhttps://fct.fnfschool.com`;
   }
 
   async function handleShare(n) {
     const shareText = buildShareText(n);
     if (navigator.share) {
       try {
-        await navigator.share({ title: n.title, text: shareText });
+        await navigator.share({ title: viewOf(n).title, text: shareText });
       } catch (err) {
         // user cancelled the share sheet — do nothing
       }
@@ -110,7 +129,51 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
 
   async function handleSave(publish) {
     if (!form.title.trim() || !form.content.trim()) { setAiError("Headline and article body are both required."); return; }
-    await onSave({ id: editingId || null, title: form.title.trim(), content: form.content.trim(), sessionType: form.sessionType, sessionDate: form.sessionDate, isPublished: publish });
+
+    const primaryIsBangla = form.language === "বাংলা" || form.language === "Bangla";
+    const primaryLang = primaryIsBangla ? "bn" : "en";
+    const targetLanguage = primaryIsBangla ? "English" : "বাংলা";
+
+    let other = { title: "", content: "" };
+    setTranslating(true);
+    setAiError("");
+    try {
+      const res = await fetch("/api/generateNews", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "translate", title: form.title.trim(), content: form.content.trim(), targetLanguage }),
+      });
+      const json = await res.json();
+      if (res.ok) other = { title: json.title || "", content: json.content || "" };
+      // if translation fails, we still save the primary language; toggle just won't appear
+    } catch (err) {
+      // ignore — save primary anyway
+    } finally {
+      setTranslating(false);
+    }
+
+    const payload = {
+      id: editingId || null,
+      sessionType: form.sessionType,
+      sessionDate: form.sessionDate,
+      isPublished: publish,
+      primaryLang,
+      // legacy fields kept for backward compatibility (point to primary)
+      title: form.title.trim(),
+      content: form.content.trim(),
+    };
+    if (primaryIsBangla) {
+      payload.title_bn = form.title.trim();
+      payload.content_bn = form.content.trim();
+      payload.title_en = other.title || "";
+      payload.content_en = other.content || "";
+    } else {
+      payload.title_en = form.title.trim();
+      payload.content_en = form.content.trim();
+      payload.title_bn = other.title || "";
+      payload.content_bn = other.content || "";
+    }
+
+    await onSave(payload);
     setEditorOpen(false);
   }
 
@@ -146,12 +209,22 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
                 <span style={{ background: badge.bg, color: badge.color, fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 20 }}>{badge.label}</span>
                 {isRecent(n) && !draft && <span style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 20 }}>NEW</span>}
                 {draft && <span style={{ background: "rgba(107,114,128,0.12)", color: "#9ca3af", fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 20 }}>DRAFT</span>}
+                {viewOf(n).hasToggle && (
+                  <span style={{ display: "inline-flex", background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 7, overflow: "hidden", marginLeft: 2 }}>
+                    {[["en", "EN"], ["bn", "বাংলা"]].map(([code, lbl2]) => (
+                      <button key={code} onClick={() => setLangView(s => ({ ...s, [n.id]: code }))}
+                        style={{ border: "none", cursor: "pointer", padding: "2px 9px", fontSize: 11, fontWeight: 700, fontFamily: "inherit",
+                          background: viewOf(n).lang === code ? "#14a800" : "transparent",
+                          color: viewOf(n).lang === code ? "#fff" : "var(--text-muted)" }}>{lbl2}</button>
+                    ))}
+                  </span>
+                )}
                 <span style={{ color: "var(--text-muted)", fontSize: 12, marginLeft: "auto" }}>{formatDisplayDate(n.sessionDate)}</span>
               </div>
-              <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", margin: "0 0 10px 0", lineHeight: 1.45 }}>{n.title}</h3>
+              <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", margin: "0 0 10px 0", lineHeight: 1.45 }}>{viewOf(n).title}</h3>
             </div>
             <div style={{ padding: "0 16px 14px 16px" }}>
-              <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.75, margin: 0, whiteSpace: "pre-wrap", ...(isExpanded ? {} : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }) }}>{renderRich(n.content)}</p>
+              <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.75, margin: 0, whiteSpace: "pre-wrap", ...(isExpanded ? {} : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }) }}>{renderRich(viewOf(n).body)}</p>
               <div style={{ display: "flex", alignItems: "center", gap: 14, paddingTop: 6 }}>
                 <button onClick={() => setExpandedId(isExpanded ? null : n.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#14a800", fontSize: 13, fontWeight: 600, padding: 0 }}>{isExpanded ? "Show less ↑" : "Read more ↓"}</button>
                 <button onClick={() => handleCopyText(n)} style={{ background: "none", border: "none", cursor: "pointer", color: copyTextId === n.id ? "#14a800" : "var(--text-muted)", fontSize: 13, fontWeight: 600, padding: 0, display: "inline-flex", alignItems: "center", gap: 5, marginLeft: "auto" }}>
@@ -254,8 +327,8 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
 
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setEditorOpen(false)} style={{ flex: 1, padding: 11, borderRadius: 9, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-              <button onClick={() => handleSave(false)} style={{ flex: 1, padding: 11, borderRadius: 9, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text-muted)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Save Draft</button>
-              <button onClick={() => handleSave(true)} style={{ flex: 2, padding: 11, borderRadius: 9, background: "#14a800", color: "#fff", border: "none", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>🚀 Publish</button>
+              <button disabled={translating} onClick={() => handleSave(false)} style={{ flex: 1, padding: 11, borderRadius: 9, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text-muted)", fontSize: 14, fontWeight: 600, cursor: translating ? "not-allowed" : "pointer" }}>{translating ? "…" : "Save Draft"}</button>
+              <button disabled={translating} onClick={() => handleSave(true)} style={{ flex: 2, padding: 11, borderRadius: 9, background: translating ? "#9ca3af" : "#14a800", color: "#fff", border: "none", fontSize: 14, fontWeight: 700, cursor: translating ? "not-allowed" : "pointer" }}>{translating ? "⏳ Translating…" : "🚀 Publish"}</button>
             </div>
           </div>
         </div>

@@ -4503,11 +4503,17 @@ export default function CarromTracker() {
     await deleteDoc(doc(db, "bills", id));
   }
 
-  async function saveNews({ id, title, content, sessionType, sessionDate, isPublished }) {
+  async function saveNews({ id, title, content, sessionType, sessionDate, isPublished, primaryLang, title_en, content_en, title_bn, content_bn }) {
+    const fields = {
+      title, content, sessionType, sessionDate, isPublished,
+      primaryLang: primaryLang || "en",
+      title_en: title_en || "", content_en: content_en || "",
+      title_bn: title_bn || "", content_bn: content_bn || "",
+    };
     if (id) {
-      await updateDoc(doc(db, "news", id), { title, content, sessionType, sessionDate, isPublished, ...(isPublished ? { publishedAt: serverTimestamp() } : {}) });
+      await updateDoc(doc(db, "news", id), { ...fields, ...(isPublished ? { publishedAt: serverTimestamp() } : {}) });
     } else {
-      await addDoc(collection(db, "news"), { title, content, sessionType, sessionDate, isPublished, createdAt: serverTimestamp(), ...(isPublished ? { publishedAt: serverTimestamp() } : {}), authorName: currentUser?.displayName || "Admin" });
+      await addDoc(collection(db, "news"), { ...fields, createdAt: serverTimestamp(), ...(isPublished ? { publishedAt: serverTimestamp() } : {}), authorName: currentUser?.displayName || "Admin" });
     }
     showToast(isPublished ? "News published! 🚀" : "Draft saved.");
   }

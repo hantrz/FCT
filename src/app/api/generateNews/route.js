@@ -1,5 +1,28 @@
 import { NextResponse } from "next/server";
 
+function buildTranslatePrompt({ title, content, targetLanguage }) {
+  const toBangla = targetLanguage === "বাংলা" || targetLanguage === "Bangla" || targetLanguage === "bn";
+  const target = toBangla ? "Bangla (Bengali)" : "English";
+  return `You are translating a fun carrom match report for FCT (Friends' Carrom Tracker), a Bangladeshi friend group's app. Translate the HEADLINE and BODY below into ${target}, keeping the same playful, witty banter tone.
+
+STRICT RULES:
+- Keep every player name in English exactly as written (e.g. Mr. Zed, Firoz Hassan).
+- Keep ALL numbers, points, percentages, scores, ranks in English (e.g. +24, 6-0, 60%, #1, #3 to #2).
+- Preserve the **bold markers** around names and duos exactly (e.g. **Mr. Zed** stays **Mr. Zed**).
+- Keep the emojis (🤝 💔 etc.) where they are.
+- NEVER use em dashes or en dashes. Use periods, commas, colons, or hyphens for scores.
+- Keep the same structure: headline on line 1, blank line, then body with one line per player, duo lines, closing.
+- Do not add or remove information. Translate faithfully but naturally (not word-for-word robotic).
+
+HEADLINE:
+${title}
+
+BODY:
+${content}
+
+Output: translated headline on line 1, then a blank line, then the translated body. Nothing else.`;
+}
+
 function buildPrompt({ sessionType, sessionDate, seasonId, adminNote, sessionData, language }) {
   const isBangla = language === "বাংলা" || language === "Bangla" || language === "bn";
 
@@ -57,6 +80,10 @@ export async function POST(req) {
       return NextResponse.json({ error: "ANTHROPIC_API_KEY not set in environment variables." }, { status: 500 });
     }
 
+    const promptContent = body.mode === "translate"
+      ? buildTranslatePrompt({ title: body.title, content: body.content, targetLanguage: body.targetLanguage })
+      : buildPrompt(body);
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -67,7 +94,7 @@ export async function POST(req) {
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         max_tokens: 900,
-        messages: [{ role: "user", content: buildPrompt(body) }],
+        messages: [{ role: "user", content: promptContent }],
       }),
     });
 
