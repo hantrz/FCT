@@ -35,6 +35,28 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [copiedId, setCopiedId] = useState(null);
+
+  async function handleShare(n) {
+    const cleanBody = (n.content || "").replace(/\*\*/g, "");
+    const shareText = `📰 ${n.title}\n\n${cleanBody}\n\n— via FCT (Friends' Carrom Tracker)\nhttps://fct.fnfschool.com`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: n.title, text: shareText });
+      } catch (err) {
+        // user cancelled the share sheet — do nothing
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareText);
+        setCopiedId(n.id);
+        setTimeout(() => setCopiedId(c => (c === n.id ? null : c)), 2000);
+      } catch (err) {
+        // clipboard blocked — last-resort fallback
+        window.prompt("Copy this news:", shareText);
+      }
+    }
+  }
   const [generating, setGenerating] = useState(false);
   const [aiError, setAiError] = useState("");
   const [form, setForm] = useState({
@@ -115,7 +137,22 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
             </div>
             <div style={{ padding: "0 16px 14px 16px" }}>
               <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.75, margin: 0, whiteSpace: "pre-wrap", ...(isExpanded ? {} : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }) }}>{renderRich(n.content)}</p>
-              <button onClick={() => setExpandedId(isExpanded ? null : n.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#14a800", fontSize: 13, fontWeight: 600, padding: "6px 0 0 0", display: "block" }}>{isExpanded ? "Show less ↑" : "Read more ↓"}</button>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, paddingTop: 6 }}>
+                <button onClick={() => setExpandedId(isExpanded ? null : n.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#14a800", fontSize: 13, fontWeight: 600, padding: 0 }}>{isExpanded ? "Show less ↑" : "Read more ↓"}</button>
+                <button onClick={() => handleShare(n)} style={{ background: "none", border: "none", cursor: "pointer", color: copiedId === n.id ? "#14a800" : "var(--text-muted)", fontSize: 13, fontWeight: 600, padding: 0, display: "inline-flex", alignItems: "center", gap: 5, marginLeft: "auto" }}>
+                  {copiedId === n.id ? (
+                    <>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>
+                      Share
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
             {isAdmin && (
               <div style={{ padding: "10px 14px", borderTop: "1px solid var(--border)", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
