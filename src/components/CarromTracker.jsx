@@ -10,6 +10,7 @@ import {
 } from "firebase/auth";
 import { db, auth } from "../lib/firebase";
 import Bills from "./Bills";
+import News from "./News";
 
 function getSeasonId(date = new Date()) {
   const d = new Date(date);
@@ -4280,6 +4281,7 @@ export default function CarromTracker() {
   const [players, setPlayers] = useState([]);
   const [matches, setMatches] = useState([]);
   const [bills, setBills] = useState([]);
+  const [newsList, setNewsList] = useState([]);
   const [synced, setSynced] = useState(false);
   const [authState, setAuthState] = useState("loading"); // loading | guest | member | admin | login
   const [currentUser, setCurrentUser] = useState(null); // { uid, displayName, mobile, role, mustChangePassword }
@@ -4366,7 +4368,10 @@ export default function CarromTracker() {
     const unsubR = onSnapshot(query(collection(db, "matches_running"), where("status", "==", "running")), snap => {
       setRunningMatch(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() });
     });
-    return () => { unsubP(); unsubM(); unsubB(); unsubR(); };
+    const unsubN = onSnapshot(query(collection(db, "news"), orderBy("createdAt", "desc")), snap => {
+      setNewsList(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => { unsubP(); unsubM(); unsubB(); unsubR(); unsubN(); };
   }, []);
 
   useEffect(() => {
@@ -4478,6 +4483,112 @@ export default function CarromTracker() {
     await deleteDoc(doc(db, "bills", id));
   }
 
+  async function saveNews({ id, title, content, sessionType, sessionDate, isPublished }) {
+    if (id) {
+      await updateDoc(doc(db, "news", id), { title, content, sessionType, sessionDate, isPublished, ...(isPublished ? { publishedAt: serverTimestamp() } : {}) });
+    } else {
+      await addDoc(collection(db, "news"), { title, content, sessionType, sessionDate, isPublished, createdAt: serverTimestamp(), ...(isPublished ? { publishedAt: serverTimestamp() } : {}), authorName: currentUser?.displayName || "Admin" });
+    }
+    showToast(isPublished ? "News published! 🚀" : "Draft saved.");
+  }
+  async function deleteNews(id) {
+    if (!confirm("Delete this news post?")) return;
+    await deleteDoc(doc(db, "news", id));
+    showToast("News deleted.");
+  }
+  async function publishNews(id, publish = true) {
+    await updateDoc(doc(db, "news", id), { isPublished: publish, ...(publish ? { publishedAt: serverTimestamp() } : {}) });
+    showToast(publish ? "News published! 🚀" : "Post unpublished.");
+  }
+
+  // Convert a match's createdAt to a BST YYYY-MM-DD string (same BST offset logic as the leaderboard "this week" filter)
+  function matchDateStrBST(m) {
+    const d = m.createdAt?.toDate?.() || (m.date ? new Date(m.date) : null);
+    if (!d) return null;
+    const bst = new Date(d.getTime() + (d.getTimezoneOffset() * 60000) + (6 * 60 * 60000));
+    return bst.toISOString().split("T")[0];
+  }
+  // Default = most recent date that has any matches
+  function getLastSessionDate() {
+    const dates = matches.map(matchDateStrBST).filter(Boolean).sort();
+    return dates.length ? dates[dates.length - 1] : new Date().toISOString().split("T")[0];
+  }
+  // Compute everything the news article needs for a given session date. Reuses the EXACT
+  // leaderboard points formula + computeStats/calcBadges so numbers always match the board.
+  function getSessionData(sessionDate) {
+    const seasonId = getSeasonId(new Date(sessionDate + "T12:00:00"));
+    const seasonMatches = matches.filter(m => m.seasonId === seasonId);
+    const dayMatches = seasonMatches.filter(m => matchDateStrBST(m) === sessionDate);
+    if (dayMatches.length === 0) return { empty: true, seasonId };
+
+    const beforeMatches = seasonMatches.filter(m => { const ds = matchDateStrBST(m); return ds && ds < sessionDate; });
+    const afterMatches  = seasonMatches.filter(m => { const ds = matchDateStrBST(m); return ds && ds <= sessionDate; });
+
+    const standings = (ms) => {
+      const raw = computeStats(players, ms);
+      const withPts = raw.map(p => {
+        const b = calcBadges(p.id, ms);
+        const points = (p.won * 3) + (p.lost * -2) + (b.cleanWins * 2) + (b.cleanLosses * -3) + (b.hatTricks * 3) + (b.lossTricks * -3);
+        return { ...p, points };
+      });
+      const sorted = [...withPts].sort((a, b) => b.points - a.points);
+      const qualified = sorted.filter(p => p.played >= QUALIFY_THRESHOLD);
+      const rankMap = {}, ptsMap = {}, playedMap = {};
+      qualified.forEach((p, i) => { rankMap[p.id] = i + 1; });
+      withPts.forEach(p => { ptsMap[p.id] = p.points; playedMap[p.id] = p.played; });
+      return { rankMap, ptsMap, playedMap };
+    };
+    const before = standings(beforeMatches);
+    const after = standings(afterMatches);
+
+    const dayPlayerIds = new Set();
+    dayMatches.forEach(m => { [...(m.team1 || []), ...(m.team2 || [])].forEach(id => dayPlayerIds.add(id)); });
+
+    const dayStatsMap = {};
+    computeStats(players, dayMatches).forEach(p => { dayStatsMap[p.id] = p; });
+
+    const playerReports = [...dayPlayerIds].map(id => {
+      const pl = players.find(p => p.id === id);
+      const ds = dayStatsMap[id] || { played: 0, won: 0, lost: 0, winPct: 0 };
+      const ptsBefore = before.ptsMap[id] || 0;
+      const ptsAfter = after.ptsMap[id] || 0;
+      const qualifiedNow = (after.playedMap[id] || 0) >= QUALIFY_THRESHOLD;
+      const wasQualified = (before.playedMap[id] || 0) >= QUALIFY_THRESHOLD;
+      return {
+        name: pl?.name || "Unknown",
+        played: ds.played, won: ds.won, lost: ds.lost, winPct: ds.winPct,
+        dayPoints: ptsAfter - ptsBefore,
+        seasonPoints: ptsAfter,
+        rankBefore: qualifiedNow && wasQualified ? (before.rankMap[id] || null) : null,
+        rankAfter: qualifiedNow ? (after.rankMap[id] || null) : null,
+        newlyQualified: qualifiedNow && !wasQualified,
+      };
+    }).sort((a, b) => b.dayPoints - a.dayPoints);
+
+    const pairKey = (a, b) => [a, b].sort().join("|");
+    const winPairs = {}, lossPairs = {};
+    dayMatches.forEach(m => {
+      const winners = m.winner === "team1" ? (m.team1 || []) : (m.team2 || []);
+      const losers = m.winner === "team1" ? (m.team2 || []) : (m.team1 || []);
+      if (winners.length === 2) { const k = pairKey(...winners); winPairs[k] = (winPairs[k] || 0) + 1; }
+      if (losers.length === 2) { const k = pairKey(...losers); lossPairs[k] = (lossPairs[k] || 0) + 1; }
+    });
+    const nameOf = (id) => players.find(p => p.id === id)?.name || "Unknown";
+    const topPair = (obj) => {
+      const e = Object.entries(obj).sort((a, b) => b[1] - a[1])[0];
+      if (!e || e[1] < 1) return null;
+      const [a, b] = e[0].split("|");
+      return { players: [nameOf(a), nameOf(b)], count: e[1] };
+    };
+    return {
+      empty: false, seasonId, sessionDate,
+      totalMatches: dayMatches.length,
+      players: playerReports,
+      bestDuo: topPair(winPairs),
+      cursedDuo: topPair(lossPairs),
+    };
+  }
+
   async function handleResetPassword(playerName) {
     const usersSnap = await getDocs(collection(db, "users"));
     const userDoc = usersSnap.docs.find(
@@ -4563,6 +4674,12 @@ export default function CarromTracker() {
         <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
       </svg>
     ),
+    news: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v12a2 2 0 002 2zm0 0a2 2 0 002-2v-7h-4"/>
+        <path d="M8 8h6M8 12h6M8 16h3"/>
+      </svg>
+    ),
   };
 
   const TABS = [
@@ -4571,6 +4688,7 @@ export default function CarromTracker() {
     { k: "players", l: "Players" },
     { k: "stats", l: "Stats" },
     { k: "history", l: "History" },
+    { k: "news", l: "News" },
     { k: "bills", l: "Bills", requiresLogin: true },
     ...(isFirebaseUser ? [{ k: "chat", l: "Chat" }, { k: "profile", l: "Me" }] : []),
   ].filter(t => !t.requiresLogin || isFirebaseUser);
@@ -4795,6 +4913,17 @@ export default function CarromTracker() {
         {tab === "players" && <Players players={players} matches={matches} onAdd={isAdmin ? addPlayer : undefined} onRemove={isAdmin ? removePlayer : undefined} onEdit={isAdmin ? editPlayer : undefined} onResetPassword={isAdmin ? handleResetPassword : undefined} isAdmin={isAdmin} onSelectPlayer={setSelectedPlayer} onNavigateToStats={() => { setStatsMode("player"); setTab("stats"); }} />}
         {tab === "stats" && <Stats players={players} matches={matches} selectedPlayer={selectedPlayer} setSelectedPlayer={setSelectedPlayer} statsMode={statsMode} setStatsMode={setStatsMode} />}
         {tab === "history" && <History players={players} matches={matches} onDelete={deleteMatch} isAdmin={isAdmin} />}
+        {tab === "news" && (
+          <News
+            news={newsList}
+            onSave={saveNews}
+            onDelete={deleteNews}
+            onPublish={publishNews}
+            isAdmin={isAdmin}
+            getSessionData={getSessionData}
+            defaultSessionDate={getLastSessionDate()}
+          />
+        )}
         {tab === "bills" && isFirebaseUser && (
           <Bills
             players={players}
