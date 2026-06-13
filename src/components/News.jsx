@@ -224,7 +224,7 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
               <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", margin: "0 0 10px 0", lineHeight: 1.45 }}>{viewOf(n).title}</h3>
             </div>
             <div style={{ padding: "0 16px 14px 16px" }}>
-              <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.75, margin: 0, whiteSpace: "pre-wrap", ...(isExpanded ? {} : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }) }}>{renderRich(viewOf(n).body)}</p>
+              <p style={{ fontSize: 14, color: "var(--text-muted)", lineHeight: 1.75, margin: 0, whiteSpace: "pre-wrap", ...(isExpanded ? {} : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }) }}>{renderRich((viewOf(n).body || "").replace(/\n{3,}/g, "\n\n"))}</p>
               <div style={{ display: "flex", alignItems: "center", gap: 14, paddingTop: 6 }}>
                 <button onClick={() => setExpandedId(isExpanded ? null : n.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#14a800", fontSize: 13, fontWeight: 600, padding: 0 }}>{isExpanded ? "Show less ↑" : "Read more ↓"}</button>
                 <button onClick={() => handleCopyText(n)} style={{ background: "none", border: "none", cursor: "pointer", color: copyTextId === n.id ? "#14a800" : "var(--text-muted)", fontSize: 13, fontWeight: 600, padding: 0, display: "inline-flex", alignItems: "center", gap: 5, marginLeft: "auto" }}>

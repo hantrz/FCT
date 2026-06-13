@@ -8,10 +8,11 @@ function buildTranslatePrompt({ title, content, targetLanguage }) {
 STRICT RULES:
 - Keep every player name in English exactly as written (e.g. Mr. Zed, Firoz Hassan).
 - Keep ALL numbers, points, percentages, scores, ranks in English (e.g. +24, 6-0, 60%, #1, #3 to #2).
-- Preserve the **bold markers** around names and duos exactly (e.g. **Mr. Zed** stays **Mr. Zed**).
+- Preserve the **bold markers** around names, duos, AND rank numbers exactly (e.g. **Mr. Zed** stays **Mr. Zed**, **#1** stays **#1**, **#3 to #2** stays **#3 to #2**). Every name and every # rank must remain wrapped in double asterisks.
 - Keep the emojis (🤝 💔 etc.) where they are.
 - NEVER use em dashes or en dashes. Use periods, commas, colons, or hyphens for scores.
-- Keep the same structure: headline on line 1, blank line, then body with one line per player, duo lines, closing.
+- Keep the same structure: headline on line 1, blank line, then body. Separate the intro, EACH player line, the Best Duo line, the Cursed Duo line, and the closing line by a COMPLETELY BLANK line (two newline characters between every block), exactly mirroring the paragraph breaks of the original. Never merge two player lines into one paragraph.
+- Translate the ENTIRE text fully. Do not stop early or truncate. Include every player line, both duo lines, and the closing.
 - Do not add or remove information. Translate faithfully but naturally (not word-for-word robotic).
 
 HEADLINE:
@@ -51,9 +52,11 @@ How to read the data:
 
 FORMATTING RULES (follow strictly):
 - In the BODY, wrap every player name and every duo pair in double asterisks for bold, exactly like **Mr. Zed** or **Firoz & Imran**. Every single time a name appears, bold it.
+- ALSO bold every rank number the same way: write ranks as **#1**, **#3**, or movements as **#3 to #2** / **#2 to #4**. Every # rank must be wrapped in double asterisks.
 - NEVER use em dashes or en dashes (the long dash or the short dash). Use a period, comma, or colon instead. For score lines use a hyphen like 6-0.
 - The HEADLINE (line 1) must be plain text with NO asterisks.
 - No other markdown: no headers, no bullet points, no numbered lists.
+- SPACING IS MANDATORY: separate the intro, EACH player line, the Best Duo line, the Cursed Duo line, and the closing line by a COMPLETELY BLANK line (two newline characters between every block). Never run two player lines together. Every player gets its own paragraph with blank lines above and below.
 
 Write the report in this EXACT structure:
 
@@ -61,7 +64,7 @@ Line 1: A catchy, punchy HEADLINE built around the single biggest story of the d
 (blank line)
 A 2 to 3 sentence intro setting the scene.
 (blank line)
-Then ONE line per player who played, in the given order. Each line starts with the player's name in bold (**Name**), then a witty one-liner that naturally works in their played/won/lost, win%, dayPoints (write it with a + or - sign), and rank movement. Rank movement ONLY for players with non-null ranks: phrase it like "climbed from #3 to #2", "slipped from #2 to #4", "holds #1", or for newlyQualified players "debuts at #3" (use the Bangla equivalent phrasing if writing in Bangla, but keep the #numbers in English). For unranked players, skip rank entirely and just cover their day.
+Then ONE line per player who played, in the given order. Each line starts with the player's name in bold (**Name**), then a witty one-liner that naturally works in their played/won/lost, win%, dayPoints (write it with a + or - sign), and rank movement. Rank movement ONLY for players with non-null ranks: phrase it like "climbed from **#3 to #2**", "slipped from **#2 to #4**", "holds **#1**", or for newlyQualified players "debuts at **#3**" (use the Bangla equivalent phrasing if writing in Bangla, but keep the #numbers in English and bold). Always wrap rank numbers in double asterisks. For unranked players, skip rank entirely and just cover their day.
 (blank line)
 🤝 Best Duo of the Day: name the bestDuo pair in bold with a one-liner on their chemistry (they won that many together). Skip this whole line if bestDuo is null.
 (blank line)
@@ -93,7 +96,7 @@ export async function POST(req) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 900,
+        max_tokens: 2400,
         messages: [{ role: "user", content: promptContent }],
       }),
     });
