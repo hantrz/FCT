@@ -109,7 +109,7 @@ function calcBadges(playerId, matches) {
     .filter(m => (m.team1 || []).includes(playerId) || (m.team2 || []).includes(playerId))
     .sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
 
-  let hatTricks = 0, lossTricks = 0, cleanWins = 0, cleanLosses = 0;
+  let hatTricks = 0, lossTricks = 0, cleanWins = 0, cleanLosses = 0, cleanHits = 0;
   let winStreak = 0, lossStreak = 0, currentSeason = null;
 
   for (const m of pm) {
@@ -134,8 +134,10 @@ function calcBadges(playerId, matches) {
       if (lossStreak === 3) { lossTricks++; lossStreak = 0; }
       if (m.loserScore === 0) cleanLosses++;
     }
+
+    if ((m.cleanHitBy || []).includes(playerId)) cleanHits++;
   }
-  return { hatTricks, lossTricks, cleanWins, cleanLosses };
+  return { hatTricks, lossTricks, cleanWins, cleanLosses, cleanHits };
 }
 
 // Point rules can change starting a specific season; everything before keeps the old rule.
@@ -813,6 +815,12 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                             {tooltip === `${p.id}-clean-loss` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💀 Clean Loss<br/>Lost while scoring 0 points<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
                           </span>
                         )}
+                        {badges.cleanHits > 0 && (
+                          <span style={{ position:"relative", display:"inline-flex" }} onMouseEnter={() => setTooltip(`${p.id}-clean-hit`)} onMouseLeave={() => setTooltip(null)}>
+                            <span style={{ fontSize:11, borderRadius:20, padding:"1px 6px", fontWeight:600, background:"#fff1f2", color:"#9f1239", border:"0.5px solid #fda4af" }}>{badges.cleanHits} 💥</span>
+                            {tooltip === `${p.id}-clean-hit` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💥 Clean Hit<br/>Pocketed all pieces in one turn<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+                          </span>
+                        )}
                       </div>
                       <div style={{ display: "flex", gap: 5, marginTop: 3, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 11, color: "var(--text-muted)", background: "var(--bg-secondary)", borderRadius: 6, padding: "1px 6px" }}>{p.played}P</span>
@@ -900,6 +908,12 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                             <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-clean-loss`)} onMouseLeave={() => setTooltip(null)}>
                               <span className="clean-loss-badge" style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600 }}>{badges.cleanLosses} 💀</span>
                               {tooltip === `${p.id}-clean-loss` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💀 Clean Loss<br/>Lost while scoring 0 points<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
+                            </span>
+                          )}
+                          {badges.cleanHits > 0 && (
+                            <span style={{ position:"relative", display:"inline-flex", flexShrink:0 }} onMouseEnter={() => setTooltip(`${p.id}-clean-hit`)} onMouseLeave={() => setTooltip(null)}>
+                              <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fff1f2", color:"#9f1239", border:"0.5px solid #fda4af" }}>{badges.cleanHits} 💥</span>
+                              {tooltip === `${p.id}-clean-hit` && <span style={{ position:"absolute", bottom:"calc(100% + 6px)", left:"50%", transform:"translateX(-50%)", background:"#1f2937", color:"#fff", fontSize:11, borderRadius:8, padding:"6px 10px", whiteSpace:"nowrap", zIndex:100, lineHeight:1.5, textAlign:"center", pointerEvents:"none", boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>💥 Clean Hit<br/>Pocketed all pieces in one turn<span style={{ position:"absolute", top:"100%", left:"50%", transform:"translateX(-50%)", borderWidth:5, borderStyle:"solid", borderColor:"#1f2937 transparent transparent transparent" }}/></span>}
                             </span>
                           )}
                         </div>
@@ -1020,6 +1034,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
                     { badge: { bg:"#fef2f2", color:"#b91c1c", border:"0.5px solid #fca5a5" }, icon:"😢", label:"Loss-trick: Every 3 consecutive losses" },
                     { badge: { bg:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }, icon:"💎", label:"Clean Win: Opponent scored 0 points" },
                     { badge: { cls:"clean-loss-badge" }, icon:"💀", label:"Clean Loss: You scored 0 points" },
+                    { badge: { bg:"#fff1f2", color:"#9f1239", border:"0.5px solid #fda4af" }, icon:"💥", label:"Clean Hit: Pocketed all pieces in one turn (badge only, no points)" },
                   ].map((item, i, arr) => (
                     <div key={i} style={{
                       display: "flex", alignItems: "center", gap: 10,
@@ -1180,6 +1195,11 @@ function NewMatch({ players, onSave, prefilled }) {
   const [winnerScore, setWinnerScore] = useState("");
   const [loserScore, setLoserScore] = useState("");
   const [scoreError, setScoreError] = useState("");
+  const [cleanHitBy, setCleanHitBy] = useState([]);
+
+  function toggleCleanHit(id) {
+    setCleanHitBy(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
 
   useEffect(() => {
     if (!prefilled) return;
@@ -1191,9 +1211,10 @@ function NewMatch({ players, onSave, prefilled }) {
     setWinnerScore("");
     setLoserScore("");
     setScoreError("");
+    setCleanHitBy([]);
   }, [prefilled]);
 
-  function changeFmt(f) { setFmt(f); setT1(f === "1v1" ? [""] : ["", ""]); setT2(f === "1v1" ? [""] : ["", ""]); setWinner(null); setWinnerScore(""); setLoserScore(""); setScoreError(""); }
+  function changeFmt(f) { setFmt(f); setT1(f === "1v1" ? [""] : ["", ""]); setT2(f === "1v1" ? [""] : ["", ""]); setWinner(null); setWinnerScore(""); setLoserScore(""); setScoreError(""); setCleanHitBy([]); }
   function setSlot(team, idx, val) {
     if (team === 1) { const n = [...t1]; n[idx] = val; setT1(n); }
     else { const n = [...t2]; n[idx] = val; setT2(n); }
@@ -1222,6 +1243,7 @@ function NewMatch({ players, onSave, prefilled }) {
       type: fmt, team1: t1, team2: t2, winner,
       winnerScore: wScore,
       loserScore: lScore,
+      cleanHitBy,
     });
     changeFmt("1v1"); setSaving(false);
   }
@@ -1335,6 +1357,35 @@ function NewMatch({ players, onSave, prefilled }) {
           {scoreError && (
             <p style={{ color: "#dc2626", fontSize: 12, fontWeight: 600, marginTop: 8 }}>⚠️ {scoreError}</p>
           )}
+        </div>
+      )}
+
+      {t1ok && t2ok && (
+        <div style={{ marginBottom: "1.25rem" }}>
+          <p className="section-label">💥 Clean Hit (optional)</p>
+          <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: -6, marginBottom: 8 }}>
+            Select anyone who pocketed all their pieces in one turn. Badge only, no extra points.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {[...t1, ...t2].filter(Boolean).map(id => {
+              const selected = cleanHitBy.includes(id);
+              return (
+                <button key={id} type="button" onClick={() => toggleCleanHit(id)}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    padding: "6px 12px", borderRadius: 20, fontSize: 13, fontWeight: 600,
+                    cursor: "pointer", fontFamily: "inherit",
+                    background: selected ? "#fff1f2" : "transparent",
+                    color: selected ? "#9f1239" : "var(--text)",
+                    border: `1.5px solid ${selected ? "#fb7185" : "var(--border-strong)"}`,
+                  }}>
+                  <PlayerAvatar player={players.find(p => p.id === id)} size={18} />
+                  {getName(id)}
+                  {selected && <span>💥</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -1656,6 +1707,10 @@ function getMatchBadgeLogs(match, allMatches, players) {
     logs.push({ type: "cleanwin", text: `💎 ${winnerNames} — Clean Win (Opponent scored 0 points)` });
   }
 
+  (match.cleanHitBy || []).forEach(playerId => {
+    logs.push({ type: "cleanhit", text: `💥 ${getPlayerName(playerId)} earned Clean Hit` });
+  });
+
   return logs;
 }
 
@@ -1816,7 +1871,7 @@ function History({ players, matches, onDelete, isAdmin }) {
                 return badgeLogs.length > 0 ? (
                   <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 3 }}>
                     {badgeLogs.map((log, i) => (
-                      <div key={i} style={{ fontSize: 12, color: log.type === "hattrick" ? "#d97706" : log.type === "losstrick" ? "#dc2626" : log.type === "cleanwin" ? "#1d4ed8" : "#6b7280", fontWeight: 500 }}>
+                      <div key={i} style={{ fontSize: 12, color: log.type === "hattrick" ? "#d97706" : log.type === "losstrick" ? "#dc2626" : log.type === "cleanwin" ? "#1d4ed8" : log.type === "cleanhit" ? "#be123c" : "#6b7280", fontWeight: 500 }}>
                         {log.text}
                       </div>
                     ))}
@@ -1967,12 +2022,13 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
             </p>
             {(() => {
               const b = calcBadges(p.id, matches);
-              return (b.hatTricks > 0 || b.lossTricks > 0 || b.cleanWins > 0 || b.cleanLosses > 0) ? (
+              return (b.hatTricks > 0 || b.lossTricks > 0 || b.cleanWins > 0 || b.cleanLosses > 0 || b.cleanHits > 0) ? (
                 <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:6 }}>
                   {b.hatTricks > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fff7ed", color:"#c2410c", border:"0.5px solid #fed7aa" }}>{b.hatTricks} 🔥</span>}
                   {b.lossTricks > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fef2f2", color:"#b91c1c", border:"0.5px solid #fca5a5" }}>{b.lossTricks} 😢</span>}
                   {b.cleanWins > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#dbeafe", color:"#1d4ed8", border:"0.5px solid #93c5fd" }}>{b.cleanWins} 💎</span>}
                   {b.cleanLosses > 0 && <span className="clean-loss-badge" style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600 }}>{b.cleanLosses} 💀</span>}
+                  {b.cleanHits > 0 && <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:11, borderRadius:20, padding:"2px 8px", fontWeight:600, background:"#fff1f2", color:"#9f1239", border:"0.5px solid #fda4af" }}>{b.cleanHits} 💥</span>}
                 </div>
               ) : null;
             })()}
@@ -2500,7 +2556,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
                           {badgeLogs.length > 0 && (
                             <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 2 }}>
                               {badgeLogs.map((log, i) => (
-                                <div key={i} style={{ fontSize: 11, color: log.type === "hattrick" ? "#d97706" : log.type === "losstrick" ? "#dc2626" : "#1d4ed8", fontWeight: 500 }}>
+                                <div key={i} style={{ fontSize: 11, color: log.type === "hattrick" ? "#d97706" : log.type === "losstrick" ? "#dc2626" : log.type === "cleanhit" ? "#be123c" : "#1d4ed8", fontWeight: 500 }}>
                                   {log.text}
                                 </div>
                               ))}
