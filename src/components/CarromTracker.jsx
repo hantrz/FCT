@@ -1087,7 +1087,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
               {guideTab === "spin" && (
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   {[
-                    { icon: "🚫", color: { bg:"#fee2e2", fg:"#dc2626", bd:"#fca5a5" }, label: "Partner Cooldown: Last 2 match teammates stay separated" },
+                    { icon: "🚫", color: { bg:"#fee2e2", fg:"#dc2626", bd:"#fca5a5" }, label: "Partner Cooldown: Last match teammates stay separated" },
                     { icon: "⚖️", color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Win Rate Balance: Both teams' combined win rates kept similar" },
                     { icon: "📈", color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Recent Form: Balance based on last 5 matches" },
                     { icon: "🔀", color: { bg:"#fef3c7", fg:"#a16207", bd:"#fde68a" }, label: "Partner Split: Frequent partners get separated" },
@@ -2674,7 +2674,7 @@ function getLastMatchLosers(matches) {
   return [];
 }
 
-function getRecentTeammatePairs(matches, selectedPlayerIds, lastN = 2) {
+function getRecentTeammatePairs(matches, selectedPlayerIds, lastN = 1) {
   try {
     function getTime(m) {
       try {
@@ -2782,7 +2782,7 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
     let filteredByRecent = configs;
     try {
       const selectedPlayerIds = selectedPlayers.map(p => p.id);
-      const blockedPairs = getRecentTeammatePairs(matches, selectedPlayerIds, 2);
+      const blockedPairs = getRecentTeammatePairs(matches, selectedPlayerIds, 1);
       const afterFilter = configs.filter(c => {
         const allTeams = [c.teamA, c.teamB];
         return allTeams.every(team => {
@@ -3248,7 +3248,7 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
                     <span style={{
                       fontSize: 11, fontWeight: 600, padding: "5px 10px",
                       borderRadius: 12, background: "#ef4444", color: "#ffffff",
-                    }}>🚫 Last 2 match partners separated</span>
+                    }}>🚫 Last match partners separated</span>
                   )}
                 </div>
               </div>
