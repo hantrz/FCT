@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   collection, addDoc, deleteDoc, doc, getDoc, getDocs, updateDoc, setDoc,
   onSnapshot, query, orderBy, serverTimestamp, deleteField, limit, where,
@@ -239,11 +239,13 @@ function calcChampion(seasonMatches, players) {
     winner.forEach(pid => stats[pid] && stats[pid].w++);
     loser.forEach(pid  => stats[pid] && stats[pid].l++);
   });
-  const pts = (pid) => {
+  const ptsMap = {};
+  Object.keys(stats).forEach(pid => {
     const b = calcBadges(pid, seasonMatches);
-    return (stats[pid].w*3)+(stats[pid].l*-2)+(b.hatTricks*3)+(b.lossTricks*-3)+(b.cleanWins*2)+(b.cleanLosses*-3);
-  };
-  const top = Object.keys(stats).sort((a,b) => pts(b)-pts(a))[0];
+    ptsMap[pid] = (stats[pid].w*3)+(stats[pid].l*-2)+(b.hatTricks*3)+(b.lossTricks*-3)+(b.cleanWins*2)+(b.cleanLosses*-3);
+  });
+  const pts = (pid) => ptsMap[pid];
+  const top = Object.keys(stats).sort((a,b) => ptsMap[b]-ptsMap[a])[0];
   if (!top) return null;
   const pl = players.find(p => p.id === top);
   const photo = pl?.imageUrl || null;
@@ -385,22 +387,25 @@ function PlayerSelect({ players, value, onChange, placeholder = "Select player",
 }
 
 function ChampionCards({ matches, players, currentSeasonId }) {
-  const currentChampion = calcChampion(matches.filter(m => m.seasonId === currentSeasonId), players);
+  const { currentChampion, lastChampion, allTimeChampion, lastSeasonId } = useMemo(() => {
+    const currentChampion = calcChampion(matches.filter(m => m.seasonId === currentSeasonId), players);
 
-  const pastIds = Array.from(new Set(matches.map(m => m.seasonId).filter(Boolean)))
-    .filter(s => s !== currentSeasonId)
-    .sort((a,b) => getSeasonDateRange(b).start - getSeasonDateRange(a).start);
-  const lastSeasonId = pastIds[0] || null;
+    const pastIds = Array.from(new Set(matches.map(m => m.seasonId).filter(Boolean)))
+      .filter(s => s !== currentSeasonId)
+      .sort((a,b) => getSeasonDateRange(b).start - getSeasonDateRange(a).start);
+    const lastSeasonId = pastIds[0] || null;
 
-  let lastChampion = null;
-  if (lastSeasonId === "May 2026") {
-    const pl = players.find(p => p.name === "Mr. Zed" || p.displayName === "Mr. Zed");
-    lastChampion = { name: "Mr. Zed", photo: pl?.imageUrl||null, pts:59, p:39, w:25, l:14, winPct:64 };
-  } else {
-    lastChampion = calcChampion(matches.filter(m => m.seasonId === lastSeasonId), players);
-  }
+    let lastChampion = null;
+    if (lastSeasonId === "May 2026") {
+      const pl = players.find(p => p.name === "Mr. Zed" || p.displayName === "Mr. Zed");
+      lastChampion = { name: "Mr. Zed", photo: pl?.imageUrl||null, pts:59, p:39, w:25, l:14, winPct:64 };
+    } else {
+      lastChampion = calcChampion(matches.filter(m => m.seasonId === lastSeasonId), players);
+    }
 
-  const allTimeChampion = calcChampion(matches, players);
+    const allTimeChampion = calcChampion(matches, players);
+    return { currentChampion, lastChampion, allTimeChampion, lastSeasonId };
+  }, [matches, players, currentSeasonId]);
 
   const cardData = [
     { champion: currentChampion, label: "Current Season", gradient: "linear-gradient(135deg,#15803d,#16a34a)", shadow: "rgba(22,163,74,0.3)", live: true, seasonLabel: currentSeasonId },
@@ -471,11 +476,11 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const currentSeasonId = getSeasonId(new Date());
   const [seasonView, setSeasonView] = useState("current"); // "current" | "alltime" | "past"
   const [selectedPastSeason, setSelectedPastSeason] = useState("");
-  const availableSeasons = (() => {
+  const availableSeasons = useMemo(() => {
     const fromMatches = Array.from(new Set(matches.map(m => m.seasonId).filter(Boolean)));
     if (!fromMatches.includes("May 2026")) fromMatches.push("May 2026");
     return fromMatches.sort((a, b) => getSeasonDateRange(b).start - getSeasonDateRange(a).start);
-  })();
+  }, [matches]);
   const pastSeasons = availableSeasons;
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -488,14 +493,14 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     const timer = setInterval(() => forceUpdate(n => n + 1), interval);
     return () => clearInterval(timer);
   }, [currentSeasonId]);
-  const displayMatches = (() => {
+  const displayMatches = useMemo(() => {
     if (seasonView === "alltime") return matches.filter(m => m.seasonId !== "May 2026");
     if (seasonView === "past") {
       const target = selectedPastSeason || pastSeasons[0] || currentSeasonId;
       return matches.filter(m => m.seasonId === target);
     }
     return matches.filter(m => m.seasonId === currentSeasonId);
-  })();
+  }, [matches, seasonView, selectedPastSeason, currentSeasonId, pastSeasons]);
   const isDark = typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
   const guideColors = isDark ? {
     cardBg:      "#0f1f17",
@@ -534,18 +539,20 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showSeasonDropdown]);
 
-  const raw = computeStats(players, displayMatches);
-  const stats = raw.map(p => {
-    const badges = calcBadges(p.id, displayMatches);
-    const points = 0
-      + (p.won * 3)
-      + (p.lost * -2)
-      + (badges.cleanWins * 2)
-      + (badges.cleanLosses * -3)
-      + (badges.hatTricks * 3)
-      + (badges.lossTricks * -3);
-    return { ...p, points };
-  });
+  const stats = useMemo(() => {
+    const raw = computeStats(players, displayMatches);
+    return raw.map(p => {
+      const badges = calcBadges(p.id, displayMatches);
+      const points = 0
+        + (p.won * 3)
+        + (p.lost * -2)
+        + (badges.cleanWins * 2)
+        + (badges.cleanLosses * -3)
+        + (badges.hatTricks * 3)
+        + (badges.lossTricks * -3);
+      return { ...p, points };
+    });
+  }, [players, displayMatches]);
   const sorted = [...stats].sort((a, b) => {
     if (sortBy === "points")   return b.points - a.points;
     if (sortBy === "winrate")  return b.winPct - a.winPct;
@@ -1378,7 +1385,7 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
   const [editIcon, setEditIcon] = useState("");
   const [editImage, setEditImage] = useState(null);
   const editFileRef = useRef(null);
-  const stats = computeStats(players, matches);
+  const stats = useMemo(() => computeStats(players, matches), [players, matches]);
 
   async function handleImageSelect(e) {
     const file = e.target.files[0];
@@ -1484,14 +1491,15 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
         <div className="empty"><p>No players added yet.</p></div>
       ) : (
         <div className="players-grid">
-          {[...players].sort((a, b) => {
-            const getPoints = (p) => {
-              const st = computeStats([p], matches)[0] || { won: 0, lost: 0 };
-              const badges = calcBadges(p.id, matches);
-              return (st.won * 3) + (st.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
-            };
-            return getPoints(b) - getPoints(a);
-          }).map((p, i) => {
+          {(() => {
+            const pointsMap = {};
+            players.forEach(pl => {
+              const st = stats.find(s => s.id === pl.id) || { won: 0, lost: 0 };
+              const badges = calcBadges(pl.id, matches);
+              pointsMap[pl.id] = (st.won * 3) + (st.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
+            });
+            return [...players].sort((a, b) => pointsMap[b.id] - pointsMap[a.id]);
+          })().map((p, i) => {
             const st = stats.find(s => s.id === p.id) || { played: 0, winPct: 0 };
             return (
               <div key={p.id} className="player-card" onClick={() => { if (onSelectPlayer && onNavigateToStats) { onSelectPlayer(p.id); onNavigateToStats(); } }}
