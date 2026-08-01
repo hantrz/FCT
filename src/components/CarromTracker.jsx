@@ -1179,6 +1179,7 @@ function NewMatch({ players, onSave, prefilled }) {
   const [saving, setSaving] = useState(false);
   const [winnerScore, setWinnerScore] = useState("");
   const [loserScore, setLoserScore] = useState("");
+  const [scoreError, setScoreError] = useState("");
 
   useEffect(() => {
     if (!prefilled) return;
@@ -1189,9 +1190,10 @@ function NewMatch({ players, onSave, prefilled }) {
     setWinner(null);
     setWinnerScore("");
     setLoserScore("");
+    setScoreError("");
   }, [prefilled]);
 
-  function changeFmt(f) { setFmt(f); setT1(f === "1v1" ? [""] : ["", ""]); setT2(f === "1v1" ? [""] : ["", ""]); setWinner(null); setWinnerScore(""); setLoserScore(""); }
+  function changeFmt(f) { setFmt(f); setT1(f === "1v1" ? [""] : ["", ""]); setT2(f === "1v1" ? [""] : ["", ""]); setWinner(null); setWinnerScore(""); setLoserScore(""); setScoreError(""); }
   function setSlot(team, idx, val) {
     if (team === 1) { const n = [...t1]; n[idx] = val; setT1(n); }
     else { const n = [...t2]; n[idx] = val; setT2(n); }
@@ -1203,15 +1205,23 @@ function NewMatch({ players, onSave, prefilled }) {
   }
 
   const t1ok = t1.every(Boolean), t2ok = t2.every(Boolean);
-  const canSave = t1ok && t2ok && winner;
+  const scoresFilled = winnerScore !== "" && loserScore !== "";
+  const canSave = t1ok && t2ok && winner && scoresFilled;
   const getName = id => players.find(p => p.id === id)?.name || "?";
   async function handleSave() {
     if (!canSave || saving) return;
+    const wScore = Number(winnerScore);
+    const lScore = Number(loserScore);
+    if (wScore <= lScore) {
+      setScoreError("The winner's score must be higher than the loser's score.");
+      return;
+    }
+    setScoreError("");
     setSaving(true);
     await onSave({
       type: fmt, team1: t1, team2: t2, winner,
-      winnerScore: winnerScore !== "" ? Number(winnerScore) : null,
-      loserScore: loserScore !== "" ? Number(loserScore) : null,
+      winnerScore: wScore,
+      loserScore: lScore,
     });
     changeFmt("1v1"); setSaving(false);
   }
@@ -1290,7 +1300,7 @@ function NewMatch({ players, onSave, prefilled }) {
 
       {winner && (
         <div style={{ marginBottom: "1.25rem" }}>
-          <p className="section-label">Score (optional)</p>
+          <p className="section-label">Score <span style={{ color: "#dc2626" }}>*</span></p>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
@@ -1303,8 +1313,8 @@ function NewMatch({ players, onSave, prefilled }) {
                 ))}
                 <span>score</span>
               </div>
-              <input type="number" min="0" value={winnerScore} onChange={e => setWinnerScore(e.target.value)}
-                placeholder="e.g. 24" style={{ width: "100%", boxSizing: "border-box" }} />
+              <input type="number" min="0" required value={winnerScore} onChange={e => { setWinnerScore(e.target.value); setScoreError(""); }}
+                placeholder="e.g. 24" style={{ width: "100%", boxSizing: "border-box", borderColor: scoreError ? "#dc2626" : undefined }} />
             </div>
             <div style={{ fontSize: 16, color: "var(--text-muted)", paddingTop: 20 }}>vs</div>
             <div style={{ flex: 1 }}>
@@ -1318,10 +1328,13 @@ function NewMatch({ players, onSave, prefilled }) {
                 ))}
                 <span>score</span>
               </div>
-              <input type="number" min="0" value={loserScore} onChange={e => setLoserScore(e.target.value)}
-                placeholder="e.g. 0" style={{ width: "100%", boxSizing: "border-box" }} />
+              <input type="number" min="0" required value={loserScore} onChange={e => { setLoserScore(e.target.value); setScoreError(""); }}
+                placeholder="e.g. 0" style={{ width: "100%", boxSizing: "border-box", borderColor: scoreError ? "#dc2626" : undefined }} />
             </div>
           </div>
+          {scoreError && (
+            <p style={{ color: "#dc2626", fontSize: 12, fontWeight: 600, marginTop: 8 }}>⚠️ {scoreError}</p>
+          )}
         </div>
       )}
 
