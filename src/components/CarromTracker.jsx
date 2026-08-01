@@ -212,6 +212,48 @@ function calcBadges(playerId, matches) {
   return { hatTricks, lossTricks, cleanWins, cleanLosses };
 }
 
+// Point rules can change starting a specific season; everything before keeps the old rule.
+// Currently: seasons before "Aug-Sep 2026" use OLD_RULES; "Aug-Sep 2026" onward use NEW_RULES.
+function getSeasonPointRules(seasonId) {
+  const OLD_RULES = { win: 3, loss: -2, cleanWinBonus: 2, cleanLossPenalty: -3, hatTrickBonus: 3, lossTrickPenalty: -3 };
+  const NEW_RULES = { win: 3, loss: -1, cleanWinBonus: 2, cleanLossPenalty: -4, hatTrickBonus: 3, lossTrickPenalty: -3 };
+  const NEW_RULES_START_SEASON = "Aug-Sep 2026";
+  const num = getSeasonNumber(seasonId);
+  const cutoff = getSeasonNumber(NEW_RULES_START_SEASON);
+  if (num !== null && cutoff !== null && num >= cutoff) return NEW_RULES;
+  return OLD_RULES;
+}
+
+// Computes a player's total points across any match set, applying EACH match's own season's
+// point rules — so mixed-season sets (like "All Time") stay correct even after rules change.
+function calcPlayerPoints(playerId, matches) {
+  const bySeason = {};
+  matches.forEach(m => {
+    const sid = m.seasonId || "unknown";
+    if (!bySeason[sid]) bySeason[sid] = [];
+    bySeason[sid].push(m);
+  });
+  let total = 0;
+  Object.keys(bySeason).forEach(sid => {
+    const seasonMatches = bySeason[sid];
+    const rules = getSeasonPointRules(sid);
+    let won = 0, lost = 0;
+    seasonMatches.forEach(m => {
+      const inT1 = (m.team1 || []).includes(playerId);
+      const inT2 = (m.team2 || []).includes(playerId);
+      if (inT1 || inT2) {
+        const isWin = (inT1 && m.winner === "team1") || (inT2 && m.winner === "team2");
+        if (isWin) won++; else lost++;
+      }
+    });
+    const badges = calcBadges(playerId, seasonMatches);
+    total += (won * rules.win) + (lost * rules.loss)
+      + (badges.cleanWins * rules.cleanWinBonus) + (badges.cleanLosses * rules.cleanLossPenalty)
+      + (badges.hatTricks * rules.hatTrickBonus) + (badges.lossTricks * rules.lossTrickPenalty);
+  });
+  return total;
+}
+
 function generatePlayerDescription(played, wins, losses, winRate, hatTricks, cleanWins, cleanLosses, streak, streakType) {
   if (played === 0) return "No matches yet — the journey begins!";
   if (winRate === 100 && played >= 3) return `Unbeatable so far — ${played} matches, zero defeats.`;
@@ -241,8 +283,7 @@ function calcChampion(seasonMatches, players) {
   });
   const ptsMap = {};
   Object.keys(stats).forEach(pid => {
-    const b = calcBadges(pid, seasonMatches);
-    ptsMap[pid] = (stats[pid].w*3)+(stats[pid].l*-2)+(b.hatTricks*3)+(b.lossTricks*-3)+(b.cleanWins*2)+(b.cleanLosses*-3);
+    ptsMap[pid] = calcPlayerPoints(pid, seasonMatches);
   });
   const pts = (pid) => ptsMap[pid];
   const top = Object.keys(stats).sort((a,b) => ptsMap[b]-ptsMap[a])[0];
@@ -474,6 +515,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const [guideTab, setGuideTab] = useState("points"); // "badges" | "points" | "spin"
   const [showChampions, setShowChampions] = useState(false);
   const currentSeasonId = getSeasonId(new Date());
+  const currentRules = getSeasonPointRules(currentSeasonId);
   const [seasonView, setSeasonView] = useState("current"); // "current" | "alltime" | "past"
   const [selectedPastSeason, setSelectedPastSeason] = useState("");
   const availableSeasons = useMemo(() => {
@@ -542,14 +584,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
   const stats = useMemo(() => {
     const raw = computeStats(players, displayMatches);
     return raw.map(p => {
-      const badges = calcBadges(p.id, displayMatches);
-      const points = 0
-        + (p.won * 3)
-        + (p.lost * -2)
-        + (badges.cleanWins * 2)
-        + (badges.cleanLosses * -3)
-        + (badges.hatTricks * 3)
-        + (badges.lossTricks * -3);
+      const points = calcPlayerPoints(p.id, displayMatches);
       return { ...p, points };
     });
   }, [players, displayMatches]);
@@ -1082,12 +1117,12 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
               {guideTab === "points" && (
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   {[
-                    { pts: "+3",  color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Win: For every match you win" },
-                    { pts: "-2",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Loss: For every match you lose" },
-                    { pts: "+5",  color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Clean Win: When opponent scores 0" },
-                    { pts: "-5",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Clean Loss: When you score 0" },
-                    { pts: "+3",  color: { bg:"#fff7ed", fg:"#c2410c", bd:"#fed7aa" }, label: "Hat-trick Bonus: Every 3 consecutive wins" },
-                    { pts: "-3",  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Loss-trick Penalty: Every 3 consecutive losses" },
+                    { pts: `+${currentRules.win}`,  color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Win: For every match you win" },
+                    { pts: `${currentRules.loss}`,  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Loss: For every match you lose" },
+                    { pts: `+${currentRules.win + currentRules.cleanWinBonus}`,  color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Clean Win: When opponent scores 0" },
+                    { pts: `${currentRules.loss + currentRules.cleanLossPenalty}`,  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Clean Loss: When you score 0" },
+                    { pts: `+${currentRules.hatTrickBonus}`,  color: { bg:"#fff7ed", fg:"#c2410c", bd:"#fed7aa" }, label: "Hat-trick Bonus: Every 3 consecutive wins" },
+                    { pts: `${currentRules.lossTrickPenalty}`,  color: { bg:"#fee2e2", fg:"#b91c1c", bd:"#fca5a5" }, label: "Loss-trick Penalty: Every 3 consecutive losses" },
                   ].map((item, i, arr) => (
                     <div key={i} style={{
                       display: "flex", alignItems: "center", gap: 10,
@@ -1494,9 +1529,7 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
           {(() => {
             const pointsMap = {};
             players.forEach(pl => {
-              const st = stats.find(s => s.id === pl.id) || { won: 0, lost: 0 };
-              const badges = calcBadges(pl.id, matches);
-              pointsMap[pl.id] = (st.won * 3) + (st.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
+              pointsMap[pl.id] = calcPlayerPoints(pl.id, matches);
             });
             return [...players].sort((a, b) => pointsMap[b.id] - pointsMap[a.id]);
           })().map((p, i) => {
@@ -1971,8 +2004,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
     const c = PALETTE[idx % PALETTE.length];
     function buildRankedList(matchSubset) {
       return computeStats(players, matchSubset).map(q => {
-        const qb = calcBadges(q.id, matchSubset);
-        return { id: q.id, pts: (q.won * 3) + (q.lost * -2) + (qb.hatTricks * 3) + (qb.lossTricks * -3) + (qb.cleanWins * 2) + (qb.cleanLosses * -3), played: q.played };
+        return { id: q.id, pts: calcPlayerPoints(q.id, matchSubset), played: q.played };
       }).filter(q => q.played >= QUALIFY_THRESHOLD).sort((a, b) => b.pts - a.pts);
     }
     const currentSeasonId = getSeasonId(new Date());
@@ -2177,8 +2209,7 @@ function Stats({ players, matches, selectedPlayer, setSelectedPlayer, statsMode,
     const baseStats = computeStats(players, filtered).filter(s => s.played > 0);
     const stats = baseStats.map(p => {
       const badges = calcBadges(p.id, filtered);
-      const base = 0;
-      const points = base + (p.won * 3) + (p.lost * -2) + (badges.cleanWins * 2) + (badges.cleanLosses * -3) + (badges.hatTricks * 3) + (badges.lossTricks * -3);
+      const points = calcPlayerPoints(p.id, filtered);
       return { ...p, points, badges };
     }).sort((a, b) => b.points - a.points || b.winPct - a.winPct);
     const rankColors = { 1: "#d97706", 2: "#64748b", 3: "#b45309" };
@@ -3742,9 +3773,7 @@ function MyProfile({ currentUser, players, matches, onNameUpdate, onLogout, show
     }
   }
   const meBadges = playerId ? calcBadges(playerId, matches) : { hatTricks: 0, lossTricks: 0, cleanWins: 0, cleanLosses: 0 };
-  const totalPoints = playerId
-    ? (wins * 3) + (losses * -2) + (meBadges.hatTricks * 3) + (meBadges.lossTricks * -3) + (meBadges.cleanWins * 2) + (meBadges.cleanLosses * -3)
-    : 0;
+  const totalPoints = playerId ? calcPlayerPoints(playerId, matches) : 0;
   const played = wins + losses;
   const winRate = played > 0 ? Math.round((wins / played) * 100) : 0;
 
@@ -4561,8 +4590,7 @@ export default function CarromTracker() {
     const standings = (ms) => {
       const raw = computeStats(players, ms);
       const withPts = raw.map(p => {
-        const b = calcBadges(p.id, ms);
-        const points = (p.won * 3) + (p.lost * -2) + (b.cleanWins * 2) + (b.cleanLosses * -3) + (b.hatTricks * 3) + (b.lossTricks * -3);
+        const points = calcPlayerPoints(p.id, ms);
         return { ...p, points };
       });
       const sorted = [...withPts].sort((a, b) => b.points - a.points);
