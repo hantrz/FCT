@@ -31,6 +31,8 @@ function renderRich(text) {
   );
 }
 
+const NEWS_PAGE_SIZE = 5;
+
 export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, getSessionData, defaultSessionDate }) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -39,6 +41,10 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
   const [copyTextId, setCopyTextId] = useState(null);
   const [langView, setLangView] = useState({}); // { [newsId]: "en" | "bn" }
   const [translating, setTranslating] = useState(false);
+  // All news is already in memory (fetched once for the whole app); this is
+  // just about not rendering every article's DOM (with its share/copy
+  // buttons etc.) at once. Same "load more" pattern as the History tab.
+  const [visibleCount, setVisibleCount] = useState(NEWS_PAGE_SIZE);
 
   // Returns the title/content for the language the reader is currently viewing.
   function viewOf(n) {
@@ -198,7 +204,7 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
         </div>
       )}
 
-      {visible.map(n => {
+      {visible.slice(0, visibleCount).map(n => {
         const badge = getSessionBadge(n.sessionType);
         const isExpanded = expandedId === n.id;
         const draft = !n.isPublished;
@@ -267,6 +273,17 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
           </div>
         );
       })}
+
+      {visible.length > visibleCount && (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 4, marginBottom: 20 }}>
+          <button
+            onClick={() => setVisibleCount(c => c + NEWS_PAGE_SIZE)}
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          >
+            Load more ({visible.length - visibleCount} remaining)
+          </button>
+        </div>
+      )}
 
       {editorOpen && isAdmin && (
         <div onClick={e => { if (e.target === e.currentTarget) setEditorOpen(false); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 2000, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>

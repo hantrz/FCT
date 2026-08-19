@@ -1792,16 +1792,29 @@ function formatElapsed(secs) {
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
+const HISTORY_PAGE_SIZE = 20;
+
 function History({ players, matches, onDelete, isAdmin }) {
   const getName = id => players.find(p => p.id === id)?.name || "?";
   const [filterPlayer, setFilterPlayer] = useState("");
   const [orderBy, setOrderBy] = useState("default");
+  const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth <= 600);
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth <= 600);
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
+
+  // Every match is already in memory (the Firestore listener fetches the
+  // whole collection once for the app), so this isn't about avoiding a
+  // network request — it's about not rendering hundreds of match-item DOM
+  // nodes at once every time this tab is opened or the filter/sort changes.
+  // Reset back to the first page whenever the filter or sort changes, so
+  // "load more" always starts fresh for the new result set.
+  useEffect(() => {
+    setVisibleCount(HISTORY_PAGE_SIZE);
+  }, [filterPlayer, orderBy]);
 
   const ctrlStyle = {
     border: "1px solid var(--border)", borderRadius: 8,
@@ -1859,7 +1872,7 @@ function History({ players, matches, onDelete, isAdmin }) {
       </div>
       {!filtered.length ? (
         <div className="empty"><p>{matches.length ? "No matches for this player." : "No matches recorded yet."}</p></div>
-      ) : filtered.map(m => {
+      ) : filtered.slice(0, visibleCount).map(m => {
         const w1 = m.winner === "team1";
         const renderTeam = (ids, won) => (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4, flexWrap: "wrap", fontSize: 13, fontWeight: won ? 700 : 400, color: won ? "var(--green)" : "var(--text-muted)" }}>
@@ -1934,6 +1947,15 @@ function History({ players, matches, onDelete, isAdmin }) {
           </div>
         );
       })}
+      {filtered.length > visibleCount && (
+        <button
+          className="btn"
+          onClick={() => setVisibleCount(c => c + HISTORY_PAGE_SIZE)}
+          style={{ alignSelf: "center", fontSize: 13, padding: "8px 20px", marginTop: 4 }}
+        >
+          Load more ({filtered.length - visibleCount} remaining)
+        </button>
+      )}
     </div>
   );
 }
