@@ -8,12 +8,20 @@ import {
 import {
   signInWithEmailAndPassword, signOut, updatePassword, onAuthStateChanged,
 } from "firebase/auth";
-import { db, auth } from "../lib/firebase";
+import { db, auth, storage } from "../lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import Bills from "./Bills";
 import News from "./News";
 import { getSeasonId, getSeasonDateRange, getSeasonNumber } from "../lib/seasons";
 
-async function fileToResizedBase64(file, maxSize = 200, quality = 0.8) {
+// Resizes a picked file on a single canvas and returns BOTH a small base64
+// preview (used only for the local <img> preview while editing — never
+// stored) and the actual Blob to upload to Firebase Storage. We used to
+// store the base64 string itself in Firestore as `imageUrl`, which meant a
+// ~10-14KB text blob got embedded directly into every player object and
+// re-sent on every realtime update — that's what was tanking LCP/CLS.
+// Now only a small Storage download URL (a few dozen bytes) is stored.
+async function resizeImage(file, maxSize = 320, quality = 0.85) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -29,14 +37,28 @@ async function fileToResizedBase64(file, maxSize = 200, quality = 0.8) {
         canvas.width = width;
         canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        canvas.toBlob((blob) => {
+          if (!blob) { reject(new Error("Could not process image")); return; }
+          resolve({ blob, dataUrl });
+        }, "image/jpeg", quality);
       };
-      img.onerror = reject;
+      img.onerror = () => reject(new Error("Could not read image"));
       img.src = e.target.result;
     };
-    reader.onerror = reject;
+    reader.onerror = () => reject(new Error("Could not read file"));
     reader.readAsDataURL(file);
   });
+}
+
+// Uploads a resized player photo to Firebase Storage and returns its public
+// download URL — this is what gets saved on the player doc instead of a
+// base64 string.
+async function uploadPlayerPhoto(blob) {
+  const path = `profilepics/${crypto.randomUUID()}.jpg`;
+  const photoRef = ref(storage, path);
+  await uploadBytes(photoRef, blob, { contentType: "image/jpeg" });
+  return getDownloadURL(photoRef);
 }
 
 const PALETTE = [
@@ -87,7 +109,7 @@ function Avatar({ id, allPlayers, size = 30 }) {
   if (!player) return null;
   if (player.imageUrl) {
     return (
-      <img src={player.imageUrl} alt={player.name}
+      <img src={player.imageUrl} alt={player.name} width={size} height={size}
         style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", border: `1.5px solid ${c}40`, flexShrink: 0 }} />
     );
   }
@@ -224,7 +246,7 @@ function calcChampion(seasonMatches, players) {
 function PlayerAvatar({ player, size = 40 }) {
   if (player?.imageUrl) {
     return (
-      <img src={player.imageUrl} alt={player.name}
+      <img src={player.imageUrl} alt={player.name} width={size} height={size}
         style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", border: "0.5px solid var(--border)", flexShrink: 0 }} />
     );
   }
@@ -402,7 +424,7 @@ function ChampionCards({ matches, players, currentSeasonId }) {
             <>
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                 {champion.photo
-                  ? <img src={champion.photo} alt={champion.name} style={{ width:44, height:44, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.4)", flexShrink:0, objectFit:"cover" }} />
+                  ? <img src={champion.photo} alt={champion.name} width={44} height={44} style={{ width:44, height:44, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.4)", flexShrink:0, objectFit:"cover" }} />
                   : <div style={{ width:44, height:44, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:800, color:"white", flexShrink:0, border:"2px solid rgba(255,255,255,0.4)" }}>{(champion.name||"?")[0]}</div>
                 }
                 <div style={{ flex:1, minWidth:0 }}>
@@ -1404,11 +1426,13 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
   const [icon, setIcon] = useState(AVATAR_ICONS[0]);
   const [adding, setAdding] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);
+  const [uploadedBlob, setUploadedBlob] = useState(null);
   const fileInputRef = useRef(null);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
   const [editIcon, setEditIcon] = useState("");
   const [editImage, setEditImage] = useState(null);
+  const [editBlob, setEditBlob] = useState(null);
   const editFileRef = useRef(null);
   const stats = useMemo(() => computeStats(players, matches), [players, matches]);
 
@@ -1417,8 +1441,9 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
     if (!file) return;
     if (!file.type.startsWith("image/")) { alert("Please select an image file"); return; }
     try {
-      const base64 = await fileToResizedBase64(file);
-      setUploadedImage(base64);
+      const { blob, dataUrl } = await resizeImage(file);
+      setUploadedImage(dataUrl); // local preview only
+      setUploadedBlob(blob);     // what actually gets uploaded on submit
     } catch {
       alert("Failed to process image");
     }
@@ -1430,8 +1455,9 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
     try {
-      const base64 = await fileToResizedBase64(file);
-      setEditImage(base64);
+      const { blob, dataUrl } = await resizeImage(file);
+      setEditImage(dataUrl); // local preview only
+      setEditBlob(blob);     // what actually gets uploaded on submit
     } catch {
       alert("Failed to process image");
     }
@@ -1441,8 +1467,16 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
   async function handleAdd() {
     if (!name.trim() || adding) return;
     setAdding(true);
-    await onAdd(name.trim(), icon, uploadedImage, mobile.trim());
-    setName(""); setMobile(""); setUploadedImage(null); setAdding(false);
+    let imageUrl = null;
+    if (uploadedBlob) {
+      try {
+        imageUrl = await uploadPlayerPhoto(uploadedBlob);
+      } catch (err) {
+        alert("Photo upload failed — saving the player without a photo.\n" + err.message);
+      }
+    }
+    await onAdd(name.trim(), icon, imageUrl, mobile.trim());
+    setName(""); setMobile(""); setUploadedImage(null); setUploadedBlob(null); setAdding(false);
   }
 
   function startEdit(p) {
@@ -1450,11 +1484,22 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
     setEditName(p.name);
     setEditIcon(p.icon || AVATAR_ICONS[0]);
     setEditImage(p.imageUrl || null);
+    setEditBlob(null);
   }
 
   async function handleEdit() {
-    await onEdit(editingId, editName, editIcon, editImage);
+    let imageUrl = editImage;
+    if (editBlob) {
+      try {
+        imageUrl = await uploadPlayerPhoto(editBlob);
+      } catch (err) {
+        alert("Photo upload failed — keeping the previous photo.\n" + err.message);
+        imageUrl = players.find(p => p.id === editingId)?.imageUrl || null;
+      }
+    }
+    await onEdit(editingId, editName, editIcon, imageUrl);
     setEditingId(null);
+    setEditBlob(null);
   }
 
   return (
@@ -1467,8 +1512,8 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {uploadedImage ? (
                 <div style={{ position: "relative" }}>
-                  <img src={uploadedImage} alt="preview" style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--border)" }} />
-                  <button type="button" onClick={() => setUploadedImage(null)}
+                  <img src={uploadedImage} alt="preview" width={56} height={56} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--border)" }} />
+                  <button type="button" onClick={() => { setUploadedImage(null); setUploadedBlob(null); }}
                     style={{ position: "absolute", top: -4, right: -4, width: 20, height: 20, borderRadius: "50%", background: "#dc2626", color: "white", border: "none", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>×</button>
                 </div>
               ) : (
@@ -1585,8 +1630,8 @@ function Players({ players, matches, onAdd, onRemove, onEdit, onResetPassword, i
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {editImage ? (
                   <div style={{ position: "relative" }}>
-                    <img src={editImage} alt="preview" style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--border)" }} />
-                    <button type="button" onClick={() => setEditImage(null)}
+                    <img src={editImage} alt="preview" width={56} height={56} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--border)" }} />
+                    <button type="button" onClick={() => { setEditImage(null); setEditBlob(null); }}
                       style={{ position: "absolute", top: -4, right: -4, width: 20, height: 20, borderRadius: "50%", background: "#dc2626", color: "white", border: "none", cursor: "pointer", fontSize: 12, padding: 0 }}>×</button>
                   </div>
                 ) : (
@@ -3715,7 +3760,7 @@ function Chat({ currentUser, onUnreadChange, isActive }) {
 function ProfileAvatar({ displayName, matchedPlayer, size = 72 }) {
   if (matchedPlayer?.imageUrl) {
     return (
-      <img src={matchedPlayer.imageUrl} alt={displayName}
+      <img src={matchedPlayer.imageUrl} alt={displayName} width={size} height={size}
         style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border)", flexShrink: 0 }} />
     );
   }

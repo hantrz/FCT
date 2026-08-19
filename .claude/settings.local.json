@@ -21,7 +21,17 @@
       "Bash(git diff *)",
       "Bash(wsl grep *)",
       "Bash(git revert *)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(git -C \"K:\\\\FCT\\\\carrom-tracker\" commit --allow-empty -m \"trigger vercel deploy\")",
+      "Bash(git -C \"K:\\\\FCT\\\\carrom-tracker\" push)",
+      "Bash(git -C \"K:\\\\FCT\\\\carrom-tracker\" commit --allow-empty -m \"trigger vercel deploy - latest history pill\")",
+      "Bash(git -C \"K:\\\\FCT\\\\carrom-tracker\" add src/components/CarromTracker.jsx)",
+      "Bash(git -C \"K:\\\\FCT\\\\carrom-tracker\" commit -m \"fix: amber color for Played duration pill\")",
+      "Bash(git -C \"K:\\\\FCT\\\\carrom-tracker\" commit --allow-empty -m \"trigger vercel deploy - loss trick badge\")",
+      "Bash(npm run *)",
+      "PowerShell(git *)",
+      "Bash(npm ls *)",
+      "Bash(git *)"
     ]
   }
 }
