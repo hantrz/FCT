@@ -4718,7 +4718,19 @@ export default function CarromTracker() {
     }
   }
 
-  if (authState === "loading") return null;
+  // We used to `return null` here while Firebase Auth was still resolving,
+  // which meant the ENTIRE page — including the public leaderboard, which
+  // doesn't need a login at all — stayed blank until the Auth SDK finished
+  // initializing (a real network round trip). That was the biggest reason
+  // LCP was so slow: nothing could paint until auth resolved, even though
+  // the players/matches Firestore listeners above already start fetching
+  // independently of auth state.
+  //
+  // Now "loading" is treated the same as "guest" below (every isAdmin/
+  // isMember/isFirebaseUser check is already false/null by default), so the
+  // page renders immediately and upgrades in place once auth resolves —
+  // admin/member controls simply appear a beat later instead of blocking
+  // everything.
   if (authState === "login") return <LoginScreen />;
 
   const realIsAdmin = authState === "admin";
