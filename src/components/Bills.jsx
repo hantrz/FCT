@@ -45,6 +45,8 @@ function formatBillTimestamp(ts) {
   return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
 }
 
+const BILL_HISTORY_PAGE_SIZE = 5;
+
 export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLoggedIn, isAdmin, loggedInPlayerName }) {
   const [seasonView, setSeasonView] = useState("current"); // "current" | "alltime" | "past"
   const [selectedPastSeason, setSelectedPastSeason] = useState("");
@@ -54,6 +56,10 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
   const [formDate, setFormDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [payments, setPayments] = useState({});
   const [saving, setSaving] = useState(false);
+  // All bills are already in memory (fetched once for the whole app); this
+  // just avoids rendering every "Bill History" row's DOM at once. Same
+  // "load more" pattern as the History and News tabs.
+  const [visibleHistoryCount, setVisibleHistoryCount] = useState(BILL_HISTORY_PAGE_SIZE);
 
   const currentSeasonId = getSeasonId(new Date());
 
@@ -357,7 +363,7 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
           <div className="empty"><p>No bill entries yet.</p></div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {[...bills].sort((a, b) => new Date(b.date) - new Date(a.date)).map(bill => (
+            {[...bills].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, visibleHistoryCount).map(bill => (
               <div key={bill.id} className="match-item">
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", marginBottom: 6 }}>{bill.date}</div>
@@ -396,6 +402,15 @@ export default function Bills({ players, bills, onSaveBill, onDeleteBill, isLogg
                 )}
               </div>
             ))}
+            {bills.length > visibleHistoryCount && (
+              <button
+                className="btn"
+                onClick={() => setVisibleHistoryCount(c => c + BILL_HISTORY_PAGE_SIZE)}
+                style={{ alignSelf: "center", fontSize: 13, padding: "8px 20px", marginTop: 4 }}
+              >
+                Load more ({bills.length - visibleHistoryCount} remaining)
+              </button>
+            )}
           </div>
         )}
       </div>
