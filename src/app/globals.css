@@ -1,4 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap');
+/* Inter/Sora are now self-hosted via next/font/google (see layout.js) —
+   this used to @import from fonts.googleapis.com, which forced an extra
+   serial round trip (HTML -> this CSS -> Google's font CSS -> the actual
+   font files) before text could render. next/font downloads and serves
+   the font files from our own domain at build time instead, and exposes
+   them as the --font-inter / --font-sora CSS variables used below. */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -58,7 +63,7 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family: var(--font-inter), -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100dvh;
@@ -119,7 +124,7 @@ body {
 }
 
 .header-text h1 {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-sora), sans-serif;
   font-size: 19px;
   font-weight: 800;
   color: #ffffff;
@@ -203,7 +208,7 @@ body {
   font-size: 13px;
   font-weight: 500;
   color: rgba(255,255,255,0.65);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-inter), sans-serif;
   white-space: nowrap;
   transition: color 0.15s, border-color 0.15s;
   flex-shrink: 0;
@@ -257,7 +262,7 @@ body {
   margin-bottom: 5px;
 }
 .metric span {
-  font-family: 'Sora', sans-serif;
+  font-family: var(--font-sora), sans-serif;
   font-size: 26px;
   font-weight: 700;
   color: var(--text);
@@ -392,7 +397,7 @@ tr:hover td { background: var(--green-light); }
 
 /* ── Form elements ── */
 input, select {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-inter), sans-serif;
   font-size: 14px;
   padding: 10px 12px;
   border: 1px solid var(--border-strong);
@@ -411,7 +416,7 @@ input:focus, select:focus {
 
 /* ── Buttons ── */
 .btn {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-inter), sans-serif;
   cursor: pointer;
   padding: 9px 16px;
   border-radius: var(--radius-sm);

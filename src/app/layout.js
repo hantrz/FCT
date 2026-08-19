@@ -1,4 +1,25 @@
+import { Inter, Sora } from "next/font/google";
 import "./globals.css";
+
+// Self-hosts these fonts at build time (served from our own domain, no
+// fonts.googleapis.com/fonts.gstatic.com round trips) and exposes them as
+// CSS variables consumed by globals.css. display: "swap" keeps text visible
+// with a fallback font while the real one loads, and next/font automatically
+// sizes that fallback to match — this is what removes the font-swap layout
+// shift that was contributing to the CLS score.
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  variable: "--font-sora",
+  display: "swap",
+});
 
 export const metadata = {
   title: "FCT - Carrom Tracker",
@@ -25,7 +46,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="bn">
+    <html lang="bn" className={`${inter.variable} ${sora.variable}`}>
       <body>{children}</body>
     </html>
   );
