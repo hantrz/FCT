@@ -54,10 +54,20 @@ async function resizeImage(file, maxSize = 320, quality = 0.85) {
 // Uploads a resized player photo to Firebase Storage and returns its public
 // download URL — this is what gets saved on the player doc instead of a
 // base64 string.
+//
+// cacheControl is set to a 1-year "immutable" hint so the browser (and the
+// iOS/Android PWA webview) reuses its local copy of the image on every later
+// visit instead of re-fetching it from Storage. This is safe because each
+// upload gets a brand-new random filename (crypto.randomUUID()) — changing a
+// player's photo later never reuses an old URL, so there's no risk of a
+// browser showing a stale cached image under a new photo.
 async function uploadPlayerPhoto(blob) {
   const path = `profilepics/${crypto.randomUUID()}.jpg`;
   const photoRef = ref(storage, path);
-  await uploadBytes(photoRef, blob, { contentType: "image/jpeg" });
+  await uploadBytes(photoRef, blob, {
+    contentType: "image/jpeg",
+    cacheControl: "public, max-age=31536000, immutable",
+  });
   return getDownloadURL(photoRef);
 }
 
