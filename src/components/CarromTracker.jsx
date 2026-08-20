@@ -4481,17 +4481,39 @@ export default function CarromTracker() {
         return m;
       }));
     });
-    const unsubB = onSnapshot(query(collection(db, "bills"), orderBy("createdAt", "desc")), snap => {
-      setBills(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
     const unsubR = onSnapshot(query(collection(db, "matches_running"), where("status", "==", "running")), snap => {
       setRunningMatch(snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() });
     });
+    return () => { unsubP(); unsubM(); unsubR(); };
+  }, []);
+
+  // Bills and News are only ever read inside their own tabs (not by the
+  // leaderboard, stats, or anything else), so there's no reason to pay for
+  // their onSnapshot connections at initial app load. Each one connects the
+  // first time its tab is opened, then stays connected for the rest of the
+  // session (switching tabs afterwards doesn't refetch). This cuts the
+  // number of simultaneous Firestore listeners competing for the initial
+  // connection from 5 down to 3.
+  const [billsTabVisited, setBillsTabVisited] = useState(false);
+  const [newsTabVisited, setNewsTabVisited] = useState(false);
+  useEffect(() => { if (tab === "bills") setBillsTabVisited(true); }, [tab]);
+  useEffect(() => { if (tab === "news") setNewsTabVisited(true); }, [tab]);
+
+  useEffect(() => {
+    if (!billsTabVisited) return;
+    const unsubB = onSnapshot(query(collection(db, "bills"), orderBy("createdAt", "desc")), snap => {
+      setBills(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsubB();
+  }, [billsTabVisited]);
+
+  useEffect(() => {
+    if (!newsTabVisited) return;
     const unsubN = onSnapshot(query(collection(db, "news"), orderBy("createdAt", "desc")), snap => {
       setNewsList(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
-    return () => { unsubP(); unsubM(); unsubB(); unsubR(); unsubN(); };
-  }, []);
+    return () => unsubN();
+  }, [newsTabVisited]);
 
   useEffect(() => {
     if (authState !== "admin") return;
