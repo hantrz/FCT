@@ -2859,7 +2859,9 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
     let filteredByRecent = configs;
     try {
       const selectedPlayerIds = selectedPlayers.map(p => p.id);
-      const blockedPairs = getRecentTeammatePairs(matches, selectedPlayerIds, 1);
+      // Cooldown window: block a pair from teaming up again if they were
+      // teammates in either of their last 2 matches (was 1 match before).
+      const blockedPairs = getRecentTeammatePairs(matches, selectedPlayerIds, 2);
       const afterFilter = configs.filter(c => {
         const allTeams = [c.teamA, c.teamB];
         return allTeams.every(team => {
@@ -3325,7 +3327,7 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
                     <span style={{
                       fontSize: 11, fontWeight: 600, padding: "5px 10px",
                       borderRadius: 12, background: "#ef4444", color: "#ffffff",
-                    }}>🚫 Last match partners separated</span>
+                    }}>🚫 Last 2 matches' partners separated</span>
                   )}
                 </div>
               </div>
