@@ -102,16 +102,18 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
   const [form, setForm] = useState({
     sessionType: "Sunday",
     sessionDate: defaultSessionDate || new Date().toISOString().split("T")[0],
-    adminNote: "", title: "", content: "", language: "English",
+    adminNote: "", title: "", content: "", language: "বাংলা", alsoTranslate: false,
   });
 
   function openEditor(item = null) {
     if (item) {
-      setForm({ sessionType: item.sessionType || "Sunday", sessionDate: item.sessionDate || defaultSessionDate, adminNote: "", title: item.title || "", content: item.content || "", language: "English" });
+      const itemIsEn = item.primaryLang === "en" || (!item.primaryLang && !item.title_bn);
+      const hasOther = itemIsEn ? !!item.title_bn : !!item.title_en;
+      setForm({ sessionType: item.sessionType || "Sunday", sessionDate: item.sessionDate || defaultSessionDate, adminNote: "", title: item.title || "", content: item.content || "", language: itemIsEn ? "English" : "বাংলা", alsoTranslate: hasOther });
       setEditingId(item.id);
     } else {
       const d = defaultSessionDate || new Date().toISOString().split("T")[0];
-      setForm({ sessionType: dayToSessionType(d), sessionDate: d, adminNote: "", title: "", content: "", language: "English" });
+      setForm({ sessionType: dayToSessionType(d), sessionDate: d, adminNote: "", title: "", content: "", language: "বাংলা", alsoTranslate: false });
       setEditingId(null);
     }
     setAiError(""); setEditorOpen(true);
@@ -141,20 +143,22 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
     const targetLanguage = primaryIsBangla ? "English" : "বাংলা";
 
     let other = { title: "", content: "" };
-    setTranslating(true);
-    setAiError("");
-    try {
-      const res = await fetch("/api/generateNews", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "translate", title: form.title.trim(), content: form.content.trim(), targetLanguage }),
-      });
-      const json = await res.json();
-      if (res.ok) other = { title: json.title || "", content: json.content || "" };
-      // if translation fails, we still save the primary language; toggle just won't appear
-    } catch (err) {
-      // ignore — save primary anyway
-    } finally {
-      setTranslating(false);
+    if (form.alsoTranslate) {
+      setTranslating(true);
+      setAiError("");
+      try {
+        const res = await fetch("/api/generateNews", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: "translate", title: form.title.trim(), content: form.content.trim(), targetLanguage }),
+        });
+        const json = await res.json();
+        if (res.ok) other = { title: json.title || "", content: json.content || "" };
+        // if translation fails, we still save the primary language; toggle just won't appear
+      } catch (err) {
+        // ignore — save primary anyway
+      } finally {
+        setTranslating(false);
+      }
     }
 
     const payload = {
@@ -329,6 +333,10 @@ export default function News({ news = [], onSave, onDelete, onPublish, isAdmin, 
               </div>
               <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10, lineHeight: 1.5 }}>The app reads that day's matches and the leaderboard automatically — no screenshots needed. Add an optional note below if you want something special mentioned.</div>
               <textarea placeholder="Optional note for the AI (e.g. 'It was Imran's birthday', 'we played in the rain')…" value={form.adminNote} onChange={e => setForm(f => ({ ...f, adminNote: e.target.value }))} rows={2} style={{ ...inp, resize: "vertical", marginBottom: 10, lineHeight: 1.5 }} />
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-muted)", marginBottom: 10, cursor: "pointer" }}>
+                <input type="checkbox" checked={!!form.alsoTranslate} onChange={e => setForm(f => ({ ...f, alsoTranslate: e.target.checked }))} />
+                Also create {form.language === "বাংলা" ? "English" : "বাংলা"} version on save (auto-translate)
+              </label>
               <button onClick={handleGenerate} disabled={generating} style={{ background: generating ? "#9ca3af" : "#14a800", color: "#fff", border: "none", borderRadius: 7, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: generating ? "not-allowed" : "pointer" }}>{generating ? "⏳ Reading the scoreboard…" : "✨ Generate Article"}</button>
               {aiError && <div style={{ color: "#ef4444", fontSize: 12, marginTop: 8 }}>{aiError}</div>}
             </div>

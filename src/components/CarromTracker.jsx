@@ -4738,12 +4738,75 @@ export default function CarromTracker() {
       const [a, b] = e[0].split("|");
       return { players: [nameOf(a), nameOf(b)], count: e[1] };
     };
+
+    const cleanHitCounts = {};
+    dayMatches.forEach(m => { (m.cleanHitBy || []).forEach(id => { cleanHitCounts[id] = (cleanHitCounts[id] || 0) + 1; }); });
+    const cleanHits = Object.entries(cleanHitCounts).map(([id, count]) => ({ name: nameOf(id), count }));
+
+    const cleanWins = dayMatches.filter(m => m.loserScore === 0).map(m => {
+      const winners = m.winner === "team1" ? (m.team1 || []) : (m.team2 || []);
+      const losers = m.winner === "team1" ? (m.team2 || []) : (m.team1 || []);
+      const entry = { winners: winners.map(nameOf), losers: losers.map(nameOf) };
+      if (m.winnerScore !== undefined && m.winnerScore !== null) entry.score = `${m.winnerScore}-0`;
+      return entry;
+    });
+
+    const sessionDateObj = new Date(sessionDate + "T12:00:00");
+    const milestones = [];
+    const debuts = [];
+    const returning = [];
+    dayPlayerIds.forEach(id => {
+      const name = nameOf(id);
+      const priorMatches = matches.filter(m => {
+        const ds = matchDateStrBST(m);
+        return ds && ds < sessionDate && [...(m.team1 || []), ...(m.team2 || [])].includes(id);
+      });
+      const beforeCount = priorMatches.length;
+      const todayCount = dayStatsMap[id]?.played || 0;
+      const afterCount = beforeCount + todayCount;
+      if (beforeCount === 0) {
+        debuts.push(name);
+      } else {
+        const lastDate = priorMatches.map(matchDateStrBST).sort().pop();
+        const daysAway = Math.round((sessionDateObj - new Date(lastDate + "T12:00:00")) / 86400000);
+        if (daysAway >= 21) returning.push({ name, daysAway });
+      }
+      if (Math.floor(afterCount / 100) > Math.floor(beforeCount / 100)) {
+        milestones.push({ name, type: "careerMatches", value: Math.floor(afterCount / 100) * 100 });
+      }
+      const ptsBefore = before.ptsMap[id] || 0;
+      const ptsAfter = after.ptsMap[id] || 0;
+      if (Math.floor(ptsAfter / 100) > Math.floor(ptsBefore / 100)) {
+        milestones.push({ name, type: "seasonPoints", value: Math.floor(ptsAfter / 100) * 100 });
+      }
+    });
+
+    const seasonRange = getSeasonDateRange(seasonId);
+    const daysLeft = Math.floor((seasonRange.end - sessionDateObj) / 86400000);
+    let sessionsLeft = 0;
+    {
+      const cursor = new Date(sessionDateObj);
+      cursor.setDate(cursor.getDate() + 1);
+      while (cursor <= seasonRange.end) {
+        const day = cursor.getDay();
+        if (day === 5 || day === 0) sessionsLeft++;
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+    const season = {
+      number: getSeasonNumber(seasonId),
+      isOpener: beforeMatches.length === 0,
+      daysLeft, sessionsLeft,
+      isFinalStretch: daysLeft <= 14,
+    };
+
     return {
       empty: false, seasonId, sessionDate,
       totalMatches: dayMatches.length,
       players: playerReports,
       bestDuo: topPair(winPairs),
       cursedDuo: topPair(lossPairs),
+      highlights: { cleanHits, cleanWins, milestones, debuts, returning, season },
     };
   }
 
