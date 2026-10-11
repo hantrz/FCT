@@ -2945,7 +2945,7 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
             newCooldownLevel = "floor";
           } else {
             configs = baseConfigs;
-            newCooldownLevel = "none";
+            newCooldownLevel = "failed";
           }
         }
       }
@@ -3399,14 +3399,14 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
                   {cooldownLevel === "relaxed" && (
                     <span style={{
                       fontSize: 11, fontWeight: 600, padding: "5px 10px",
-                      borderRadius: 12, background: "#f97316", color: "#ffffff",
-                    }}>⚠️ No valid 2-match pairing — relaxed to last match only</span>
+                      borderRadius: 12, background: "#ef4444", color: "#ffffff",
+                    }}>🚫 Last match's partners separated</span>
                   )}
-                  {cooldownLevel === "floor" && (
+                  {(cooldownLevel === "floor" || cooldownLevel === "failed") && (
                     <span style={{
                       fontSize: 11, fontWeight: 600, padding: "5px 10px",
                       borderRadius: 12, background: "#f97316", color: "#ffffff",
-                    }}>⚠️ Cooldown unavailable — only last match's partners kept apart</span>
+                    }}>⚠️ Cooldown relaxed — no valid pairing available</span>
                   )}
                 </div>
               </div>
