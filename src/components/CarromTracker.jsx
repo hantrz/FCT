@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
-  collection, addDoc, deleteDoc, doc, getDoc, getDocs, updateDoc, setDoc,
+  collection, addDoc, deleteDoc, doc, getDoc, getDocs, getDocsFromServer, updateDoc, setDoc,
   onSnapshot, query, orderBy, serverTimestamp, deleteField, limit, where,
 } from "firebase/firestore";
 import {
@@ -1119,7 +1119,7 @@ function Leaderboard({ players, matches, onSelectPlayer, onNavigateToStats }) {
               {guideTab === "spin" && (
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   {[
-                    { icon: "🚫", color: { bg:"#fee2e2", fg:"#dc2626", bd:"#fca5a5" }, label: "Partner Cooldown: Last match teammates stay separated" },
+                    { icon: "🚫", color: { bg:"#fee2e2", fg:"#dc2626", bd:"#fca5a5" }, label: "Partner Cooldown: Last 2 matches' teammates stay separated (relaxes to last match only if no valid pairing exists)" },
                     { icon: "⚖️", color: { bg:"#dbeafe", fg:"#1d4ed8", bd:"#93c5fd" }, label: "Win Rate Balance: Both teams' combined win rates kept similar" },
                     { icon: "📈", color: { bg:"#dcfce7", fg:"#15803d", bd:"#86efac" }, label: "Recent Form: Balance based on last 5 matches" },
                     { icon: "🔀", color: { bg:"#fef3c7", fg:"#a16207", bd:"#fde68a" }, label: "Partner Split: Frequent partners get separated" },
@@ -2810,7 +2810,15 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
   const [teams, setTeams] = useState(null);
   const [shuffleNames, setShuffleNames] = useState([]);
   const [appliedConditions, setAppliedConditions] = useState([]);
-  const [recentPairBlocked, setRecentPairBlocked] = useState(false);
+  // "full"    — 2-match cooldown filtered out at least one config (normal case)
+  // "relaxed" — all 3 configs were blocked at 2-match, so it fell back to a
+  //             1-match cooldown and that found a usable config
+  // "floor"   — even 1-match cooldown blocked everything; fell back to the
+  //             last resort: just keep the single most recent match's own
+  //             teammates apart
+  // "none"    — no constraint was needed (or fetching/filtering failed and
+  //             we gave up rather than block the spin)
+  const [cooldownLevel, setCooldownLevel] = useState("none");
   const [strikeFirst, setStrikeFirst] = useState(null);
   const [particles, setParticles] = useState([]);
   const [showResult, setShowResult] = useState(false);
@@ -2830,7 +2838,7 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
     if (spinning) return;
     setTeams(null);
     setAppliedConditions([]);
-    setRecentPairBlocked(false);
+    setCooldownLevel("none");
     setStrikeFirst(null);
     setParticles([]);
     setShowResult(false);
@@ -2841,7 +2849,7 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
     }
   };
 
-  const spin = () => {
+  const spin = async () => {
     if (selected.length !== 4 || spinning) return;
     setSpinning(true);
     setTeams(null);
@@ -2850,44 +2858,103 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
     const selectedPlayers = selected.map(id => players.find(p => p.id === id));
     const [p1, p2, p3, p4] = selectedPlayers;
 
-    let configs = [
+    // Pull match history straight from the Firestore server instead of the
+    // app's cached realtime listener. The cached `matches` prop can lag
+    // behind by several minutes on a shaky connection — e.g. if someone
+    // *else's* phone just saved the previous match's result, this device's
+    // listener may not have caught up yet, which lets a hard-rule-breaking
+    // pairing slip through even though the rule's own logic is correct.
+    // getDocsFromServer forces a real round-trip, bypassing both the
+    // listener cache and the offline persistence cache.
+    let freshMatches = matches;
+    try {
+      const freshSnap = await getDocsFromServer(
+        query(collection(db, "matches"), orderBy("createdAt", "desc"), limit(40))
+      );
+      freshMatches = freshSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (err) {
+      console.error("Fresh match fetch failed, falling back to cached matches:", err);
+    }
+
+    const selectedPlayerIds = selectedPlayers.map(p => p.id);
+
+    const baseConfigs = [
       { teamA: [p1, p2], teamB: [p3, p4] },
       { teamA: [p1, p3], teamB: [p2, p4] },
       { teamA: [p1, p4], teamB: [p2, p3] },
     ];
 
-    let filteredByRecent = configs;
-    try {
-      const selectedPlayerIds = selectedPlayers.map(p => p.id);
-      // Cooldown window: block a pair from teaming up again if they were
-      // teammates in either of their last 2 matches (was 1 match before).
-      const blockedPairs = getRecentTeammatePairs(matches, selectedPlayerIds, 2);
-      const afterFilter = configs.filter(c => {
+    function filterByBlocked(cfgs, blockedPairs) {
+      return cfgs.filter(c => {
         const allTeams = [c.teamA, c.teamB];
         return allTeams.every(team => {
           for (let i = 0; i < team.length; i++) {
             for (let j = i + 1; j < team.length; j++) {
               const pair = [team[i].id, team[j].id].sort().join("|||");
-              if (blockedPairs.has(pair)) {
-                console.log("Config blocked because of pair:", team[i].name, "+", team[j].name);
-                return false;
-              }
+              if (blockedPairs.has(pair)) return false;
             }
           }
           return true;
         });
       });
-      if (afterFilter.length > 0) {
-        filteredByRecent = afterFilter;
-        console.log("Configs after recent pair filter:", filteredByRecent.length);
+    }
+
+    let configs = baseConfigs;
+    let newCooldownLevel = "none";
+    try {
+      // Tier 1: the normal 2-match cooldown.
+      const blocked2 = getRecentTeammatePairs(freshMatches, selectedPlayerIds, 2);
+      const after2 = filterByBlocked(baseConfigs, blocked2);
+      if (after2.length > 0 && after2.length < 3) {
+        configs = after2;
+        newCooldownLevel = "full";
+      } else if (after2.length === 3) {
+        configs = baseConfigs;
+        newCooldownLevel = "none";
       } else {
-        console.warn("All configs blocked — using fallback");
+        // Tier 2: 2-match cooldown blocked all 3 pairings — relax to 1-match.
+        const blocked1 = getRecentTeammatePairs(freshMatches, selectedPlayerIds, 1);
+        const after1 = filterByBlocked(baseConfigs, blocked1);
+        if (after1.length > 0) {
+          configs = after1;
+          newCooldownLevel = "relaxed";
+        } else {
+          // Tier 3 (absolute floor): even 1-match cooldown blocked
+          // everything. Guarantee at minimum that whoever was teammates in
+          // the single most recent match doesn't get repeated.
+          const getTime = m => {
+            const c = m.createdAt;
+            return c?.toMillis?.() ?? (c?.seconds ? c.seconds * 1000 : 0);
+          };
+          const lastMatch = [...freshMatches].sort((a, b) => getTime(b) - getTime(a))[0];
+          const floorBlocked = new Set();
+          if (lastMatch) {
+            const tA = lastMatch.teamA || lastMatch.team1 || [];
+            const tB = lastMatch.teamB || lastMatch.team2 || [];
+            [tA, tB].forEach(team => {
+              for (let i = 0; i < team.length; i++) {
+                for (let j = i + 1; j < team.length; j++) {
+                  floorBlocked.add([team[i], team[j]].sort().join("|||"));
+                }
+              }
+            });
+          }
+          const afterFloor = filterByBlocked(baseConfigs, floorBlocked);
+          if (afterFloor.length > 0) {
+            configs = afterFloor;
+            newCooldownLevel = "floor";
+          } else {
+            configs = baseConfigs;
+            newCooldownLevel = "none";
+          }
+        }
       }
     } catch (err) {
-      console.error("Recent pair filtering error:", err);
+      console.error("Cooldown filtering error:", err);
+      configs = baseConfigs;
+      newCooldownLevel = "none";
     }
-    configs = filteredByRecent;
-    setRecentPairBlocked(filteredByRecent.length > 0 && filteredByRecent.length < 3);
+    setCooldownLevel(newCooldownLevel);
 
     const numConds = 1 + Math.floor(Math.random() * 3);
     const shuffledConds = [...SOFT_CONDITIONS].sort(() => Math.random() - 0.5);
@@ -2897,25 +2964,25 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
       let score = 0;
       active.forEach(cond => {
         if (cond.id === "winRate") {
-          const a = (getPlayerWinRate(cfg.teamA[0].id, matches) + getPlayerWinRate(cfg.teamA[1].id, matches)) / 2;
-          const b = (getPlayerWinRate(cfg.teamB[0].id, matches) + getPlayerWinRate(cfg.teamB[1].id, matches)) / 2;
+          const a = (getPlayerWinRate(cfg.teamA[0].id, freshMatches) + getPlayerWinRate(cfg.teamA[1].id, freshMatches)) / 2;
+          const b = (getPlayerWinRate(cfg.teamB[0].id, freshMatches) + getPlayerWinRate(cfg.teamB[1].id, freshMatches)) / 2;
           score += 100 - Math.abs(a - b);
         } else if (cond.id === "recentForm") {
-          const a = (getRecentForm(cfg.teamA[0].id, matches) + getRecentForm(cfg.teamA[1].id, matches)) / 2;
-          const b = (getRecentForm(cfg.teamB[0].id, matches) + getRecentForm(cfg.teamB[1].id, matches)) / 2;
+          const a = (getRecentForm(cfg.teamA[0].id, freshMatches) + getRecentForm(cfg.teamA[1].id, freshMatches)) / 2;
+          const b = (getRecentForm(cfg.teamB[0].id, freshMatches) + getRecentForm(cfg.teamB[1].id, freshMatches)) / 2;
           score += 100 - Math.abs(a - b);
         } else if (cond.id === "headToHead") {
-          const aP = getPartnershipCount(cfg.teamA[0].id, cfg.teamA[1].id, matches);
-          const bP = getPartnershipCount(cfg.teamB[0].id, cfg.teamB[1].id, matches);
+          const aP = getPartnershipCount(cfg.teamA[0].id, cfg.teamA[1].id, freshMatches);
+          const bP = getPartnershipCount(cfg.teamB[0].id, cfg.teamB[1].id, freshMatches);
           score += Math.max(0, 100 - (aP + bP) * 10);
         } else if (cond.id === "lastLosers") {
-          const losers = getLastMatchLosers(matches);
+          const losers = getLastMatchLosers(freshMatches);
           const aL = cfg.teamA.filter(p => losers.includes(p.id)).length;
           const bL = cfg.teamB.filter(p => losers.includes(p.id)).length;
           if (aL + bL < 2) score += 50;
           else if (aL === 1 && bL === 1) score += 100;
         } else if (cond.id === "topBottom") {
-          const sortedByRate = [...selectedPlayers].sort((x, y) => getPlayerWinRate(y.id, matches) - getPlayerWinRate(x.id, matches));
+          const sortedByRate = [...selectedPlayers].sort((x, y) => getPlayerWinRate(y.id, freshMatches) - getPlayerWinRate(x.id, freshMatches));
           const top = sortedByRate[0], bottom = sortedByRate[3];
           const topInA = cfg.teamA.some(p => p.id === top.id);
           const botInA = cfg.teamA.some(p => p.id === bottom.id);
@@ -2989,7 +3056,7 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
         }
         setTeams(finalConfig);
         setAppliedConditions(active.map(c => c.label));
-        const striker = getStrikeFirstPlayer(matches, selectedPlayers);
+        const striker = getStrikeFirstPlayer(freshMatches, selectedPlayers);
         setStrikeFirst(striker);
         setTimeout(() => {
           const box = strikeBoxRef.current;
@@ -3050,7 +3117,7 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
     setTeams(null);
     setShuffleNames([]);
     setAppliedConditions([]);
-    setRecentPairBlocked(false);
+    setCooldownLevel("none");
     setStrikeFirst(null);
     setParticles([]);
     setShowResult(false);
@@ -3304,7 +3371,7 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
               </div>
             )}
 
-            {(appliedConditions.length > 0 || recentPairBlocked) && (
+            {(appliedConditions.length > 0 || cooldownLevel !== "none") && (
               <div style={{
                 padding: 12, background: "#fef3c7",
                 borderRadius: 10, border: "1px solid #fbbf24",
@@ -3323,11 +3390,23 @@ function TeamSpin({ players, matches, onClose, currentUser, onMatchStarted }) {
                       borderRadius: 12, background: "#fbbf24", color: "#1a1a1a",
                     }}>{label}</span>
                   ))}
-                  {recentPairBlocked && (
+                  {cooldownLevel === "full" && (
                     <span style={{
                       fontSize: 11, fontWeight: 600, padding: "5px 10px",
                       borderRadius: 12, background: "#ef4444", color: "#ffffff",
                     }}>🚫 Last 2 matches' partners separated</span>
+                  )}
+                  {cooldownLevel === "relaxed" && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, padding: "5px 10px",
+                      borderRadius: 12, background: "#f97316", color: "#ffffff",
+                    }}>⚠️ No valid 2-match pairing — relaxed to last match only</span>
+                  )}
+                  {cooldownLevel === "floor" && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, padding: "5px 10px",
+                      borderRadius: 12, background: "#f97316", color: "#ffffff",
+                    }}>⚠️ Cooldown unavailable — only last match's partners kept apart</span>
                   )}
                 </div>
               </div>
